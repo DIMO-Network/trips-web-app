@@ -2,6 +2,9 @@ import Head from "next/head";
 import Image from "next/image";
 import styles from "@/styles/Home.module.css";
 import { useState } from "react";
+import { useSignMessage } from 'wagmi'
+import WalletConnectProvider from '@walletconnect/web3-provider';
+
 
 export default function Home() {
 	const [, setIsNetworkSwitchHighlighted] =
@@ -12,6 +15,63 @@ export default function Home() {
 		setIsNetworkSwitchHighlighted(false);
 		setIsConnectHighlighted(false);
 	};
+	const { signMessage } = useSignMessage()
+	const handleConnectWallet = async () => {
+		const provider = new WalletConnectProvider({
+			infuraId: "e417c64f2d2349b3b83de2ae0d49688d",
+		});
+
+		try {
+			await provider.enable();
+			const ethersProvider = new ethers.providers.Web3Provider(provider);
+			const signer = ethersProvider.getSigner();
+			const address = await signer.getAddress();
+
+			// Fetch the challenge from your backend
+			const challengeResponse = await fetch('/auth/web3/generate_challenge', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+				body: new URLSearchParams({
+					client_id: 'your_client_id',
+					domain: 'your_domain',
+					scope: 'openid email',
+					response_type: 'code',
+					address: address,
+				}),
+			});
+			const { state, challenge } = await challengeResponse.json();
+
+			// Prompt user to sign the challenge
+			const signature = await signer.signMessage(challenge);
+
+			// Submit the signed challenge to your backend
+			const submitResponse = await fetch('/auth/web3/submit_challenge', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+				body: new URLSearchParams({
+					client_id: 'your_client_id',
+					domain: 'your_domain',
+					grant_type: 'authorization_code',
+					state: state,
+					signature: signature,
+				}),
+			});
+			const submitResult = await submitResponse.json();
+
+			// Handle the response from your backend
+			// ...
+
+		} catch (error) {
+			console.error('Error:', error);
+		} finally {
+			await provider.disconnect();
+		}
+	};
+
 
 	return (
 		<>
@@ -31,7 +91,7 @@ export default function Home() {
 			<main className={styles.main}>
 				<div className={styles.wrapper}>
 					<div className={styles.containerCentered}>
-						<div onClick={closeAll} className={styles.highlight}>
+						<div onClick={() => signMessage({message: 'hello'})} className={styles.highlight}>
 							<w3m-button />
 						</div>
 						<div onClick={closeAll} className={styles.highlight}>
@@ -62,4 +122,3 @@ export default function Home() {
 		</>
 	);
 }
-
