@@ -1,7 +1,7 @@
 import Head from "next/head";
 import Image from "next/image";
 import styles from "@/styles/Home.module.css";
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import { useSignMessage } from 'wagmi'
 import WalletConnectProvider from '@walletconnect/web3-provider';
 import { ethers } from "ethers";
@@ -17,7 +17,17 @@ export default function Home() {
 		setIsNetworkSwitchHighlighted(false);
 		setIsConnectHighlighted(false);
 	};
-	const { signMessage } = useSignMessage()
+	const { signMessage, data, error } = useSignMessage()
+
+	useEffect(() => {
+		if(data) {
+			console.log('Signature:', data);
+		}
+
+		if(error) {
+			console.error('Error signing message:', error);
+		}
+	}, [data, error]);
 
 
 	const fetchChallenge = async (address) => {
@@ -64,19 +74,23 @@ export default function Home() {
 			const signer = ethersProvider.getSigner();
 			const address = await signer.getAddress();
 
-			const challenge = await fetchChallenge(address);
-			console.log('Challenge:', challenge);
-			if (challenge) {
-				const signature = await signMessage({ message: challenge.challenge });
-				// Process the signature here
-				console.log('Signature:', signature);
+			const challengeResponse = await fetchChallenge(address);
+			if (challengeResponse && challengeResponse.challenge) {
+
+				const message = challengeResponse.challenge;
+				console.log('Challenge:', message);
+
+				signer.signMessage(message).then(signature => {
+					console.log('Signature:', signature);
+					// Process the signature here
+				}).catch(error => {
+					console.error('Error during signing:', error);
+				});
 			}
 		} catch (error) {
 			console.error('Error in onAccountConnected:', error);
 		}
 	};
-
-
 
 
 	return (
