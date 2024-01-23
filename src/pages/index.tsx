@@ -22,7 +22,7 @@ export default function Home() {
 
 	const fetchChallenge = async (address) => {
 		try {
-			const challengeResponse = await fetch('/auth/web3/generate_challenge', {
+			const challengeResponse = await fetch('http://localhost:3003/auth/web3/generate_challenge', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/x-www-form-urlencoded',
@@ -65,8 +65,9 @@ export default function Home() {
 			const address = await signer.getAddress();
 
 			const challenge = await fetchChallenge(address);
+			console.log('Challenge:', challenge);
 			if (challenge) {
-				const signature = await signMessage({ message: challenge.nonce });
+				const signature = await signMessage({ message: challenge.challenge });
 				// Process the signature here
 				console.log('Signature:', signature);
 			}
