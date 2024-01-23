@@ -4,6 +4,8 @@ import styles from "@/styles/Home.module.css";
 import { useState } from "react";
 import { useSignMessage } from 'wagmi'
 import WalletConnectProvider from '@walletconnect/web3-provider';
+import { ethers } from "ethers";
+
 
 
 export default function Home() {
@@ -16,61 +18,64 @@ export default function Home() {
 		setIsConnectHighlighted(false);
 	};
 	const { signMessage } = useSignMessage()
-	const handleConnectWallet = async () => {
-		const provider = new WalletConnectProvider({
-			infuraId: "e417c64f2d2349b3b83de2ae0d49688d",
-		});
 
+
+	const fetchChallenge = async (address) => {
 		try {
-			await provider.enable();
-			const ethersProvider = new ethers.providers.Web3Provider(provider);
-			const signer = ethersProvider.getSigner();
-			const address = await signer.getAddress();
-
-			// Fetch the challenge from your backend
 			const challengeResponse = await fetch('/auth/web3/generate_challenge', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/x-www-form-urlencoded',
 				},
 				body: new URLSearchParams({
-					client_id: 'your_client_id',
-					domain: 'your_domain',
-					scope: 'openid email',
+					client_id: 'client_id',
+					domain: 'domain',
+					scope: 'email',
 					response_type: 'code',
 					address: address,
 				}),
 			});
-			const { state, challenge } = await challengeResponse.json();
 
-			// Prompt user to sign the challenge
-			const signature = await signer.signMessage(challenge);
+			// Check if the response is OK
+			if (!challengeResponse.ok) {
+				console.error('Response not OK, status:', challengeResponse.status);
+				const text = await challengeResponse.text(); // Response as text for debugging
+				console.error('Response text:', text);
+				return;
+			}
 
-			// Submit the signed challenge to your backend
-			const submitResponse = await fetch('/auth/web3/submit_challenge', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/x-www-form-urlencoded',
-				},
-				body: new URLSearchParams({
-					client_id: 'your_client_id',
-					domain: 'your_domain',
-					grant_type: 'authorization_code',
-					state: state,
-					signature: signature,
-				}),
-			});
-			const submitResult = await submitResponse.json();
-
-			// Handle the response from your backend
-			// ...
-
+			const challenge = await challengeResponse.json();
+			return challenge;
 		} catch (error) {
-			console.error('Error:', error);
-		} finally {
-			await provider.disconnect();
+			console.error('Error fetching challenge:', error);
 		}
 	};
+
+
+	const onAccountConnected = async () => {
+		try {
+			if (!window.ethereum) {
+				console.error("Ethereum wallet is not available");
+				return;
+			}
+
+			await window.ethereum.request({ method: 'eth_requestAccounts' });
+			const ethersProvider = new ethers.providers.Web3Provider(window.ethereum);
+			const signer = ethersProvider.getSigner();
+			const address = await signer.getAddress();
+
+			const challenge = await fetchChallenge(address);
+			if (challenge) {
+				const signature = await signMessage({ message: challenge.nonce });
+				// Process the signature here
+				console.log('Signature:', signature);
+			}
+		} catch (error) {
+			console.error('Error in onAccountConnected:', error);
+		}
+	};
+
+
 
 
 	return (
@@ -91,12 +96,15 @@ export default function Home() {
 			<main className={styles.main}>
 				<div className={styles.wrapper}>
 					<div className={styles.containerCentered}>
-						<div onClick={() => signMessage({message: 'hello'})} className={styles.highlight}>
+						<div onClick={closeAll} className={styles.highlight}>
 							<w3m-button />
 						</div>
 						<div onClick={closeAll} className={styles.highlight}>
 							<w3m-network-button />
 						</div>
+						<button onClick={onAccountConnected}>
+							Sign Message
+						</button>
 					</div>
 				</div>
 			</main>
