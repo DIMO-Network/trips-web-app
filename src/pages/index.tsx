@@ -17,56 +17,46 @@ export default function Home() {
 		setIsNetworkSwitchHighlighted(false);
 		setIsConnectHighlighted(false);
 	};
-	const { signMessage, data, error } = useSignMessage()
+	const [errorMessage, setErrorMessage] = useState('');
 
-	useEffect(() => {
-		if(data) {
-			console.log('Signature:', data);
-		}
+	const { signMessage } = useSignMessage();
 
-		if(error) {
-			console.error('Error signing message:', error);
+	async function postForm(url, params) {
+		const formBody = [];
+		for (const property in params) {
+			const encodedKey = encodeURIComponent(property);
+			const encodedValue = encodeURIComponent(params[property]);
+			formBody.push(encodedKey + "=" + encodedValue);
 		}
-	}, [data, error]);
+		return fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded'
+			},
+			body: formBody.join('&'),
+		});
+	}
 
 
 	const fetchChallenge = async (address) => {
-		try {
-			const challengeResponse = await fetch('http://localhost:3003/auth/web3/generate_challenge', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/x-www-form-urlencoded',
-				},
-				body: new URLSearchParams({
-					client_id: 'client_id',
-					domain: 'domain',
-					scope: 'email',
-					response_type: 'code',
-					address: address,
-				}),
-			});
-
-			// Check if the response is OK
-			if (!challengeResponse.ok) {
-				console.error('Response not OK, status:', challengeResponse.status);
-				const text = await challengeResponse.text(); // Response as text for debugging
-				console.error('Response text:', text);
-				return;
-			}
-
-			const challenge = await challengeResponse.json();
-			return challenge;
-		} catch (error) {
-			console.error('Error fetching challenge:', error);
+		const response = await postForm('http://localhost:3003/auth/web3/generate_challenge', {
+			client_id: 'client_id',
+			domain: 'redirect_uri',
+			scope: 'openid email',
+			response_type: 'code',
+			address: address,
+		});
+		const data = await response.json();
+		if (!response.ok) {
+			throw new Error(data.error || 'Error fetching challenge');
 		}
+		return data;
 	};
-
 
 	const onAccountConnected = async () => {
 		try {
 			if (!window.ethereum) {
-				console.error("Ethereum wallet is not available");
-				return;
+				throw new Error("Ethereum wallet is not available");
 			}
 
 			await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -80,15 +70,24 @@ export default function Home() {
 				const message = challengeResponse.challenge;
 				console.log('Challenge:', message);
 
-				signer.signMessage(message).then(signature => {
-					console.log('Signature:', signature);
-					// Process the signature here
-				}).catch(error => {
-					console.error('Error during signing:', error);
+				const signature = await signer.signMessage(message);
+				console.log('Signature:', signature);
+
+				const verificationResponse = await postForm('http://localhost:3003/auth/web3/submit_challenge', {
+					client_id: 'client_id',
+					domain: 'redirect_uri',
+					grant_type: 'authorization_code',
+					state: challengeResponse.state,
+					signature: signature,
 				});
+
+				if (!verificationResponse.ok) {
+					throw new Error('Error submitting challenge');
+				}
 			}
 		} catch (error) {
 			console.error('Error in onAccountConnected:', error);
+			setErrorMessage(error.message);
 		}
 	};
 
