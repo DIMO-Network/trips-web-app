@@ -9,8 +9,7 @@ import { ethers } from "ethers";
 
 
 export default function Home() {
-	const [, setIsNetworkSwitchHighlighted] =
-		useState(false);
+	const [, setIsNetworkSwitchHighlighted] = useState(false);
 	const [, setIsConnectHighlighted] = useState(false);
 
 	const closeAll = () => {
@@ -20,6 +19,9 @@ export default function Home() {
 	const [errorMessage, setErrorMessage] = useState('');
 
 	const { signMessage } = useSignMessage();
+
+	const [isWalletConnected, setIsWalletConnected] = useState(false);
+	const [signature, setSignature] = useState("");
 
 	async function postForm(url, params) {
 		const formBody = [];
@@ -66,19 +68,19 @@ export default function Home() {
 
 			const challengeResponse = await fetchChallenge(address);
 			if (challengeResponse && challengeResponse.challenge) {
+				const challengeMessage = challengeResponse.challenge;
+				console.log('Challenge:', challengeMessage);
 
-				const message = challengeResponse.challenge;
-				console.log('Challenge:', message);
-
-				const signature = await signer.signMessage(message);
-				console.log('Signature:', signature);
+				const signedMessage = await signer.signMessage(challengeMessage);
+				console.log('Signature:', signedMessage);
+				setSignature(signedMessage); // Update the signature state
 
 				const verificationResponse = await postForm('http://localhost:3003/auth/web3/submit_challenge', {
 					client_id: 'client_id',
 					domain: 'redirect_uri',
 					grant_type: 'authorization_code',
 					state: challengeResponse.state,
-					signature: signature,
+					signature: signedMessage,
 				});
 
 				if (!verificationResponse.ok) {
@@ -90,6 +92,18 @@ export default function Home() {
 			setErrorMessage(error.message);
 		}
 	};
+
+	useEffect(() => {
+		const checkWalletConnection = async () => {
+			if (window.ethereum) {
+				const ethersProvider = new ethers.providers.Web3Provider(window.ethereum);
+				const accounts = await ethersProvider.listAccounts();
+				setIsWalletConnected(accounts.length > 0);
+			}
+		};
+
+		checkWalletConnection();
+	}, []);
 
 
 	return (
@@ -116,9 +130,17 @@ export default function Home() {
 						<div onClick={closeAll} className={styles.highlight}>
 							<w3m-network-button />
 						</div>
-						<button onClick={onAccountConnected}>
-							Sign Message
-						</button>
+						{isWalletConnected && (
+							<button onClick={onAccountConnected} className={styles.signButton}>
+								Sign Message
+							</button>
+						)}
+						{signature && (
+							<div className={styles.successBanner}>
+								<p>Message successfully signed! Signature:</p>
+								<p>{signature}</p>
+							</div>
+						)}
 					</div>
 				</div>
 			</main>
