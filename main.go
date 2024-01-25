@@ -5,8 +5,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"net/url"
 )
 
 type ChallengeResponse struct {
@@ -63,32 +65,51 @@ func HandleGenerateChallenge(w http.ResponseWriter, r *http.Request) {
 
 	// Extract form values
 	address := r.FormValue("address")
-	// etc
+	clientID := "trips-signals-webapp"
+	domain := "https://localhost:3003/login-redirect"
+	scope := "openid email"
+	responseType := "code"
 
-	// Generate state and nonce
-	state, err := generateRandomString(16) // 16 bytes = 128 bits
+	queryParams := url.Values{}
+	queryParams.Add("client_id", clientID)
+	queryParams.Add("domain", domain)
+	queryParams.Add("scope", scope)
+	queryParams.Add("response_type", responseType)
+	queryParams.Add("address", address)
+
+	newURL := fmt.Sprintf("https://auth.dev.dimo.zone/auth/web3/generate_challenge?%s", queryParams.Encode())
+
+	resp, err := http.Post(newURL, "application/json", nil)
 	if err != nil {
-		http.Error(w, "Error generating state", http.StatusInternalServerError)
+		http.Error(w, "Failed to make request", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	log.Printf("body: %s", string(body))
+
+	if err != nil {
+		log.Printf("Error reading response body: %v", err)
+		http.Error(w, "Error reading external response", http.StatusInternalServerError)
+	}
+
+	var apiResp ChallengeResponse
+	if err := json.Unmarshal(body, &apiResp); err != nil {
+		log.Printf("Error unmarshalling external response: %v", err)
+		http.Error(w, "Error processing response from external service", http.StatusInternalServerError)
 		return
 	}
 
-	nonce, err := generateRandomString(32) // 32 bytes = 256 bits
-	if err != nil {
-		http.Error(w, "Error generating nonce", http.StatusInternalServerError)
+	// check for empty state and challenge
+	if apiResp.State == "" || apiResp.Challenge == "" {
+		log.Printf("State or Challenge is empty")
+		http.Error(w, "State or Challenge incomplete from external service", http.StatusInternalServerError)
 		return
-	}
-
-	// Construct the challenge message
-	challenge := fmt.Sprintf("Please verify ownership of the address %s by signing this random string: %s", address, nonce)
-
-	// Send the JSON response
-	resp := ChallengeResponse{
-		State:     state,
-		Challenge: challenge,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(apiResp)
 }
 
 func HandleSubmitChallenge(w http.ResponseWriter, r *http.Request) {
