@@ -1,27 +1,25 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
+)
+
+const (
+	clientID     = "trips-signals-webapp"
+	domain       = "https://localhost:3003/oauth/callback"
+	scope        = "openid email"
+	responseType = "code"
+	grantType    = "authorization_code"
 )
 
 type ChallengeResponse struct {
 	State     string `json:"state"`
 	Challenge string `json:"challenge"`
-}
-
-type VerifyRequest struct {
-	ClientID  string `json:"client_id"`
-	Domain    string `json:"domain"`
-	GrantType string `json:"grant_type"`
-	State     string `json:"state"`
-	Signature string `json:"signature"`
 }
 
 func enableCors(w *http.ResponseWriter) {
@@ -41,47 +39,31 @@ func corsHandler(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func generateRandomString(n int) (string, error) {
-	bytes := make([]byte, n)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bytes), nil
-}
-
 func HandleGenerateChallenge(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
-	// Parse the URL-encoded form data
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
 		return
 	}
 
-	// Extract form values
 	address := r.FormValue("address")
-	clientID := "trips-signals-webapp"
-	domain := "https://localhost:3003/login-redirect"
-	scope := "openid email"
-	responseType := "code"
 
-	queryParams := url.Values{}
-	queryParams.Add("client_id", clientID)
-	queryParams.Add("domain", domain)
-	queryParams.Add("scope", scope)
-	queryParams.Add("response_type", responseType)
-	queryParams.Add("address", address)
+	formData := url.Values{}
+	formData.Add("client_id", clientID)
+	formData.Add("domain", domain)
+	formData.Add("scope", scope)
+	formData.Add("response_type", responseType)
+	formData.Add("address", address)
 
-	newURL := fmt.Sprintf("https://auth.dev.dimo.zone/auth/web3/generate_challenge?%s", queryParams.Encode())
-
-	resp, err := http.Post(newURL, "application/json", nil)
+	encodedFormData := formData.Encode()
+	reqURL := "https://auth.dev.dimo.zone/auth/web3/generate_challenge"
+	resp, err := http.Post(reqURL, "application/x-www-form-urlencoded", strings.NewReader(encodedFormData))
 	if err != nil {
-		http.Error(w, "Failed to make request", http.StatusInternalServerError)
+		http.Error(w, "Failed to make request to external service", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
@@ -101,7 +83,6 @@ func HandleGenerateChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// check for empty state and challenge
 	if apiResp.State == "" || apiResp.Challenge == "" {
 		log.Printf("State or Challenge is empty")
 		http.Error(w, "State or Challenge incomplete from external service", http.StatusInternalServerError)
@@ -118,27 +99,39 @@ func HandleSubmitChallenge(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
 		return
 	}
 
-	// Extract form values
-	clientID := r.FormValue("client_id")
-	domain := r.FormValue("domain")
-	grantType := r.FormValue("grant_type")
 	state := r.FormValue("state")
 	signature := r.FormValue("signature")
 
-	// TODO: Implement actual signature verification logic
-	log.Printf("Received challenge submission: clientID=%s, domain=%s, grantType=%s, state=%s, signature=%s\n",
-		clientID, domain, grantType, state, signature)
+	formData := url.Values{}
+	formData.Add("client_id", clientID)
+	formData.Add("domain", domain)
+	formData.Add("grant_type", grantType)
+	formData.Add("state", state)
+	formData.Add("signature", signature)
 
-	// signature verification
+	encodedFormData := formData.Encode()
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Challenge submission received"))
+	reqURL := "https://auth.dev.dimo.zone/auth/web3/submit_challenge"
+	resp, err := http.Post(reqURL, "application/x-www-form-urlencoded", strings.NewReader(encodedFormData))
+	if err != nil {
+		http.Error(w, "Failed to make request to external service", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response from external service", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
 }
 
 func main() {
