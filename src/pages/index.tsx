@@ -130,11 +130,10 @@ export default function Home() {
 						<div onClick={closeAll} className={styles.highlight}>
 							<w3m-network-button />
 						</div>
-						{isWalletConnected && (
 							<button onClick={onAccountConnected} className={styles.signButton}>
 								Sign Message
 							</button>
-						)}
+
 						{signature && (
 							<div className={styles.successBanner}>
 								<p>Message successfully signed! Signature:</p>
