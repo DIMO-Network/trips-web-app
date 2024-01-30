@@ -7,6 +7,7 @@ import (
 	"github.com/dimo-network/trips-web-app-new/api/api/internal/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"io"
@@ -31,10 +32,6 @@ func setupRoutes(app *fiber.App, settings *config.Settings) {
 }
 
 func HandleGenerateChallenge(c *fiber.Ctx, settings *config.Settings) error {
-	if c.Method() != fiber.MethodPost {
-		return c.Status(fiber.StatusMethodNotAllowed).SendString("Method not allowed")
-	}
-
 	address := c.FormValue("address")
 
 	formData := url.Values{}
@@ -71,13 +68,6 @@ func HandleGenerateChallenge(c *fiber.Ctx, settings *config.Settings) error {
 }
 
 func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
-	if c.Method() != fiber.MethodPost {
-		return c.Status(fiber.StatusMethodNotAllowed).SendString("Method not allowed")
-	}
-	//debug
-	body := c.Body()
-	log.Info().Msgf("Received request body: %s", string(body))
-
 	state := c.FormValue("state")
 	signature := c.FormValue("signature")
 
@@ -108,6 +98,24 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 	return c.Send(respBody)
 }
 
+func ErrorHandler(ctx *fiber.Ctx, err error) error {
+	code := fiber.StatusInternalServerError
+	message := "Internal Server Error"
+
+	var e *fiber.Error
+	if errors.As(err, &e) {
+		code = e.Code
+		message = e.Message
+	}
+
+	log.Error().Err(err).Int("code", code).Str("path", ctx.Path()).Msg("Error occurred")
+
+	return ctx.Status(code).JSON(fiber.Map{
+		"error":   true,
+		"message": message,
+	})
+}
+
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
@@ -124,7 +132,9 @@ func main() {
 	}
 	zerolog.SetGlobalLevel(level)
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		ErrorHandler: ErrorHandler,
+	})
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hello, Fiber is running!")

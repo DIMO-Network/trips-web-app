@@ -1,17 +1,6 @@
 ENVIRONMENT: local
 PORT: 3003
 LOG_LEVEL: info
-DB_USER: dimo
-DB_PASSWORD: dimo
-DB_HOST: localhost
-DB_PORT: 5432
-DB_NAME: trips-web-app-new
-DB_MAX_OPEN_CONNECTIONS: 5
-DB_MAX_IDLE_CONNECTIONS: 5
-
-SERVICE_NAME: trips-signals-webapp
-JWT_KEY_SET_URL: http://127.0.0.1:5556/dex/keys
-
 
 CLIENT_ID: trips-signals-webapp
 DOMAIN: https://localhost:3003/oauth/callback
