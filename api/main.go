@@ -7,15 +7,20 @@ import (
 	"github.com/dimo-network/trips-web-app-new/api/api/internal/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/segmentio/ksuid"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 )
+
+var cacheInstance = cache.New(cache.DefaultExpiration, 10*time.Minute)
 
 type ChallengeResponse struct {
 	State     string `json:"state"`
@@ -94,8 +99,21 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to read response from external service")
 	}
 
-	c.Set("Content-Type", "application/json")
-	return c.Send(respBody)
+	var responseMap map[string]interface{}
+	if err := json.Unmarshal(respBody, &responseMap); err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error processing response")
+	}
+
+	token, exists := responseMap["access_token"]
+	if !exists {
+		return c.Status(fiber.StatusInternalServerError).SendString("Token not found in response")
+	}
+
+	sessionID := ksuid.New().String()
+
+	cacheInstance.Set(sessionID, token, cache.DefaultExpiration)
+
+	return c.JSON(fiber.Map{"session_id": sessionID})
 }
 
 func ErrorHandler(ctx *fiber.Ctx, err error) error {

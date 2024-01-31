@@ -86,6 +86,9 @@ export default function Home() {
 				if (!verificationResponse.ok) {
 					throw new Error('Error submitting challenge');
 				}
+
+				const verificationData = await verificationResponse.json();
+				localStorage.setItem('session_id', verificationData.session_id);
 			}
 		} catch (error) {
 			console.error('Error in onAccountConnected:', error);
