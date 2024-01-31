@@ -110,10 +110,17 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 	}
 
 	sessionID := ksuid.New().String()
-
 	cacheInstance.Set(sessionID, token, cache.DefaultExpiration)
 
-	return c.JSON(fiber.Map{"session_id": sessionID})
+	cookie := new(fiber.Cookie)
+	cookie.Name = "session_id"
+	cookie.Value = sessionID
+	cookie.Expires = time.Now().Add(24 * time.Hour)
+	cookie.HTTPOnly = true
+
+	c.Cookie(cookie)
+
+	return c.JSON(fiber.Map{"message": "Challenge accepted"})
 }
 
 func ErrorHandler(ctx *fiber.Ctx, err error) error {

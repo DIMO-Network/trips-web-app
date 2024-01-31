@@ -88,7 +88,7 @@ export default function Home() {
 				}
 
 				const verificationData = await verificationResponse.json();
-				localStorage.setItem('session_id', verificationData.session_id);
+				//localStorage.setItem('session_id', verificationData.session_id);
 			}
 		} catch (error) {
 			console.error('Error in onAccountConnected:', error);
@@ -133,9 +133,9 @@ export default function Home() {
 						<div onClick={closeAll} className={styles.highlight}>
 							<w3m-network-button />
 						</div>
-							<button onClick={onAccountConnected} className={styles.signButton}>
-								Sign Message
-							</button>
+						<button onClick={onAccountConnected} className={styles.signButton}>
+							Sign Message
+						</button>
 
 						{signature && (
 							<div className={styles.successBanner}>
