@@ -203,3 +203,26 @@ span.button:hover {
 	padding: 10px 20px;
 	font-size: 1rem;
 }
+.signButton {
+	background-color: transparent;
+	border: 2px solid #0070f3;
+	border-radius: 15px;
+	padding: 10px 20px;
+	cursor: pointer;
+	color: #0070f3;
+	transition: all 0.3s ease;
+}
+
+.signButton:hover {
+	background-color: #0070f3;
+	color: white;
+}
+
+
+.successBanner {
+	margin-top: 20px;
+	background-color: #d4edda;
+	color: #155724;
+	padding: 10px;
+	border-radius: 5px;
+}

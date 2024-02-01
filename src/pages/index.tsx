@@ -1,17 +1,113 @@
 import Head from "next/head";
 import Image from "next/image";
 import styles from "@/styles/Home.module.css";
-import { useState } from "react";
+import {useEffect, useState} from "react";
+import { useSignMessage } from 'wagmi'
+import WalletConnectProvider from '@walletconnect/web3-provider';
+import { ethers } from "ethers";
+
+
 
 export default function Home() {
-	const [, setIsNetworkSwitchHighlighted] =
-		useState(false);
+	const [, setIsNetworkSwitchHighlighted] = useState(false);
 	const [, setIsConnectHighlighted] = useState(false);
 
 	const closeAll = () => {
 		setIsNetworkSwitchHighlighted(false);
 		setIsConnectHighlighted(false);
 	};
+	const [errorMessage, setErrorMessage] = useState('');
+
+	const { signMessage } = useSignMessage();
+
+	const [isWalletConnected, setIsWalletConnected] = useState(false);
+	const [signature, setSignature] = useState("");
+
+	async function postForm(url, params) {
+		const formBody = [];
+		for (const property in params) {
+			const encodedKey = encodeURIComponent(property);
+			const encodedValue = encodeURIComponent(params[property]);
+			formBody.push(encodedKey + "=" + encodedValue);
+		}
+		return fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded'
+			},
+			body: formBody.join('&'),
+		});
+	}
+
+
+	const fetchChallenge = async (address) => {
+		const response = await postForm('http://localhost:3003/auth/web3/generate_challenge', {
+			client_id: 'client_id',
+			domain: 'redirect_uri',
+			scope: 'openid email',
+			response_type: 'code',
+			address: address,
+		});
+		const data = await response.json();
+		if (!response.ok) {
+			throw new Error(data.error || 'Error fetching challenge');
+		}
+		return data;
+	};
+
+	const onAccountConnected = async () => {
+		try {
+			if (!window.ethereum) {
+				throw new Error("Ethereum wallet is not available");
+			}
+
+			await window.ethereum.request({ method: 'eth_requestAccounts' });
+			const ethersProvider = new ethers.providers.Web3Provider(window.ethereum);
+			const signer = ethersProvider.getSigner();
+			const address = await signer.getAddress();
+
+			const challengeResponse = await fetchChallenge(address);
+			if (challengeResponse && challengeResponse.challenge) {
+				const challengeMessage = challengeResponse.challenge;
+				console.log('Challenge:', challengeMessage);
+
+				const signedMessage = await signer.signMessage(challengeMessage);
+				console.log('Signature:', signedMessage);
+				setSignature(signedMessage); // Update the signature state
+
+				const verificationResponse = await postForm('http://localhost:3003/auth/web3/submit_challenge', {
+					client_id: 'client_id',
+					domain: 'redirect_uri',
+					grant_type: 'authorization_code',
+					state: challengeResponse.state,
+					signature: signedMessage,
+				});
+
+				if (!verificationResponse.ok) {
+					throw new Error('Error submitting challenge');
+				}
+
+				const verificationData = await verificationResponse.json();
+				//localStorage.setItem('session_id', verificationData.session_id);
+			}
+		} catch (error) {
+			console.error('Error in onAccountConnected:', error);
+			setErrorMessage(error.message);
+		}
+	};
+
+	useEffect(() => {
+		const checkWalletConnection = async () => {
+			if (window.ethereum) {
+				const ethersProvider = new ethers.providers.Web3Provider(window.ethereum);
+				const accounts = await ethersProvider.listAccounts();
+				setIsWalletConnected(accounts.length > 0);
+			}
+		};
+
+		checkWalletConnection();
+	}, []);
+
 
 	return (
 		<>
@@ -37,6 +133,16 @@ export default function Home() {
 						<div onClick={closeAll} className={styles.highlight}>
 							<w3m-network-button />
 						</div>
+						<button onClick={onAccountConnected} className={styles.signButton}>
+							Sign Message
+						</button>
+
+						{signature && (
+							<div className={styles.successBanner}>
+								<p>Message successfully signed! Signature:</p>
+								<p>{signature}</p>
+							</div>
+						)}
 					</div>
 				</div>
 			</main>
@@ -62,4 +168,3 @@ export default function Home() {
 		</>
 	);
 }
-
