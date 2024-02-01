@@ -9,3 +9,5 @@ RESPONSE_TYPE: code
 GRANT_TYPE: authorization_code
 AUTH_URL: https://auth.dev.dimo.zone/auth/web3/generate_challenge
 SUBMIT_CHALLENGE_URL: https://auth.dev.dimo.zone/auth/web3/submit_challenge
+IDENTITY_API_URL: https://identity-api.dimo.zone
+

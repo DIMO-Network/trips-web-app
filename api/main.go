@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/DIMO-Network/shared"
@@ -27,12 +28,104 @@ type ChallengeResponse struct {
 	Challenge string `json:"challenge"`
 }
 
+type GraphQLRequest struct {
+	Query string `json:"query"`
+}
+
+type VehicleResponse struct {
+	Data struct {
+		Vehicles struct {
+			Nodes []Vehicle `json:"nodes"`
+		} `json:"vehicles"`
+	} `json:"data"`
+}
+
+type Vehicle struct {
+	ID    string `json:"id"`
+	Make  string `json:"make"`
+	Model string `json:"model"`
+	Year  int    `json:"year"`
+}
+
+func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
+	// Retrieve the user's eth address from the session or request
+	ethAddress := c.Query("ethAddress")
+	if ethAddress == "" {
+		return c.Status(fiber.StatusBadRequest).SendString("Ethereum address is required")
+	}
+
+	// Query identity-api
+	vehicles, err := queryIdentityAPIForVehicles(ethAddress, settings)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
+	}
+
+	return c.JSON(vehicles)
+}
+
+func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
+	// GraphQL query
+	graphqlQuery := `{
+        vehicles(first: 10, filterBy: { owner: "` + ethAddress + `" }) {
+            nodes {
+                tokenId,
+                earnings {
+                    totalTokens
+                },
+                definition {
+                    make,
+                    model,
+                    year
+                },
+                aftermarketDevice {
+                    address,
+                    serial,
+                    manufacturer {
+                        name
+                    }
+                }
+            }
+        }
+    }`
+
+	// GraphQL request
+	requestPayload := GraphQLRequest{Query: graphqlQuery}
+	payloadBytes, err := json.Marshal(requestPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	// POST request
+	req, err := http.NewRequest("POST", settings.IdentityAPIURL, bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var response VehicleResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, err
+	}
+
+	return response.Data.Vehicles.Nodes, nil
+}
+
 func setupRoutes(app *fiber.App, settings *config.Settings) {
 	app.Post("/auth/web3/generate_challenge", func(c *fiber.Ctx) error {
 		return HandleGenerateChallenge(c, settings)
 	})
 	app.Post("/auth/web3/submit_challenge", func(c *fiber.Ctx) error {
 		return HandleSubmitChallenge(c, settings)
+	})
+	app.Get("/vehicles/me", func(c *fiber.Ctx) error {
+		return HandleGetVehicles(c, settings)
 	})
 }
 
@@ -160,10 +253,6 @@ func main() {
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: ErrorHandler,
-	})
-
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, Fiber is running!")
 	})
 
 	app.Use(cors.New(cors.Config{
