@@ -7,11 +7,11 @@ import (
 	"github.com/dimo-network/trips-web-app-new/api/api/internal/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/segmentio/ksuid"
 	"io"
 	"net/http"
 	"net/url"
@@ -109,18 +109,19 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Token not found in response")
 	}
 
-	sessionID := ksuid.New().String()
-	cacheInstance.Set(sessionID, token, cache.DefaultExpiration)
+	sessionID := uuid.New().String()
+	cacheInstance.Set(sessionID, token, 2*time.Hour)
 
 	cookie := new(fiber.Cookie)
 	cookie.Name = "session_id"
 	cookie.Value = sessionID
-	cookie.Expires = time.Now().Add(24 * time.Hour)
+	cookie.Expires = time.Now().Add(2 * time.Hour)
 	cookie.HTTPOnly = true
 
 	c.Cookie(cookie)
 
-	return c.JSON(fiber.Map{"message": "Challenge accepted"})
+	return c.JSON(fiber.Map{"message": "Challenge accepted and session started!"})
+
 }
 
 func ErrorHandler(ctx *fiber.Ctx, err error) error {
