@@ -117,6 +117,20 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
 	return response.Data.Vehicles.Nodes, nil
 }
 
+func AuthMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// Retrieve the session_id from the request cookie
+		sessionCookie := c.Cookies("session_id")
+
+		// Check if the session_id is in the cache
+		if _, found := cacheInstance.Get(sessionCookie); !found {
+			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		return c.Next()
+	}
+}
+
 func setupRoutes(app *fiber.App, settings *config.Settings) {
 	app.Post("/auth/web3/generate_challenge", func(c *fiber.Ctx) error {
 		return HandleGenerateChallenge(c, settings)
@@ -124,7 +138,7 @@ func setupRoutes(app *fiber.App, settings *config.Settings) {
 	app.Post("/auth/web3/submit_challenge", func(c *fiber.Ctx) error {
 		return HandleSubmitChallenge(c, settings)
 	})
-	app.Get("/vehicles/me", func(c *fiber.Ctx) error {
+	app.Get("/vehicles/me", AuthMiddleware(), func(c *fiber.Ctx) error {
 		return HandleGetVehicles(c, settings)
 	})
 }
