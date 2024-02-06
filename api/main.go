@@ -139,14 +139,19 @@ func setupRoutes(app *fiber.App, settings *config.Settings) {
 func AuthMiddleware(cache *cache.Cache) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		sessionCookie := c.Cookies("session_id")
+		log.Info().Msgf("Received session cookie: %s", sessionCookie) //debugging
+
 		token, found := cache.Get(sessionCookie)
+		log.Info().Msgf("Token found in cache: %t", found) //debugging
+
 		if !found {
 			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 		}
 
-		// Parse the token to get the claims
+		// Parse the token
 		jwtToken, err := jwt.Parse(token.(string), nil)
 		if err != nil {
+			log.Info().Msgf("Error parsing JWT: %v", err) //debugging
 			return c.Status(fiber.StatusInternalServerError).SendString("Error parsing JWT")
 		}
 
@@ -257,6 +262,7 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 	cookie.Value = sessionID
 	cookie.Expires = time.Now().Add(2 * time.Hour)
 	cookie.HTTPOnly = true
+	cookie.Domain = "localhost"
 
 	c.Cookie(cookie)
 
@@ -305,9 +311,10 @@ func main() {
 	})
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:3000",
-		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH",
-		AllowHeaders: "Accept, Content-Type, Content-Length, Authorization",
+		AllowOrigins:     "http://localhost:3000",
+		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH",
+		AllowHeaders:     "Accept, Content-Type, Content-Length, Authorization",
+		AllowCredentials: true,
 	}))
 
 	handleGetVehiclesWithSettings := func(c *fiber.Ctx) error {

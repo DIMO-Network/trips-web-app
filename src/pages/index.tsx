@@ -36,6 +36,8 @@ export default function Home() {
 				'Content-Type': 'application/x-www-form-urlencoded'
 			},
 			body: formBody.join('&'),
+			credentials: 'include',
+
 		});
 	}
 
