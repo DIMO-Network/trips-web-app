@@ -89,6 +89,8 @@ export default function Home() {
 
 				const verificationData = await verificationResponse.json();
 				//localStorage.setItem('session_id', verificationData.session_id);
+
+				window.location.href = 'http://localhost:3003';
 			}
 		} catch (error) {
 			console.error('Error in onAccountConnected:', error);

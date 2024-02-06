@@ -8,6 +8,8 @@ import (
 	"github.com/dimo-network/trips-web-app-new/api/api/internal/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/template/handlebars/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -47,10 +49,12 @@ type Vehicle struct {
 	Year  int    `json:"year"`
 }
 
+const EthereumAddressKey = "ethereum_address"
+
 func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
-	// Retrieve the user's eth address from the session or request
-	ethAddress := c.Query("ethAddress")
-	if ethAddress == "" {
+	// Retrieve the user's eth address from c.Locals
+	ethAddress, ok := c.Locals(EthereumAddressKey).(string)
+	if !ok || ethAddress == "" {
 		return c.Status(fiber.StatusBadRequest).SendString("Ethereum address is required")
 	}
 
@@ -60,7 +64,10 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
 	}
 
-	return c.JSON(vehicles)
+	return c.Render("vehicles", fiber.Map{
+		"Title":    "My Vehicles",
+		"Vehicles": vehicles,
+	})
 }
 
 func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
@@ -117,20 +124,6 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
 	return response.Data.Vehicles.Nodes, nil
 }
 
-func AuthMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		// Retrieve the session_id from the request cookie
-		sessionCookie := c.Cookies("session_id")
-
-		// Check if the session_id is in the cache
-		if _, found := cacheInstance.Get(sessionCookie); !found {
-			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
-		}
-
-		return c.Next()
-	}
-}
-
 func setupRoutes(app *fiber.App, settings *config.Settings) {
 	app.Post("/auth/web3/generate_challenge", func(c *fiber.Ctx) error {
 		return HandleGenerateChallenge(c, settings)
@@ -138,9 +131,42 @@ func setupRoutes(app *fiber.App, settings *config.Settings) {
 	app.Post("/auth/web3/submit_challenge", func(c *fiber.Ctx) error {
 		return HandleSubmitChallenge(c, settings)
 	})
-	app.Get("/vehicles/me", AuthMiddleware(), func(c *fiber.Ctx) error {
+	app.Get("/vehicles/me", AuthMiddleware(cacheInstance), ExtractEthereumAddress, func(c *fiber.Ctx) error {
 		return HandleGetVehicles(c, settings)
 	})
+}
+
+func AuthMiddleware(cache *cache.Cache) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		sessionCookie := c.Cookies("session_id")
+		token, found := cache.Get(sessionCookie)
+		if !found {
+			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		// Parse the token to get the claims
+		jwtToken, err := jwt.Parse(token.(string), nil)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Error parsing JWT")
+		}
+
+		// Set the jwt token in c.Locals
+		c.Locals("user", jwtToken)
+		return c.Next()
+	}
+}
+
+func ExtractEthereumAddress(c *fiber.Ctx) error {
+	// Retrieve the jwt token from c.Locals
+	token := c.Locals("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
+	ethereumAddress, ok := claims["ethereum_address"].(string)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).SendString("Ethereum address not found in JWT")
+	}
+
+	c.Locals("ethereum_address", ethereumAddress)
+	return c.Next()
 }
 
 func HandleGenerateChallenge(c *fiber.Ctx, settings *config.Settings) error {
@@ -201,6 +227,11 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 	}
 	defer resp.Body.Close()
 
+	// Check the HTTP status code here
+	if resp.StatusCode >= 300 {
+		return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Received non-success status code: %d", resp.StatusCode))
+	}
+
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to read response from external service")
@@ -210,6 +241,8 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 	if err := json.Unmarshal(respBody, &responseMap); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error processing response")
 	}
+
+	log.Info().Msgf("Response from submit challenge: %+v", responseMap) //debugging
 
 	token, exists := responseMap["access_token"]
 	if !exists {
@@ -227,8 +260,7 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 
 	c.Cookie(cookie)
 
-	return c.JSON(fiber.Map{"message": "Challenge accepted and session started!"})
-
+	return c.JSON(fiber.Map{"message": "Challenge accepted and session started!", "access_token": token})
 }
 
 func ErrorHandler(ctx *fiber.Ctx, err error) error {
@@ -265,8 +297,11 @@ func main() {
 	}
 	zerolog.SetGlobalLevel(level)
 
+	engine := handlebars.New("../views", ".hbs")
+
 	app := fiber.New(fiber.Config{
 		ErrorHandler: ErrorHandler,
+		Views:        engine,
 	})
 
 	app.Use(cors.New(cors.Config{
@@ -275,6 +310,19 @@ func main() {
 		AllowHeaders: "Accept, Content-Type, Content-Length, Authorization",
 	}))
 
+	/*
+		handleGetVehiclesWithSettings := func(c *fiber.Ctx) error {
+			return HandleGetVehicles(c, &settings)
+		}
+	*/
+
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.Render("vehicles", fiber.Map{
+			"Title": "My Vehicles",
+		})
+	})
+
+	//app.Get("/vehicles/me", AuthMiddleware(cacheInstance), ExtractEthereumAddress, handleGetVehiclesWithSettings)
 	setupRoutes(app, &settings)
 
 	log.Info().Msgf("Starting server on port %s", settings.Port)
