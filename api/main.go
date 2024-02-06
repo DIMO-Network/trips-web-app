@@ -310,19 +310,20 @@ func main() {
 		AllowHeaders: "Accept, Content-Type, Content-Length, Authorization",
 	}))
 
+	handleGetVehiclesWithSettings := func(c *fiber.Ctx) error {
+		return HandleGetVehicles(c, &settings)
+	}
+
 	/*
-		handleGetVehiclesWithSettings := func(c *fiber.Ctx) error {
-			return HandleGetVehicles(c, &settings)
-		}
+		app.Get("/", func(c *fiber.Ctx) error {
+				return c.Render("vehicles", fiber.Map{
+					"Title": "My Vehicles",
+				})
+			})
+
 	*/
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.Render("vehicles", fiber.Map{
-			"Title": "My Vehicles",
-		})
-	})
-
-	//app.Get("/vehicles/me", AuthMiddleware(cacheInstance), ExtractEthereumAddress, handleGetVehiclesWithSettings)
+	app.Get("/", AuthMiddleware(cacheInstance), ExtractEthereumAddress, handleGetVehiclesWithSettings)
 	setupRoutes(app, &settings)
 
 	log.Info().Msgf("Starting server on port %s", settings.Port)
