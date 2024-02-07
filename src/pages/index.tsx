@@ -92,7 +92,7 @@ export default function Home() {
 				const verificationData = await verificationResponse.json();
 				//localStorage.setItem('session_id', verificationData.session_id);
 
-				window.location.href = 'http://localhost:3003';
+				window.location.href = 'http://localhost:3003/api/vehicles/me';
 			}
 		} catch (error) {
 			console.error('Error in onAccountConnected:', error);
