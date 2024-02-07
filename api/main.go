@@ -34,22 +34,24 @@ type GraphQLRequest struct {
 	Query string `json:"query"`
 }
 
-type VehicleResponse struct {
-	Data struct {
-		Vehicles struct {
-			Nodes []Vehicle `json:"nodes"`
-		} `json:"vehicles"`
-	} `json:"data"`
-}
-
 type Vehicle struct {
-	ID    string `json:"id"`
-	Make  string `json:"make"`
-	Model string `json:"model"`
-	Year  int    `json:"year"`
+	TokenID  int64 `json:"tokenId"`
+	Earnings struct {
+		TotalTokens string `json:"totalTokens"`
+	} `json:"earnings"`
+	Definition struct {
+		Make  string `json:"make"`
+		Model string `json:"model"`
+		Year  int    `json:"year"`
+	} `json:"definition"`
+	AftermarketDevice struct {
+		Address      string `json:"address"`
+		Serial       string `json:"serial"`
+		Manufacturer struct {
+			Name string `json:"name"`
+		} `json:"manufacturer"`
+	} `json:"aftermarketDevice"`
 }
-
-const EthereumAddressKey = "ethereum_address"
 
 func ExtractEthereumAddressFromToken(tokenString string) (string, error) {
 	// Parsing the token without validating its signature
@@ -103,6 +105,9 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
 	}
 
+	// Debugging: Print the vehicles to check
+	fmt.Printf("Vehicles: %+v\n", vehicles)
+
 	return c.Render("vehicles", fiber.Map{
 		"Title":    "My Vehicles",
 		"Vehicles": vehicles,
@@ -111,6 +116,7 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 
 func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
 	// GraphQL query
+	ethAddress = "0x20Ca3bE69a8B95D3093383375F0473A8c6341727"
 	graphqlQuery := `{
         vehicles(first: 10, filterBy: { owner: "` + ethAddress + `" }) {
             nodes {
@@ -134,6 +140,8 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
         }
     }`
 
+	log.Info().Msgf("this is the request query: %s", graphqlQuery)
+
 	// GraphQL request
 	requestPayload := GraphQLRequest{Query: graphqlQuery}
 	payloadBytes, err := json.Marshal(requestPayload)
@@ -153,17 +161,39 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
 	if err != nil {
 		return nil, err
 	}
-	body, err := io.ReadAll(resp.Body)
-	fmt.Printf("response body", string(body))
-
 	defer resp.Body.Close()
 
-	var response VehicleResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
 
-	return response.Data.Vehicles.Nodes, nil
+	fmt.Printf("Response body: %s\n", string(body))
+
+	var vehicleResponse struct {
+		Data struct {
+			Vehicles struct {
+				Nodes []Vehicle `json:"nodes"`
+			} `json:"vehicles"`
+		} `json:"data"`
+	}
+
+	if err := json.Unmarshal(body, &vehicleResponse); err != nil {
+		return nil, err
+	}
+
+	// Create a slice of Vehicles with the flattened structure for the template
+	vehicles := make([]Vehicle, 0, len(vehicleResponse.Data.Vehicles.Nodes))
+	for _, v := range vehicleResponse.Data.Vehicles.Nodes {
+		vehicles = append(vehicles, Vehicle{
+			TokenID:           v.TokenID,
+			Earnings:          v.Earnings,
+			Definition:        v.Definition,
+			AftermarketDevice: v.AftermarketDevice,
+		})
+	}
+
+	return vehicles, nil
 }
 
 func HandleGenerateChallenge(c *fiber.Ctx, settings *config.Settings) error {
