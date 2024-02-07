@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/DIMO-Network/shared"
-	"github.com/dimo-network/trips-web-app-new/api/api/internal/config"
-	jwtware "github.com/gofiber/contrib/jwt"
+	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/template/handlebars/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -51,15 +51,54 @@ type Vehicle struct {
 
 const EthereumAddressKey = "ethereum_address"
 
-func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
-	// Retrieve the user's eth address from c.Locals
-	ethAddress, ok := c.Locals(EthereumAddressKey).(string)
-	if !ok || ethAddress == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("Ethereum address is required")
+func ExtractEthereumAddressFromToken(tokenString string) (string, error) {
+	// Parsing the token without validating its signature
+	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
+	if err != nil {
+		fmt.Println("Error parsing token:", err)
+		return "", fmt.Errorf("error parsing token")
 	}
 
-	// Query identity-api
-	vehicles, err := queryIdentityAPIForVehicles(ethAddress, settings)
+	// Asserting the type of the claims to access the data
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", errors.New("invalid claims type")
+	}
+
+	ethAddress, ok := claims["ethereum_address"].(string)
+	if !ok {
+		return "", errors.New("ethereum address not found in JWT")
+	}
+
+	return ethAddress, nil
+}
+
+func AuthMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// Retrieve the session_id from the request cookie
+		sessionCookie := c.Cookies("session_id")
+
+		// Check if the session_id is in the cache
+		jwtToken, found := cacheInstance.Get(sessionCookie)
+		if !found {
+			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		ethAddress, err := ExtractEthereumAddressFromToken(jwtToken.(string))
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token: " + err.Error())
+		}
+
+		c.Locals("ethereum_address", ethAddress)
+
+		return c.Next()
+	}
+}
+
+func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
+	ethAddress := c.Locals("ethereum_address")
+
+	vehicles, err := queryIdentityAPIForVehicles(ethAddress.(string), settings)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
 	}
@@ -114,6 +153,9 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
 	if err != nil {
 		return nil, err
 	}
+	body, err := io.ReadAll(resp.Body)
+	fmt.Printf("response body", string(body))
+
 	defer resp.Body.Close()
 
 	var response VehicleResponse
@@ -267,17 +309,8 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	jwtMiddleware := jwtware.New(jwtware.Config{
-		JWKSetURLs: []string{settings.TokenExchangeJWTKeySetURL},
-		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			log.Error().Err(err).Msg("JWT Validation Error") //debugging
-			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized: " + err.Error())
-		},
-		ContextKey: EthereumAddressKey,
-	})
-
 	// Protected route
-	app.Get("/api/vehicles/me", jwtMiddleware, func(c *fiber.Ctx) error {
+	app.Get("/api/vehicles/me", AuthMiddleware(), func(c *fiber.Ctx) error {
 		return HandleGetVehicles(c, &settings)
 	})
 
