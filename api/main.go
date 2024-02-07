@@ -270,8 +270,8 @@ func main() {
 	jwtMiddleware := jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{settings.TokenExchangeJWTKeySetURL},
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			log.Error().Err(err).Msg("JWT Validation Error")
-			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+			log.Error().Err(err).Msg("JWT Validation Error") //debugging
+			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized: " + err.Error())
 		},
 		ContextKey: EthereumAddressKey,
 	})
