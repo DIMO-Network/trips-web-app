@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/MicahParks/keyfunc/v2 v2.1.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/avast/retry-go/v4 v4.3.3 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.19.0 // indirect
@@ -18,6 +19,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kms v1.23.1 // indirect
 	github.com/aws/smithy-go v1.13.5 // indirect
 	github.com/aymerick/raymond v2.0.2+incompatible // indirect
+	github.com/gofiber/contrib/jwt v1.0.8 // indirect
 	github.com/gofiber/template v1.8.2 // indirect
 	github.com/gofiber/template/handlebars/v2 v2.1.7 // indirect
 	github.com/gofiber/template/html/v2 v2.1.0 // indirect
