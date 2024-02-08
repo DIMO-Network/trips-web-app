@@ -27,6 +27,6 @@ The backend Fiber server will be hosted on http://localhost:3003
 ## Using the Application
 
 1. Sign in: Open the web application at http://localhost:3000 and click on the 'Connect Wallet' button
-2. Sign the Message: After signing in, click on the 'Sign Message' button. A green verification banner should appear, displaying the signature
-3. View the token: To view the token, open the web inspector in the browser. In the network tab, find the response of the submit_challenge endpoint. The token will be included in this response
+2. Sign the Message: After signing in, click on the 'Sign Message' button. A green verification banner should appear
+3. The page will then redirect to api/vehicles/me to show a listing of the user's vehicles and their basic information
    
