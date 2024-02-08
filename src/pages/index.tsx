@@ -131,7 +131,7 @@ export default function Home() {
 			<main className={styles.main}>
 				<div className={styles.wrapper}>
 					<div className={styles.containerCentered}>
-						<div onClick={closeAll} className={styles.highlight}>
+						<div onClick={onAccountConnected} className={styles.highlight}>
 							<w3m-button />
 						</div>
 						<div onClick={closeAll} className={styles.highlight}>
