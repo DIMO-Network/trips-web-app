@@ -36,6 +36,8 @@ export default function Home() {
 				'Content-Type': 'application/x-www-form-urlencoded'
 			},
 			body: formBody.join('&'),
+			credentials: 'include',
+
 		});
 	}
 
@@ -89,6 +91,8 @@ export default function Home() {
 
 				const verificationData = await verificationResponse.json();
 				//localStorage.setItem('session_id', verificationData.session_id);
+
+				window.location.href = 'http://localhost:3003/api/vehicles/me';
 			}
 		} catch (error) {
 			console.error('Error in onAccountConnected:', error);
@@ -127,7 +131,7 @@ export default function Home() {
 			<main className={styles.main}>
 				<div className={styles.wrapper}>
 					<div className={styles.containerCentered}>
-						<div onClick={closeAll} className={styles.highlight}>
+						<div onClick={onAccountConnected} className={styles.highlight}>
 							<w3m-button />
 						</div>
 						<div onClick={closeAll} className={styles.highlight}>

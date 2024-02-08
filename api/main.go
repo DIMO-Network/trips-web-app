@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/DIMO-Network/shared"
-	"github.com/dimo-network/trips-web-app-new/api/api/internal/config"
+	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/template/handlebars/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -27,13 +30,169 @@ type ChallengeResponse struct {
 	Challenge string `json:"challenge"`
 }
 
-func setupRoutes(app *fiber.App, settings *config.Settings) {
-	app.Post("/auth/web3/generate_challenge", func(c *fiber.Ctx) error {
-		return HandleGenerateChallenge(c, settings)
+type GraphQLRequest struct {
+	Query string `json:"query"`
+}
+
+type Vehicle struct {
+	TokenID  int64 `json:"tokenId"`
+	Earnings struct {
+		TotalTokens string `json:"totalTokens"`
+	} `json:"earnings"`
+	Definition struct {
+		Make  string `json:"make"`
+		Model string `json:"model"`
+		Year  int    `json:"year"`
+	} `json:"definition"`
+	AftermarketDevice struct {
+		Address      string `json:"address"`
+		Serial       string `json:"serial"`
+		Manufacturer struct {
+			Name string `json:"name"`
+		} `json:"manufacturer"`
+	} `json:"aftermarketDevice"`
+}
+
+func ExtractEthereumAddressFromToken(tokenString string) (string, error) {
+	// Parsing the token without validating its signature
+	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
+	if err != nil {
+		fmt.Println("Error parsing token:", err)
+		return "", fmt.Errorf("error parsing token")
+	}
+
+	// Asserting the type of the claims to access the data
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", errors.New("invalid claims type")
+	}
+
+	ethAddress, ok := claims["ethereum_address"].(string)
+	if !ok {
+		return "", errors.New("ethereum address not found in JWT")
+	}
+
+	return ethAddress, nil
+}
+
+func AuthMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// Retrieve the session_id from the request cookie
+		sessionCookie := c.Cookies("session_id")
+
+		// Check if the session_id is in the cache
+		jwtToken, found := cacheInstance.Get(sessionCookie)
+		if !found {
+			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		ethAddress, err := ExtractEthereumAddressFromToken(jwtToken.(string))
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token: " + err.Error())
+		}
+
+		c.Locals("ethereum_address", ethAddress)
+
+		return c.Next()
+	}
+}
+
+func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
+	ethAddress := c.Locals("ethereum_address")
+
+	vehicles, err := queryIdentityAPIForVehicles(ethAddress.(string), settings)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
+	}
+
+	// Debugging: Print the vehicles to check
+	fmt.Printf("Vehicles: %+v\n", vehicles)
+
+	return c.Render("vehicles", fiber.Map{
+		"Title":    "My Vehicles",
+		"Vehicles": vehicles,
 	})
-	app.Post("/auth/web3/submit_challenge", func(c *fiber.Ctx) error {
-		return HandleSubmitChallenge(c, settings)
-	})
+}
+
+func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
+	// GraphQL query
+	graphqlQuery := `{
+        vehicles(first: 10, filterBy: { owner: "` + ethAddress + `" }) {
+            nodes {
+                tokenId,
+                earnings {
+                    totalTokens
+                },
+                definition {
+                    make,
+                    model,
+                    year
+                },
+                aftermarketDevice {
+                    address,
+                    serial,
+                    manufacturer {
+                        name
+                    }
+                }
+            }
+        }
+    }`
+
+	log.Info().Msgf("this is the request query: %s", graphqlQuery)
+
+	// GraphQL request
+	requestPayload := GraphQLRequest{Query: graphqlQuery}
+	payloadBytes, err := json.Marshal(requestPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	// POST request
+	req, err := http.NewRequest("POST", settings.IdentityAPIURL, bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("Response body: %s\n", string(body))
+
+	var vehicleResponse struct {
+		Data struct {
+			Vehicles struct {
+				Nodes []Vehicle `json:"nodes"`
+			} `json:"vehicles"`
+		} `json:"data"`
+	}
+
+	if err := json.Unmarshal(body, &vehicleResponse); err != nil {
+		return nil, err
+	}
+
+	// Create a slice of Vehicles with the flattened structure for the template
+	vehicles := make([]Vehicle, 0, len(vehicleResponse.Data.Vehicles.Nodes))
+	for _, v := range vehicleResponse.Data.Vehicles.Nodes {
+		vehicles = append(vehicles, Vehicle{
+			TokenID:           v.TokenID,
+			Earnings:          v.Earnings,
+			Definition:        v.Definition,
+			AftermarketDevice: v.AftermarketDevice,
+		})
+	}
+
+	return vehicles, nil
 }
 
 func HandleGenerateChallenge(c *fiber.Ctx, settings *config.Settings) error {
@@ -94,6 +253,11 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 	}
 	defer resp.Body.Close()
 
+	// Check the HTTP status code here
+	if resp.StatusCode >= 300 {
+		return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Received non-success status code: %d", resp.StatusCode))
+	}
+
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to read response from external service")
@@ -103,6 +267,8 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 	if err := json.Unmarshal(respBody, &responseMap); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error processing response")
 	}
+
+	log.Info().Msgf("Response from submit challenge: %+v", responseMap) //debugging
 
 	token, exists := responseMap["access_token"]
 	if !exists {
@@ -117,11 +283,11 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 	cookie.Value = sessionID
 	cookie.Expires = time.Now().Add(2 * time.Hour)
 	cookie.HTTPOnly = true
+	cookie.Domain = "localhost"
 
 	c.Cookie(cookie)
 
-	return c.JSON(fiber.Map{"message": "Challenge accepted and session started!"})
-
+	return c.JSON(fiber.Map{"message": "Challenge accepted and session started!", "access_token": token})
 }
 
 func ErrorHandler(ctx *fiber.Ctx, err error) error {
@@ -158,21 +324,36 @@ func main() {
 	}
 	zerolog.SetGlobalLevel(level)
 
+	engine := handlebars.New("../views", ".hbs")
+
 	app := fiber.New(fiber.Config{
 		ErrorHandler: ErrorHandler,
-	})
-
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, Fiber is running!")
+		Views:        engine,
 	})
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:3000",
-		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH",
-		AllowHeaders: "Accept, Content-Type, Content-Length, Authorization",
+		AllowOrigins:     "http://localhost:3000",
+		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH",
+		AllowHeaders:     "Accept, Content-Type, Content-Length, Authorization",
+		AllowCredentials: true,
 	}))
 
-	setupRoutes(app, &settings)
+	// Protected route
+	app.Get("/api/vehicles/me", AuthMiddleware(), func(c *fiber.Ctx) error {
+		return HandleGetVehicles(c, &settings)
+	})
+
+	// Public Routes
+	app.Post("/auth/web3/generate_challenge", func(c *fiber.Ctx) error {
+		return HandleGenerateChallenge(c, &settings)
+	})
+	app.Post("/auth/web3/submit_challenge", func(c *fiber.Ctx) error {
+		return HandleSubmitChallenge(c, &settings)
+	})
+
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("can you see this")
+	})
 
 	log.Info().Msgf("Starting server on port %s", settings.Port)
 	if err := app.Listen(":" + settings.Port); err != nil {
