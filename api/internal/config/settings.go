@@ -10,6 +10,7 @@ type Settings struct {
 	SubmitChallengeURL        string `yaml:"SUBMIT_CHALLENGE_URL"`
 	IdentityAPIURL            string `yaml:"IDENTITY_API_URL"`
 	TokenExchangeJWTKeySetURL string `yaml:"TOKEN_EXCHANGE_JWK_KEY_SET_URL"`
+	TokenExchangeAPIURL       string `yaml:"token_exchange_api_url"`
 	Port                      string `yaml:"PORT"`
 	LogLevel                  string `yaml:"LOG_LEVEL"`
 }

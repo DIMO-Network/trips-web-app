@@ -10,6 +10,9 @@ GRANT_TYPE: authorization_code
 AUTH_URL: https://auth.dev.dimo.zone/auth/web3/generate_challenge
 SUBMIT_CHALLENGE_URL: https://auth.dev.dimo.zone/auth/web3/submit_challenge
 IDENTITY_API_URL: https://identity-api.dimo.zone/query
+TOKEN_EXCHANGE_API_URL: https://token-exchange-api.dev.dimo.zone
 TOKEN_EXCHANGE_JWK_KEY_SET_URL: http://127.0.0.1:5556/dex/keys
+
+
 
 

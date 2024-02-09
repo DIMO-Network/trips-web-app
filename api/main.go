@@ -290,6 +290,58 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 	return c.JSON(fiber.Map{"message": "Challenge accepted and session started!", "access_token": token})
 }
 
+func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
+	accessToken, ok := c.Locals("access_token").(string)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).SendString("Access token not available")
+	}
+
+	nftContractAddress := "0x90C4D6113Ec88dd4BDf12f26DB2b3998fd13A144"
+	privileges := []int{1, 2, 3, 4} // example?
+	tokenId := c.Query("tokenId", "defaultTokenId")
+
+	requestBody := map[string]interface{}{
+		"nftContractAddress": nftContractAddress,
+		"privileges":         privileges,
+		"tokenId":            tokenId,
+	}
+	requestBodyBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error marshaling request body")
+	}
+
+	req, err := http.NewRequest("POST", settings.TokenExchangeAPIURL, bytes.NewBuffer(requestBodyBytes))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error creating new request")
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error sending request to token exchange API")
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error reading response from token exchange API")
+	}
+
+	var responseMap map[string]interface{}
+	if err := json.Unmarshal(respBody, &responseMap); err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error processing response")
+	}
+
+	token, exists := responseMap["token"]
+	if !exists {
+		return c.Status(fiber.StatusInternalServerError).SendString("Token not found in response from token exchange API")
+	}
+
+	return c.JSON(fiber.Map{"token": token})
+}
+
 func ErrorHandler(ctx *fiber.Ctx, err error) error {
 	code := fiber.StatusInternalServerError
 	message := "Internal Server Error"
@@ -341,6 +393,10 @@ func main() {
 	// Protected route
 	app.Get("/api/vehicles/me", AuthMiddleware(), func(c *fiber.Ctx) error {
 		return HandleGetVehicles(c, &settings)
+	})
+
+	app.Post("/api/token_exchange", AuthMiddleware(), func(c *fiber.Ctx) error {
+		return HandleTokenExchange(c, &settings)
 	})
 
 	// Public Routes
