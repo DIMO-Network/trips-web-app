@@ -291,13 +291,28 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 }
 
 func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
-	accessToken, ok := c.Locals("access_token").(string)
-	if !ok {
-		return c.Status(fiber.StatusBadRequest).SendString("Access token not available")
+
+	log.Info().Msg("HandleTokenExchange called")
+
+	sessionCookie := c.Cookies("session_id")
+	log.Info().Msgf("Session Cookie: %s", sessionCookie)
+
+	jwtToken, found := cacheInstance.Get(sessionCookie)
+	if !found {
+		log.Error().Msg("No session found")
+		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized: No session found")
 	}
 
+	accessToken, ok := jwtToken.(string)
+	if !ok {
+		log.Error().Msg("Token format is invalid")
+		return c.Status(fiber.StatusInternalServerError).SendString("Internal Error: Token format is invalid")
+	}
+
+	log.Info().Msgf("JWT being sent: %s", accessToken)
+
 	nftContractAddress := "0x90C4D6113Ec88dd4BDf12f26DB2b3998fd13A144"
-	privileges := []int{1, 2, 3, 4} // example?
+	privileges := []int{4} // example?
 	tokenId := c.Query("tokenId", "defaultTokenId")
 
 	requestBody := map[string]interface{}{
@@ -305,40 +320,49 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 		"privileges":         privileges,
 		"tokenId":            tokenId,
 	}
+
 	requestBodyBytes, err := json.Marshal(requestBody)
 	if err != nil {
+		log.Error().Err(err).Msg("Error marshaling request body")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error marshaling request body")
 	}
 
 	req, err := http.NewRequest("POST", settings.TokenExchangeAPIURL, bytes.NewBuffer(requestBodyBytes))
 	if err != nil {
+		log.Error().Err(err).Msg("Error creating new request")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error creating new request")
 	}
+
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Error().Err(err).Msg("Error sending request to token exchange API")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error sending request to token exchange API")
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
+		log.Error().Err(err).Msg("Error reading response from token exchange API")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error reading response from token exchange API")
 	}
 
 	var responseMap map[string]interface{}
 	if err := json.Unmarshal(respBody, &responseMap); err != nil {
+		log.Error().Err(err).Msg("Error processing response")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error processing response")
 	}
 
 	token, exists := responseMap["token"]
 	if !exists {
+		log.Error().Msg("Token not found in response from token exchange API")
 		return c.Status(fiber.StatusInternalServerError).SendString("Token not found in response from token exchange API")
 	}
 
+	log.Info().Msgf("Token exchange successful: %s", token)
 	return c.JSON(fiber.Map{"token": token})
 }
 
@@ -395,16 +419,16 @@ func main() {
 		return HandleGetVehicles(c, &settings)
 	})
 
-	app.Post("/api/token_exchange", AuthMiddleware(), func(c *fiber.Ctx) error {
-		return HandleTokenExchange(c, &settings)
-	})
-
 	// Public Routes
 	app.Post("/auth/web3/generate_challenge", func(c *fiber.Ctx) error {
 		return HandleGenerateChallenge(c, &settings)
 	})
 	app.Post("/auth/web3/submit_challenge", func(c *fiber.Ctx) error {
 		return HandleSubmitChallenge(c, &settings)
+	})
+
+	app.Post("/api/token_exchange", AuthMiddleware(), func(c *fiber.Ctx) error {
+		return HandleTokenExchange(c, &settings)
 	})
 
 	app.Get("/", func(c *fiber.Ctx) error {

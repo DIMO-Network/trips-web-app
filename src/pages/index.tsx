@@ -23,6 +23,9 @@ export default function Home() {
 	const [isWalletConnected, setIsWalletConnected] = useState(false);
 	const [signature, setSignature] = useState("");
 
+	const [showMyVehicles, setShowMyVehicles] = useState(false);
+
+
 	async function postForm(url, params) {
 		const formBody = [];
 		for (const property in params) {
@@ -57,6 +60,31 @@ export default function Home() {
 		return data;
 	};
 
+	const performTokenExchange = async () => {
+		try {
+			const response = await fetch('http://localhost:3003/api/token_exchange', {
+				method: 'POST',
+				credentials: 'include',
+				headers: {
+					'Content-Type': 'application/json',
+
+				},
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to exchange token');
+			}
+
+			const data = await response.json();
+			console.log('Exchanged token:', data);
+
+		} catch (error) {
+			console.error('Error in token exchange:', error);
+			setErrorMessage(error.message);
+		}
+	};
+
+
 	const onAccountConnected = async () => {
 		try {
 			if (!window.ethereum) {
@@ -85,12 +113,11 @@ export default function Home() {
 					signature: signedMessage,
 				});
 
-				if (!verificationResponse.ok) {
+				if (verificationResponse.ok) {
+					setShowMyVehicles(true);
+				} else {
 					throw new Error('Error submitting challenge');
 				}
-
-				const verificationData = await verificationResponse.json();
-				//localStorage.setItem('session_id', verificationData.session_id);
 
 				window.location.href = 'http://localhost:3003/api/vehicles/me';
 			}
@@ -111,6 +138,20 @@ export default function Home() {
 
 		checkWalletConnection();
 	}, []);
+
+	useEffect(() => {
+		if (showMyVehicles) {
+			performTokenExchange();
+		}
+	}, [showMyVehicles]);
+
+	if (showMyVehicles) {
+		return (
+			<div>
+				<p>Loading vehicles...</p>
+			</div>
+		);
+	}
 
 
 	return (
