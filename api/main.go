@@ -292,6 +292,18 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 
 func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 
+	ethAddress := c.Locals("ethereum_address").(string)
+	vehicles, err := queryIdentityAPIForVehicles(ethAddress, settings)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to query vehicles")
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to query vehicles")
+	}
+	if len(vehicles) == 0 {
+		log.Error().Msg("No vehicles found for the given Ethereum address")
+		return c.Status(fiber.StatusInternalServerError).SendString("No vehicles found")
+	}
+	tokenId := vehicles[0].TokenID
+
 	log.Info().Msg("HandleTokenExchange called")
 
 	sessionCookie := c.Cookies("session_id")
@@ -313,8 +325,6 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 
 	nftContractAddress := "0x90C4D6113Ec88dd4BDf12f26DB2b3998fd13A144"
 	privileges := []int{4} // example?
-	tokenId := c.Query("tokenId", "defaultTokenId")
-
 	requestBody := map[string]interface{}{
 		"nftContractAddress": nftContractAddress,
 		"privileges":         privileges,
@@ -327,6 +337,8 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error marshaling request body")
 	}
 
+	log.Info().Msgf("Request body being sent: %s", string(requestBodyBytes))
+
 	req, err := http.NewRequest("POST", settings.TokenExchangeAPIURL, bytes.NewBuffer(requestBodyBytes))
 	if err != nil {
 		log.Error().Err(err).Msg("Error creating new request")
@@ -338,6 +350,8 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
+	log.Info().Msgf("Token Exchange API URL: %s", settings.TokenExchangeAPIURL)
+
 	if err != nil {
 		log.Error().Err(err).Msg("Error sending request to token exchange API")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error sending request to token exchange API")
@@ -355,6 +369,8 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 		log.Error().Err(err).Msg("Error processing response")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error processing response")
 	}
+
+	log.Info().Msgf("Response body from token exchange API: %s", string(respBody))
 
 	token, exists := responseMap["token"]
 	if !exists {
