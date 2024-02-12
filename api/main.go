@@ -348,6 +348,11 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("Content-Type", "application/json")
 
+	//log raw req
+	log.Info().Msgf("Request URL: %s", req.URL.String())
+	log.Info().Msgf("Request Headers: %v", req.Header)
+	log.Info().Msgf("Request Body: %s", string(requestBodyBytes))
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	log.Info().Msgf("Token Exchange API URL: %s", settings.TokenExchangeAPIURL)
@@ -363,6 +368,8 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 		log.Error().Err(err).Msg("Error reading response from token exchange API")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error reading response from token exchange API")
 	}
+
+	log.Info().Msgf("Response body from token exchange API: %s", string(respBody))
 
 	var responseMap map[string]interface{}
 	if err := json.Unmarshal(respBody, &responseMap); err != nil {
