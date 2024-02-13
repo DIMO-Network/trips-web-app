@@ -270,7 +270,7 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 
 	log.Info().Msgf("Response from submit challenge: %+v", responseMap) //debugging
 
-	token, exists := responseMap["access_token"]
+	token, exists := responseMap["id_token"]
 	if !exists {
 		return c.Status(fiber.StatusInternalServerError).SendString("Token not found in response")
 	}
@@ -287,7 +287,7 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 
 	c.Cookie(cookie)
 
-	return c.JSON(fiber.Map{"message": "Challenge accepted and session started!", "access_token": token})
+	return c.JSON(fiber.Map{"message": "Challenge accepted and session started!", "id_token": token})
 }
 
 func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
@@ -376,8 +376,6 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 		log.Error().Err(err).Msg("Error processing response")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error processing response")
 	}
-
-	log.Info().Msgf("Response body from token exchange API: %s", string(respBody))
 
 	token, exists := responseMap["token"]
 	if !exists {
