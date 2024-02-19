@@ -105,9 +105,6 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
 	}
 
-	// Debugging: Print the vehicles to check
-	fmt.Printf("Vehicles: %+v\n", vehicles)
-
 	return c.Render("vehicles", fiber.Map{
 		"Title":    "My Vehicles",
 		"Vehicles": vehicles,
@@ -139,8 +136,6 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
         }
     }`
 
-	log.Info().Msgf("this is the request query: %s", graphqlQuery)
-
 	// GraphQL request
 	requestPayload := GraphQLRequest{Query: graphqlQuery}
 	payloadBytes, err := json.Marshal(requestPayload)
@@ -167,8 +162,6 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
 		return nil, err
 	}
 
-	fmt.Printf("Response body: %s\n", string(body))
-
 	var vehicleResponse struct {
 		Data struct {
 			Vehicles struct {
@@ -181,7 +174,6 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
 		return nil, err
 	}
 
-	// Create a slice of Vehicles with the flattened structure for the template
 	vehicles := make([]Vehicle, 0, len(vehicleResponse.Data.Vehicles.Nodes))
 	for _, v := range vehicleResponse.Data.Vehicles.Nodes {
 		vehicles = append(vehicles, Vehicle{
@@ -295,11 +287,9 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 	ethAddress := c.Locals("ethereum_address").(string)
 	vehicles, err := queryIdentityAPIForVehicles(ethAddress, settings)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to query vehicles")
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to query vehicles")
 	}
 	if len(vehicles) == 0 {
-		log.Error().Msg("No vehicles found for the given Ethereum address")
 		return c.Status(fiber.StatusInternalServerError).SendString("No vehicles found")
 	}
 	tokenId := vehicles[0].TokenID
@@ -307,24 +297,21 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 	log.Info().Msg("HandleTokenExchange called")
 
 	sessionCookie := c.Cookies("session_id")
-	log.Info().Msgf("Session Cookie: %s", sessionCookie)
 
 	jwtToken, found := cacheInstance.Get(sessionCookie)
 	if !found {
-		log.Error().Msg("No session found")
 		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized: No session found")
 	}
 
 	accessToken, ok := jwtToken.(string)
 	if !ok {
-		log.Error().Msg("Token format is invalid")
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Error: Token format is invalid")
 	}
 
 	log.Info().Msgf("JWT being sent: %s", accessToken)
 
 	nftContractAddress := "0xbA5738a18d83D41847dfFbDC6101d37C69c9B0cF"
-	privileges := []int{4} // example?
+	privileges := []int{4}
 	requestBody := map[string]interface{}{
 		"nftContractAddress": nftContractAddress,
 		"privileges":         privileges,
@@ -333,7 +320,6 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 
 	requestBodyBytes, err := json.Marshal(requestBody)
 	if err != nil {
-		log.Error().Err(err).Msg("Error marshaling request body")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error marshaling request body")
 	}
 
@@ -341,35 +327,24 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 
 	req, err := http.NewRequest("POST", settings.TokenExchangeAPIURL, bytes.NewBuffer(requestBodyBytes))
 	if err != nil {
-		log.Error().Err(err).Msg("Error creating new request")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error creating new request")
 	}
 
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("Content-Type", "application/json")
 
-	//log raw req
-	log.Info().Msgf("Request URL: %s", req.URL.String())
-	log.Info().Msgf("Request Headers: %v", req.Header)
-	log.Info().Msgf("Request Body: %s", string(requestBodyBytes))
-
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	log.Info().Msgf("Token Exchange API URL: %s", settings.TokenExchangeAPIURL)
 
 	if err != nil {
-		log.Error().Err(err).Msg("Error sending request to token exchange API")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error sending request to token exchange API")
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error().Err(err).Msg("Error reading response from token exchange API")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error reading response from token exchange API")
 	}
-
-	log.Info().Msgf("Response body from token exchange API: %s", string(respBody))
 
 	var responseMap map[string]interface{}
 	if err := json.Unmarshal(respBody, &responseMap); err != nil {
@@ -379,7 +354,6 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 
 	token, exists := responseMap["token"]
 	if !exists {
-		log.Error().Msg("Token not found in response from token exchange API")
 		return c.Status(fiber.StatusInternalServerError).SendString("Token not found in response from token exchange API")
 	}
 

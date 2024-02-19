@@ -67,20 +67,22 @@ export default function Home() {
 				credentials: 'include',
 				headers: {
 					'Content-Type': 'application/json',
-
 				},
 			});
 
 			if (!response.ok) {
-				throw new Error('Failed to exchange token');
+				const errorText = await response.text();
+				throw new Error('Failed to exchange token: ' + errorText);
 			}
 
 			const data = await response.json();
 			console.log('Exchanged token:', data);
+			return data.token; // Return the token
 
 		} catch (error) {
 			console.error('Error in token exchange:', error);
 			setErrorMessage(error.message);
+			throw error;
 		}
 	};
 
@@ -114,12 +116,13 @@ export default function Home() {
 				});
 
 				if (verificationResponse.ok) {
-					setShowMyVehicles(true);
+					const token = await performTokenExchange(); // Wait for token exchange
+					if (token) {
+						window.location.href = 'http://localhost:3003/api/vehicles/me'; // Redirect after successful token exchange
+					}
 				} else {
 					throw new Error('Error submitting challenge');
 				}
-
-				window.location.href = 'http://localhost:3003/api/vehicles/me';
 			}
 		} catch (error) {
 			console.error('Error in onAccountConnected:', error);
@@ -141,7 +144,13 @@ export default function Home() {
 
 	useEffect(() => {
 		if (showMyVehicles) {
-			performTokenExchange();
+			(async () => {
+				try {
+					const result = await performTokenExchange();
+				} catch (error) {
+					console.error(error);
+				}
+			})();
 		}
 	}, [showMyVehicles]);
 
