@@ -51,6 +51,36 @@ type Vehicle struct {
 			Name string `json:"name"`
 		} `json:"manufacturer"`
 	} `json:"aftermarketDevice"`
+	DeviceStatus DeviceStatus `json:"deviceStatus"`
+}
+
+type DeviceStatus struct {
+	AmbientTemp          int          `json:"ambientTemp"`
+	BatteryCapacity      int          `json:"batteryCapacity"`
+	BatteryVoltage       int          `json:"batteryVoltage"`
+	ChargeLimit          int          `json:"chargeLimit"`
+	Charging             bool         `json:"charging"`
+	FuelPercentRemaining int          `json:"fuelPercentRemaining"`
+	Latitude             float64      `json:"latitude"`
+	Longitude            float64      `json:"longitude"`
+	Odometer             int          `json:"odometer"`
+	Oil                  int          `json:"oil"`
+	Range                int          `json:"range"`
+	RecordCreatedAt      string       `json:"recordCreatedAt"`
+	RecordUpdatedAt      string       `json:"recordUpdatedAt"`
+	Soc                  int          `json:"soc"`
+	TirePressure         TirePressure `json:"tirePressure"`
+}
+
+type TirePressure struct {
+	Age        string `json:"age"`
+	BackLeft   int    `json:"backLeft"`
+	BackRight  int    `json:"backRight"`
+	DataAge    string `json:"dataAge"`
+	FrontLeft  int    `json:"frontLeft"`
+	FrontRight int    `json:"frontRight"`
+	RequestId  string `json:"requestId"`
+	UnitSystem string `json:"unitSystem"`
 }
 
 func ExtractEthereumAddressFromToken(tokenString string) (string, error) {
@@ -98,11 +128,21 @@ func AuthMiddleware() fiber.Handler {
 }
 
 func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
-	ethAddress := c.Locals("ethereum_address")
+	ethAddress := c.Locals("ethereum_address").(string)
 
-	vehicles, err := queryIdentityAPIForVehicles(ethAddress.(string), settings)
+	vehicles, err := queryIdentityAPIForVehicles(ethAddress, settings)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
+	}
+
+	for i := range vehicles {
+		status, err := queryDeviceDataAPI(vehicles[i].TokenID, settings, c)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to get device status")
+			// Decide how to handle this error; you might want to continue, return an error, or set a default status
+			continue
+		}
+		vehicles[i].DeviceStatus = status
 	}
 
 	return c.Render("vehicles", fiber.Map{
@@ -187,6 +227,40 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
 	return vehicles, nil
 }
 
+func queryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) (DeviceStatus, error) {
+	var deviceStatus DeviceStatus
+
+	sessionCookie := c.Cookies("session_id")
+	privilegeTokenKey := "privilegeToken_" + sessionCookie
+
+	// Retrieve the privilege token from the cache
+	token, found := cacheInstance.Get(privilegeTokenKey)
+	if !found {
+		return deviceStatus, errors.New("privilege token not found in cache")
+	}
+
+	url := fmt.Sprintf("%s/vehicle/%d/status", settings.DeviceDataAPIBaseURL, tokenID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return deviceStatus, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token.(string))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return deviceStatus, err
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&deviceStatus); err != nil {
+		return deviceStatus, err
+	}
+
+	return deviceStatus, nil
+}
+
 func HandleGenerateChallenge(c *fiber.Ctx, settings *config.Settings) error {
 	address := c.FormValue("address")
 
@@ -267,6 +341,7 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Token not found in response")
 	}
 
+	//jwt token storage
 	sessionID := uuid.New().String()
 	cacheInstance.Set(sessionID, token, 2*time.Hour)
 
@@ -303,12 +378,12 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized: No session found")
 	}
 
-	accessToken, ok := jwtToken.(string)
+	idToken, ok := jwtToken.(string)
 	if !ok {
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Error: Token format is invalid")
 	}
 
-	log.Info().Msgf("JWT being sent: %s", accessToken)
+	log.Info().Msgf("JWT being sent: %s", idToken)
 
 	nftContractAddress := "0xbA5738a18d83D41847dfFbDC6101d37C69c9B0cF"
 	privileges := []int{4}
@@ -330,7 +405,7 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error creating new request")
 	}
 
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", "Bearer "+idToken)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
@@ -356,6 +431,10 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 	if !exists {
 		return c.Status(fiber.StatusInternalServerError).SendString("Token not found in response from token exchange API")
 	}
+
+	// privilege token storage
+	privilegeTokenKey := "privilegeToken_" + sessionCookie
+	cacheInstance.Set(privilegeTokenKey, token, cache.DefaultExpiration)
 
 	log.Info().Msgf("Token exchange successful: %s", token)
 	return c.JSON(fiber.Map{"token": token})
