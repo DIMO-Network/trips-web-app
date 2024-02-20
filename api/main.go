@@ -136,11 +136,12 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 	}
 
 	for i := range vehicles {
+		log.Info().Msgf("Vehicle TokenID: %d", vehicles[i].TokenID) // Logging the TokenID
+
 		status, err := queryDeviceDataAPI(vehicles[i].TokenID, settings, c)
 		if err != nil {
-			log.Error().Err(err).Msg("Failed to get device status")
-			// Decide how to handle this error; you might want to continue, return an error, or set a default status
-			continue
+			log.Error().Err(err).Msgf("Failed to get device status for TokenID: %d", vehicles[i].TokenID)
+			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Failed to get device status for vehicle with TokenID: %d", vehicles[i].TokenID))
 		}
 		vehicles[i].DeviceStatus = status
 	}
