@@ -105,9 +105,6 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
 	}
 
-	// Debugging: Print the vehicles to check
-	fmt.Printf("Vehicles: %+v\n", vehicles)
-
 	return c.Render("vehicles", fiber.Map{
 		"Title":    "My Vehicles",
 		"Vehicles": vehicles,
@@ -139,8 +136,6 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
         }
     }`
 
-	log.Info().Msgf("this is the request query: %s", graphqlQuery)
-
 	// GraphQL request
 	requestPayload := GraphQLRequest{Query: graphqlQuery}
 	payloadBytes, err := json.Marshal(requestPayload)
@@ -167,8 +162,6 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
 		return nil, err
 	}
 
-	fmt.Printf("Response body: %s\n", string(body))
-
 	var vehicleResponse struct {
 		Data struct {
 			Vehicles struct {
@@ -181,7 +174,6 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
 		return nil, err
 	}
 
-	// Create a slice of Vehicles with the flattened structure for the template
 	vehicles := make([]Vehicle, 0, len(vehicleResponse.Data.Vehicles.Nodes))
 	for _, v := range vehicleResponse.Data.Vehicles.Nodes {
 		vehicles = append(vehicles, Vehicle{
@@ -270,7 +262,7 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 
 	log.Info().Msgf("Response from submit challenge: %+v", responseMap) //debugging
 
-	token, exists := responseMap["access_token"]
+	token, exists := responseMap["id_token"]
 	if !exists {
 		return c.Status(fiber.StatusInternalServerError).SendString("Token not found in response")
 	}
@@ -287,7 +279,86 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 
 	c.Cookie(cookie)
 
-	return c.JSON(fiber.Map{"message": "Challenge accepted and session started!", "access_token": token})
+	return c.JSON(fiber.Map{"message": "Challenge accepted and session started!", "id_token": token})
+}
+
+func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
+
+	ethAddress := c.Locals("ethereum_address").(string)
+	vehicles, err := queryIdentityAPIForVehicles(ethAddress, settings)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to query vehicles")
+	}
+	if len(vehicles) == 0 {
+		return c.Status(fiber.StatusInternalServerError).SendString("No vehicles found")
+	}
+	tokenId := vehicles[0].TokenID
+
+	log.Info().Msg("HandleTokenExchange called")
+
+	sessionCookie := c.Cookies("session_id")
+
+	jwtToken, found := cacheInstance.Get(sessionCookie)
+	if !found {
+		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized: No session found")
+	}
+
+	accessToken, ok := jwtToken.(string)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).SendString("Internal Error: Token format is invalid")
+	}
+
+	log.Info().Msgf("JWT being sent: %s", accessToken)
+
+	nftContractAddress := "0xbA5738a18d83D41847dfFbDC6101d37C69c9B0cF"
+	privileges := []int{4}
+	requestBody := map[string]interface{}{
+		"nftContractAddress": nftContractAddress,
+		"privileges":         privileges,
+		"tokenId":            tokenId,
+	}
+
+	requestBodyBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error marshaling request body")
+	}
+
+	log.Info().Msgf("Request body being sent: %s", string(requestBodyBytes))
+
+	req, err := http.NewRequest("POST", settings.TokenExchangeAPIURL, bytes.NewBuffer(requestBodyBytes))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error creating new request")
+	}
+
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error sending request to token exchange API")
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error reading response from token exchange API")
+	}
+
+	var responseMap map[string]interface{}
+	if err := json.Unmarshal(respBody, &responseMap); err != nil {
+		log.Error().Err(err).Msg("Error processing response")
+		return c.Status(fiber.StatusInternalServerError).SendString("Error processing response")
+	}
+
+	token, exists := responseMap["token"]
+	if !exists {
+		return c.Status(fiber.StatusInternalServerError).SendString("Token not found in response from token exchange API")
+	}
+
+	log.Info().Msgf("Token exchange successful: %s", token)
+	return c.JSON(fiber.Map{"token": token})
 }
 
 func ErrorHandler(ctx *fiber.Ctx, err error) error {
@@ -349,6 +420,10 @@ func main() {
 	})
 	app.Post("/auth/web3/submit_challenge", func(c *fiber.Ctx) error {
 		return HandleSubmitChallenge(c, &settings)
+	})
+
+	app.Post("/api/token_exchange", AuthMiddleware(), func(c *fiber.Ctx) error {
+		return HandleTokenExchange(c, &settings)
 	})
 
 	app.Get("/", func(c *fiber.Ctx) error {
