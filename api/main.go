@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -51,36 +52,68 @@ type Vehicle struct {
 			Name string `json:"name"`
 		} `json:"manufacturer"`
 	} `json:"aftermarketDevice"`
-	DeviceStatus DeviceStatus `json:"deviceStatus"`
+	DeviceStatusEntries []DeviceDataEntry `json:"deviceStatusEntries"`
 }
 
-type DeviceStatus struct {
-	AmbientTemp          int          `json:"ambientTemp"`
-	BatteryCapacity      int          `json:"batteryCapacity"`
-	BatteryVoltage       int          `json:"batteryVoltage"`
-	ChargeLimit          int          `json:"chargeLimit"`
-	Charging             bool         `json:"charging"`
-	FuelPercentRemaining int          `json:"fuelPercentRemaining"`
-	Latitude             float64      `json:"latitude"`
-	Longitude            float64      `json:"longitude"`
-	Odometer             int          `json:"odometer"`
-	Oil                  int          `json:"oil"`
-	Range                int          `json:"range"`
-	RecordCreatedAt      string       `json:"recordCreatedAt"`
-	RecordUpdatedAt      string       `json:"recordUpdatedAt"`
-	Soc                  int          `json:"soc"`
-	TirePressure         TirePressure `json:"tirePressure"`
+type RawDeviceStatus struct {
+	DTC                       map[string]interface{} `json:"dtc"`
+	MAF                       map[string]interface{} `json:"maf"`
+	VIN                       map[string]interface{} `json:"vin"`
+	Cell                      map[string]interface{} `json:"cell"`
+	HDOP                      map[string]interface{} `json:"hdop"`
+	NSAT                      map[string]interface{} `json:"nsat"`
+	WiFi                      map[string]interface{} `json:"wifi"`
+	Speed                     map[string]interface{} `json:"speed"`
+	Device                    map[string]interface{} `json:"device"`
+	RunTime                   map[string]interface{} `json:"runTime"`
+	Altitude                  map[string]interface{} `json:"altitude"`
+	Timestamp                 map[string]interface{} `json:"timestamp"`
+	EngineLoad                map[string]interface{} `json:"engineLoad"`
+	IntakeTemp                map[string]interface{} `json:"intakeTemp"`
+	CoolantTemp               map[string]interface{} `json:"coolantTemp"`
+	EngineSpeed               map[string]interface{} `json:"engineSpeed"`
+	ThrottlePosition          map[string]interface{} `json:"throttlePosition"`
+	LongTermFuelTrim1         map[string]interface{} `json:"longTermFuelTrim1"`
+	BarometricPressure        map[string]interface{} `json:"barometricPressure"`
+	ShortTermFuelTrim1        map[string]interface{} `json:"shortTermFuelTrim1"`
+	AcceleratorPedalPositionD map[string]interface{} `json:"acceleratorPedalPositionD"`
+	AcceleratorPedalPositionE map[string]interface{} `json:"acceleratorPedalPositionE"`
 }
 
-type TirePressure struct {
-	Age        string `json:"age"`
-	BackLeft   int    `json:"backLeft"`
-	BackRight  int    `json:"backRight"`
-	DataAge    string `json:"dataAge"`
-	FrontLeft  int    `json:"frontLeft"`
-	FrontRight int    `json:"frontRight"`
-	RequestId  string `json:"requestId"`
-	UnitSystem string `json:"unitSystem"`
+type DeviceDataEntry struct {
+	SignalName string
+	Value      interface{}
+	Timestamp  string
+	Source     string
+}
+
+type DeviceStatusEntries []DeviceDataEntry
+
+func processRawDeviceStatus(rawDeviceStatus RawDeviceStatus) DeviceStatusEntries {
+	var entries DeviceStatusEntries
+
+	v := reflect.ValueOf(rawDeviceStatus)
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		name := v.Type().Field(i).Name
+
+		if data, ok := field.Interface().(map[string]interface{}); ok {
+			var entry DeviceDataEntry
+			entry.SignalName = name
+
+			if value, exists := data["value"]; exists {
+				entry.Value = value
+			}
+			if timestamp, exists := data["timestamp"]; exists {
+				entry.Timestamp = fmt.Sprintf("%v", timestamp)
+			}
+			if source, exists := data["source"]; exists {
+				entry.Source = fmt.Sprintf("%v", source)
+			}
+			entries = append(entries, entry)
+		}
+	}
+	return entries
 }
 
 func ExtractEthereumAddressFromToken(tokenString string) (string, error) {
@@ -136,14 +169,12 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 	}
 
 	for i := range vehicles {
-		log.Info().Msgf("Vehicle TokenID: %d", vehicles[i].TokenID) // Logging the TokenID
-
-		status, err := queryDeviceDataAPI(vehicles[i].TokenID, settings, c)
+		rawStatus, err := queryDeviceDataAPI(vehicles[i].TokenID, settings, c)
 		if err != nil {
-			log.Error().Err(err).Msgf("Failed to get device status for TokenID: %d", vehicles[i].TokenID)
-			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Failed to get device status for vehicle with TokenID: %d", vehicles[i].TokenID))
+			log.Error().Err(err).Msg("Failed to get raw device status")
+			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Failed to get raw device status for vehicle with TokenID: %d", vehicles[i].TokenID))
 		}
-		vehicles[i].DeviceStatus = status
+		vehicles[i].DeviceStatusEntries = processRawDeviceStatus(rawStatus)
 	}
 
 	return c.Render("vehicles", fiber.Map{
@@ -228,8 +259,8 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
 	return vehicles, nil
 }
 
-func queryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) (DeviceStatus, error) {
-	var deviceStatus DeviceStatus
+func queryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) (RawDeviceStatus, error) {
+	var rawDeviceStatus RawDeviceStatus
 
 	sessionCookie := c.Cookies("session_id")
 	privilegeTokenKey := "privilegeToken_" + sessionCookie
@@ -237,29 +268,29 @@ func queryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) 
 	// Retrieve the privilege token from the cache
 	token, found := cacheInstance.Get(privilegeTokenKey)
 	if !found {
-		return deviceStatus, errors.New("privilege token not found in cache")
+		return rawDeviceStatus, errors.New("privilege token not found in cache")
 	}
 
-	url := fmt.Sprintf("%s/vehicle/%d/status", settings.DeviceDataAPIBaseURL, tokenID)
+	url := fmt.Sprintf("%s/vehicle/%d/status-raw", settings.DeviceDataAPIBaseURL, tokenID)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return deviceStatus, err
+		return rawDeviceStatus, err
 	}
 	req.Header.Set("Authorization", "Bearer "+token.(string))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return deviceStatus, err
+		return rawDeviceStatus, err
 	}
 	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&deviceStatus); err != nil {
-		return deviceStatus, err
+	if err := json.NewDecoder(resp.Body).Decode(&rawDeviceStatus); err != nil {
+		return rawDeviceStatus, err
 	}
 
-	return deviceStatus, nil
+	return rawDeviceStatus, nil
 }
 
 func HandleGenerateChallenge(c *fiber.Ctx, settings *config.Settings) error {

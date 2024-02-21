@@ -82,31 +82,23 @@
         <td>
           <button onclick="toggleDeviceStatus('device-status-{{@index}}')">Expand Device Status</button>
           <div id="device-status-{{@index}}" style="display: none;">
-          Ambient Temp: {{this.DeviceStatus.AmbientTemp}}<br>
-          Battery Capacity: {{this.DeviceStatus.BatteryCapacity}}<br>
-          Battery Voltage: {{this.DeviceStatus.BatteryVoltage}}<br>
-          Charge Limit: {{this.DeviceStatus.ChargeLimit}}<br>
-          Charging: {{this.DeviceStatus.Charging}}<br>
-          Fuel Percent Remaining: {{this.DeviceStatus.FuelPercentRemaining}}<br>
-          Latitude: {{this.DeviceStatus.Latitude}}<br>
-          Longitude: {{this.DeviceStatus.Longitude}}<br>
-          Odometer: {{this.DeviceStatus.Odometer}}<br>
-          Oil: {{this.DeviceStatus.Oil}}<br>
-          Range: {{this.DeviceStatus.Range}}<br>
-          Record Created At: {{this.DeviceStatus.RecordCreatedAt}}<br>
-          Record Updated At: {{this.DeviceStatus.RecordUpdatedAt}}<br>
-          State of Charge (SoC): {{this.DeviceStatus.Soc}}<br>
-          Tire Pressure:
-          <ul>
-            <li>Age: {{this.DeviceStatus.TirePressure.age}}</li>
-            <li>Back Left: {{this.DeviceStatus.TirePressure.backLeft}}</li>
-            <li>Back Right: {{this.DeviceStatus.TirePressure.backRight}}</li>
-            <li>Data Age: {{this.DeviceStatus.TirePressure.dataAge}}</li>
-            <li>Front Left: {{this.DeviceStatus.TirePressure.frontLeft}}</li>
-            <li>Front Right: {{this.DeviceStatus.TirePressure.frontRight}}</li>
-            <li>Request ID: {{this.DeviceStatus.TirePressure.requestId}}</li>
-            <li>Unit System: {{this.DeviceStatus.TirePressure.unitSystem}}</li>
-          </ul>
+            <table>
+              <tr>
+                <th>Signal Name</th>
+                <th>Value</th>
+                <th>Timestamp</th>
+                <th>Source</th>
+              </tr>
+              {{#each this.DeviceStatusEntries}}
+                <tr>
+                  <td>{{this.SignalName}}</td>
+                  <td>{{this.Value}}</td>
+                  <td>{{this.Timestamp}}</td>
+                  <td>{{this.Source}}</td>
+                </tr>
+              {{/each}}
+            </table>
+          </div>
         </td>
       </tr>
     {{/each}}
