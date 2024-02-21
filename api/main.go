@@ -98,19 +98,34 @@ func processRawDeviceStatus(rawDeviceStatus RawDeviceStatus) DeviceStatusEntries
 		name := v.Type().Field(i).Name
 
 		if data, ok := field.Interface().(map[string]interface{}); ok {
-			var entry DeviceDataEntry
-			entry.SignalName = name
-
 			if value, exists := data["value"]; exists {
-				entry.Value = value
+				// Check if value is a nested map and process each entry
+				switch valueTyped := value.(type) {
+				case map[string]interface{}:
+					for k, v := range valueTyped {
+						entries = append(entries, DeviceDataEntry{
+							SignalName: fmt.Sprintf("%s.%s", name, k),
+							Value:      fmt.Sprintf("%v", v),
+							Timestamp:  fmt.Sprintf("%v", data["timestamp"]),
+							Source:     fmt.Sprintf("%v", data["source"]),
+						})
+					}
+				default:
+					entries = append(entries, DeviceDataEntry{
+						SignalName: name,
+						Value:      fmt.Sprintf("%v", value),
+						Timestamp:  fmt.Sprintf("%v", data["timestamp"]),
+						Source:     fmt.Sprintf("%v", data["source"]),
+					})
+				}
+			} else {
+				entries = append(entries, DeviceDataEntry{
+					SignalName: name,
+					Value:      "",
+					Timestamp:  fmt.Sprintf("%v", data["timestamp"]),
+					Source:     fmt.Sprintf("%v", data["source"]),
+				})
 			}
-			if timestamp, exists := data["timestamp"]; exists {
-				entry.Timestamp = fmt.Sprintf("%v", timestamp)
-			}
-			if source, exists := data["source"]; exists {
-				entry.Source = fmt.Sprintf("%v", source)
-			}
-			entries = append(entries, entry)
 		}
 	}
 	return entries
