@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -51,6 +52,83 @@ type Vehicle struct {
 			Name string `json:"name"`
 		} `json:"manufacturer"`
 	} `json:"aftermarketDevice"`
+	DeviceStatusEntries []DeviceDataEntry `json:"deviceStatusEntries"`
+}
+
+type RawDeviceStatus struct {
+	DTC                       map[string]interface{} `json:"dtc"`
+	MAF                       map[string]interface{} `json:"maf"`
+	VIN                       map[string]interface{} `json:"vin"`
+	Cell                      map[string]interface{} `json:"cell"`
+	HDOP                      map[string]interface{} `json:"hdop"`
+	NSAT                      map[string]interface{} `json:"nsat"`
+	WiFi                      map[string]interface{} `json:"wifi"`
+	Speed                     map[string]interface{} `json:"speed"`
+	Device                    map[string]interface{} `json:"device"`
+	RunTime                   map[string]interface{} `json:"runTime"`
+	Altitude                  map[string]interface{} `json:"altitude"`
+	Timestamp                 map[string]interface{} `json:"timestamp"`
+	EngineLoad                map[string]interface{} `json:"engineLoad"`
+	IntakeTemp                map[string]interface{} `json:"intakeTemp"`
+	CoolantTemp               map[string]interface{} `json:"coolantTemp"`
+	EngineSpeed               map[string]interface{} `json:"engineSpeed"`
+	ThrottlePosition          map[string]interface{} `json:"throttlePosition"`
+	LongTermFuelTrim1         map[string]interface{} `json:"longTermFuelTrim1"`
+	BarometricPressure        map[string]interface{} `json:"barometricPressure"`
+	ShortTermFuelTrim1        map[string]interface{} `json:"shortTermFuelTrim1"`
+	AcceleratorPedalPositionD map[string]interface{} `json:"acceleratorPedalPositionD"`
+	AcceleratorPedalPositionE map[string]interface{} `json:"acceleratorPedalPositionE"`
+}
+
+type DeviceDataEntry struct {
+	SignalName string
+	Value      interface{}
+	Timestamp  string
+	Source     string
+}
+
+type DeviceStatusEntries []DeviceDataEntry
+
+func processRawDeviceStatus(rawDeviceStatus RawDeviceStatus) DeviceStatusEntries {
+	var entries DeviceStatusEntries
+
+	v := reflect.ValueOf(rawDeviceStatus)
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		name := v.Type().Field(i).Name
+
+		if data, ok := field.Interface().(map[string]interface{}); ok {
+			if value, exists := data["value"]; exists {
+				// Check if value is a nested map and process each entry
+				switch valueTyped := value.(type) {
+				case map[string]interface{}:
+					for k, v := range valueTyped {
+						entries = append(entries, DeviceDataEntry{
+							SignalName: fmt.Sprintf("%s.%s", name, k),
+							Value:      fmt.Sprintf("%v", v),
+							Timestamp:  fmt.Sprintf("%v", data["timestamp"]),
+							Source:     fmt.Sprintf("%v", data["source"]),
+						})
+					}
+				default:
+					entries = append(entries, DeviceDataEntry{
+						SignalName: name,
+						Value:      fmt.Sprintf("%v", value),
+						Timestamp:  fmt.Sprintf("%v", data["timestamp"]),
+						Source:     fmt.Sprintf("%v", data["source"]),
+					})
+				}
+			} else {
+				entries = append(entries, DeviceDataEntry{
+					SignalName: name,
+					Value:      "",
+					Timestamp:  fmt.Sprintf("%v", data["timestamp"]),
+					Source:     fmt.Sprintf("%v", data["source"]),
+				})
+			}
+		}
+	}
+	return entries
 }
 
 func ExtractEthereumAddressFromToken(tokenString string) (string, error) {
@@ -98,11 +176,20 @@ func AuthMiddleware() fiber.Handler {
 }
 
 func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
-	ethAddress := c.Locals("ethereum_address")
+	ethAddress := c.Locals("ethereum_address").(string)
 
-	vehicles, err := queryIdentityAPIForVehicles(ethAddress.(string), settings)
+	vehicles, err := queryIdentityAPIForVehicles(ethAddress, settings)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
+	}
+
+	for i := range vehicles {
+		rawStatus, err := queryDeviceDataAPI(vehicles[i].TokenID, settings, c)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to get raw device status")
+			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Failed to get raw device status for vehicle with TokenID: %d", vehicles[i].TokenID))
+		}
+		vehicles[i].DeviceStatusEntries = processRawDeviceStatus(rawStatus)
 	}
 
 	return c.Render("vehicles", fiber.Map{
@@ -187,6 +274,40 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
 	return vehicles, nil
 }
 
+func queryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) (RawDeviceStatus, error) {
+	var rawDeviceStatus RawDeviceStatus
+
+	sessionCookie := c.Cookies("session_id")
+	privilegeTokenKey := "privilegeToken_" + sessionCookie
+
+	// Retrieve the privilege token from the cache
+	token, found := cacheInstance.Get(privilegeTokenKey)
+	if !found {
+		return rawDeviceStatus, errors.New("privilege token not found in cache")
+	}
+
+	url := fmt.Sprintf("%s/vehicle/%d/status-raw", settings.DeviceDataAPIBaseURL, tokenID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return rawDeviceStatus, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token.(string))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return rawDeviceStatus, err
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&rawDeviceStatus); err != nil {
+		return rawDeviceStatus, err
+	}
+
+	return rawDeviceStatus, nil
+}
+
 func HandleGenerateChallenge(c *fiber.Ctx, settings *config.Settings) error {
 	address := c.FormValue("address")
 
@@ -267,6 +388,7 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Token not found in response")
 	}
 
+	//jwt token storage
 	sessionID := uuid.New().String()
 	cacheInstance.Set(sessionID, token, 2*time.Hour)
 
@@ -303,12 +425,12 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized: No session found")
 	}
 
-	accessToken, ok := jwtToken.(string)
+	idToken, ok := jwtToken.(string)
 	if !ok {
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Error: Token format is invalid")
 	}
 
-	log.Info().Msgf("JWT being sent: %s", accessToken)
+	log.Info().Msgf("JWT being sent: %s", idToken)
 
 	nftContractAddress := "0xbA5738a18d83D41847dfFbDC6101d37C69c9B0cF"
 	privileges := []int{4}
@@ -330,7 +452,7 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error creating new request")
 	}
 
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", "Bearer "+idToken)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
@@ -356,6 +478,10 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 	if !exists {
 		return c.Status(fiber.StatusInternalServerError).SendString("Token not found in response from token exchange API")
 	}
+
+	// privilege token storage
+	privilegeTokenKey := "privilegeToken_" + sessionCookie
+	cacheInstance.Set(privilegeTokenKey, token, cache.DefaultExpiration)
 
 	log.Info().Msgf("Token exchange successful: %s", token)
 	return c.JSON(fiber.Map{"token": token})

@@ -48,6 +48,16 @@
       color: #555;
     }
   </style>
+  <script>
+    function toggleDeviceStatus(id) {
+      var element = document.getElementById(id);
+      if (element.style.display === "none") {
+        element.style.display = "block";
+      } else {
+        element.style.display = "none";
+      }
+    }
+  </script>
 </head>
 <body>
 <h1>{{Title}}</h1>
@@ -59,6 +69,7 @@
       <th>Make</th>
       <th>Model</th>
       <th>Year</th>
+      <th>Device Status</th>
     </tr>
     </thead>
     <tbody>
@@ -68,6 +79,27 @@
         <td>{{this.Definition.make}}</td>
         <td>{{this.Definition.model}}</td>
         <td>{{this.Definition.year}}</td>
+        <td>
+          <button onclick="toggleDeviceStatus('device-status-{{@index}}')">Expand Device Status</button>
+          <div id="device-status-{{@index}}" style="display: none;">
+            <table>
+              <tr>
+                <th>Signal Name</th>
+                <th>Value</th>
+                <th>Timestamp</th>
+                <th>Source</th>
+              </tr>
+              {{#each this.DeviceStatusEntries}}
+                <tr>
+                  <td>{{this.SignalName}}</td>
+                  <td>{{this.Value}}</td>
+                  <td>{{this.Timestamp}}</td>
+                  <td>{{this.Source}}</td>
+                </tr>
+              {{/each}}
+            </table>
+          </div>
+        </td>
       </tr>
     {{/each}}
     </tbody>
