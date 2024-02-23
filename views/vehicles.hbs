@@ -96,9 +96,12 @@
           throw new Error('Failed to fetch trip data');
         }
         const geoJSON = await response.json();
+        console.log("GeoJSON data:", geoJSON);
 
-        mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
+
+        mapboxgl.accessToken = 'pk.eyJ1IjoiYmVua29jaGFub3dza2kiLCJhIjoiY2t6eDdlZzRnOGUyeTJvbXphdXdvZnJjZSJ9.S1WS1tkPKQnGt3A5Y72ZUA';
         if (!window.map) {
+          console.log('Initializing map');
           window.map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v11',
@@ -107,7 +110,8 @@
           });
         }
 
-        window.map.once('load', function() {
+        window.map.on('load', function() {
+          console.log('Map loaded');
           if (window.map.getSource('route')) {
             window.map.getSource('route').setData(geoJSON);
           } else {
@@ -133,6 +137,8 @@
           const bounds = new mapboxgl.LngLatBounds();
           geoJSON.features[0].geometry.coordinates.forEach(coord => bounds.extend(coord));
           window.map.fitBounds(bounds, { padding: 20 });
+          console.log('Added source and layer to map');
+
         });
 
       } catch (error) {
