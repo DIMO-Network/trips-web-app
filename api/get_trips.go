@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"net/http"
-	"net/url"
 )
 
 type Trip struct {
@@ -59,6 +58,8 @@ type LocationData struct {
 }
 
 func queryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Trip, error) {
+	log.Info().Msg("queryTripsAPI function called")
+
 	var tripsResponse TripsResponse
 
 	sessionCookie := c.Cookies("session_id")
@@ -66,6 +67,9 @@ func queryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 
 	// Retrieve the privilege token from the cache
 	token, found := CacheInstance.Get(privilegeTokenKey)
+
+	log.Info().Msgf("privilege token in cache now for trips api: %d", token)
+
 	if !found {
 		return nil, errors.New("privilege token not found in cache")
 	}
@@ -98,6 +102,76 @@ func queryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 	return tripsResponse.Trips, nil
 }
 
+func queryDeviceDataHistory(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
+	log.Info().Msgf("queryDeviceDataHistory function called for TokenID: %d", tokenID)
+
+	var historyResponse HistoryResponse
+
+	sessionCookie := c.Cookies("session_id")
+	privilegeTokenKey := "privilegeToken_" + sessionCookie
+
+	// Retrieve the privilege token from the cache
+	token, found := CacheInstance.Get(privilegeTokenKey)
+
+	log.Info().Msgf("privilege token in cache now for device history: %d", token)
+
+	if !found {
+		log.Info().Msgf("priv token not found in cache")
+		return nil, errors.New("privilege token not found in cache")
+	}
+
+	ddUrl := fmt.Sprintf("%s/vehicle/%d/history", settings.DeviceDataAPIBaseURL, tokenID)
+
+	req, err := http.NewRequest("GET", ddUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token.(string))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&historyResponse); err != nil {
+		return nil, err
+	}
+
+	locations := extractLocationData(historyResponse)
+	return locations, nil
+}
+
+func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, startTime, endTime string) error {
+	log.Info().Msgf("handleMapDataForTrip function called for TripID: %s", tripID)
+
+	tokenID, exists := tripIDToTokenIDMap[tripID]
+	if !exists {
+		return c.Status(fiber.StatusNotFound).SendString("Trip not found")
+	}
+
+	log.Info().Msgf("HandleMapDataForTrip: TripID: %s, StartTime: %s, EndTime: %s, TokenID: %d", tripID, startTime, endTime, tokenID)
+
+	// Fetch historical data for the specific trip
+	locations, err := queryDeviceDataHistory(tokenID, settings, c)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch historical data: " + err.Error()})
+	}
+
+	// Convert the historical data to GeoJSON
+	geoJSON := convertToGeoJSON(locations, tripID, startTime, endTime)
+
+	geoJSONData, err := json.Marshal(geoJSON)
+	if err != nil {
+		log.Error().Msgf("Error with geojson: %v", err)
+	} else {
+		log.Info().Msgf("GeoJSON data: %s", string(geoJSONData))
+	}
+	return c.JSON(geoJSON)
+}
+
 func extractLocationData(historyData HistoryResponse) []LocationData {
 	var locations []LocationData
 	for _, hit := range historyData.Hits.Hits {
@@ -111,6 +185,8 @@ func extractLocationData(historyData HistoryResponse) []LocationData {
 }
 
 func convertToGeoJSON(locations []LocationData, tripID string, tripStart string, tripEnd string) *geojson.FeatureCollection {
+	log.Info().Msg("convertToGeoJSON function called")
+
 	coords := make([][]float64, 0, len(locations))
 
 	for _, loc := range locations {
@@ -135,56 +211,4 @@ func convertToGeoJSON(locations []LocationData, tripID string, tripStart string,
 	fc.AddFeature(feature)
 
 	return fc
-}
-
-func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
-	var historyResponse HistoryResponse
-
-	sessionCookie := c.Cookies("session_id")
-	privilegeTokenKey := "privilegeToken_" + sessionCookie
-
-	// Retrieve the privilege token from the cache
-	token, found := CacheInstance.Get(privilegeTokenKey)
-	if !found {
-		return nil, errors.New("privilege token not found in cache")
-	}
-
-	ddUrl := fmt.Sprintf("%s/v1/vehicle/%d/history?start=%s&end=%s", settings.DeviceDataAPIBaseURL, tokenID, url.QueryEscape(startTime), url.QueryEscape(endTime))
-
-	req, err := http.NewRequest("GET", ddUrl, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+token.(string))
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if err := json.NewDecoder(resp.Body).Decode(&historyResponse); err != nil {
-		return nil, err
-	}
-
-	locations := extractLocationData(historyResponse)
-	return locations, nil
-}
-
-func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, startTime, endTime string) error {
-	tokenID, exists := tripIDToTokenIDMap[tripID]
-	if !exists {
-		return c.Status(fiber.StatusNotFound).SendString("Trip not found")
-	}
-
-	// Fetch historical data for the specific trip
-	locations, err := queryDeviceDataHistory(tokenID, startTime, endTime, settings, c)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch historical data: " + err.Error()})
-	}
-
-	// Convert the historical data to GeoJSON
-	geoJSON := convertToGeoJSON(locations, tripID, startTime, endTime)
-	return c.JSON(geoJSON)
 }
