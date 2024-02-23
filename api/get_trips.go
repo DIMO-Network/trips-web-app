@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
+	geojson "github.com/paulmach/go.geojson"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"net/http"
@@ -24,6 +25,8 @@ type TimeEntry struct {
 type TripsResponse struct {
 	Trips []Trip `json:"trips"`
 }
+
+var tripIDToTokenIDMap = make(map[string]int64)
 
 type GeoJSONFeatureCollection struct {
 	Type     string           `json:"type"`
@@ -88,6 +91,7 @@ func queryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 
 	// Log each trip ID
 	for _, trip := range tripsResponse.Trips {
+		tripIDToTokenIDMap[trip.ID] = tokenID
 		log.Info().Msgf("Trip ID: %s", trip.ID)
 	}
 
@@ -106,26 +110,31 @@ func extractLocationData(historyData HistoryResponse) []LocationData {
 	return locations
 }
 
-func convertToGeoJSON(locations []LocationData) GeoJSONFeatureCollection {
-	var coordinates [][]float64
+func convertToGeoJSON(locations []LocationData, tripID string, tripStart string, tripEnd string) *geojson.FeatureCollection {
+	coords := make([][]float64, 0, len(locations))
+
 	for _, loc := range locations {
-		coordinates = append(coordinates, []float64{loc.Longitude, loc.Latitude})
+		// Append each location as a coordinate pair in the coords slice
+		coords = append(coords, []float64{loc.Longitude, loc.Latitude})
 	}
 
-	geoJSON := GeoJSONFeatureCollection{
-		Type: "FeatureCollection",
-		Features: []GeoJSONFeature{
-			{
-				Type: "Feature",
-				Geometry: GeoJSONGeometry{
-					Type:        "LineString",
-					Coordinates: coordinates,
-				},
-			},
-		},
+	feature := geojson.NewLineStringFeature(coords)
+
+	feature.Properties = map[string]interface{}{
+		"type":         "LineString",
+		"trip_id":      tripID,
+		"trip_start":   tripStart,
+		"trip_end":     tripEnd,
+		"privacy_zone": 1,
+		"color":        "black",
+		"point-color":  "black",
 	}
 
-	return geoJSON
+	// Create a feature collection and add the LineString feature to it
+	fc := geojson.NewFeatureCollection()
+	fc.AddFeature(feature)
+
+	return fc
 }
 
 func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
@@ -164,38 +173,8 @@ func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, set
 }
 
 func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, startTime, endTime string) error {
-	ethAddress := c.Locals("ethereum_address").(string)
-	vehicles, err := queryIdentityAPIForVehicles(ethAddress, settings)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	if len(vehicles) == 0 {
-		return c.Status(fiber.StatusNotFound).SendString("No vehicles found")
-	}
-
-	var tokenID int64
-	var tripFound = false
-	for _, vehicle := range vehicles {
-		if tripFound {
-			break
-		}
-
-		trips, err := queryTripsAPI(vehicle.TokenID, settings, c)
-		if err != nil {
-			continue
-		}
-
-		for _, trip := range trips {
-			if trip.ID == tripID {
-				tokenID = vehicle.TokenID
-				tripFound = true
-				break
-			}
-		}
-	}
-
-	if !tripFound {
+	tokenID, exists := tripIDToTokenIDMap[tripID]
+	if !exists {
 		return c.Status(fiber.StatusNotFound).SendString("Trip not found")
 	}
 
@@ -206,6 +185,6 @@ func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 	}
 
 	// Convert the historical data to GeoJSON
-	geoJSON := convertToGeoJSON(locations)
+	geoJSON := convertToGeoJSON(locations, tripID, startTime, endTime)
 	return c.JSON(geoJSON)
 }
