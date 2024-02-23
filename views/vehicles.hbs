@@ -50,8 +50,14 @@
       color: #555;
     }
     #map {
-      height: 400px;
-      width: 100%;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      height: 60vh;
+      width: 80vw;
+      z-index: 1000;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
       display: none;
     }
   </style>
@@ -77,7 +83,20 @@
     window.onload = initializeMap;
 
     async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime) {
-      document.getElementById('map').style.display = 'block';
+      const mapContainer = document.getElementById('map');
+      mapContainer.style.display = 'block';
+
+      if (!window.map) {
+        console.log('Initializing map');
+        window.map = new mapboxgl.Map({
+          container: 'map',
+          style: 'mapbox://styles/mapbox/dark-v10',
+          center: [0, 0],
+          zoom: 9
+        });
+      } else {
+        window.map.resize();
+      }
 
       try {
         const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
@@ -94,9 +113,7 @@
         const geoJSON = await response.json();
         console.log("GeoJSON data:", geoJSON);
 
-        mapboxgl.accessToken = 'pk.eyJ1IjoiYmVua29jaGFub3dza2kiLCJhIjoiY2t6eDdlZzRnOGUyeTJvbXphdXdvZnJjZSJ9.S1WS1tkPKQnGt3A5Y72ZUA';
-
-        // Function to add data to map
+        // Add data to map
         const addDataToMap = () => {
           if (window.map.getSource('route')) {
             window.map.getSource('route').setData(geoJSON);
@@ -114,7 +131,7 @@
                 'line-cap': 'round'
               },
               paint: {
-                'line-color': '#888',
+                'line-color': '#FFFF00',
                 'line-width': 6
               }
             });
@@ -135,9 +152,6 @@
         console.error('Error fetching trip data:', error);
       }
     }
-
-
-
 
   </script>
 </head>
