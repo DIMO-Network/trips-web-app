@@ -69,7 +69,7 @@
       mapboxgl.accessToken = "pk.eyJ1IjoiYmVua29jaGFub3dza2kiLCJhIjoiY2t6eDdlZzRnOGUyeTJvbXphdXdvZnJjZSJ9.S1WS1tkPKQnGt3A5Y72ZUA";
       window.map = new mapboxgl.Map({
         container: 'map',
-        style: 'mapbox://styles/mapbox/streets-v11',
+        style: 'mapbox://styles/mapbox/dark-v10',
         center: [0, 0],
         zoom: 9
       });
@@ -77,13 +77,9 @@
     window.onload = initializeMap;
 
     async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime) {
+      document.getElementById('map').style.display = 'block';
+
       try {
-        // Debugging: Check if map instance exists and is a Mapbox map
-        if (window.map) {
-          console.log('Map instance exists:', window.map instanceof mapboxgl.Map);
-        } else {
-          console.log('Map instance does not exist');
-        }
         const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
         const response = await fetch(url, {
           headers: {
@@ -98,20 +94,10 @@
         const geoJSON = await response.json();
         console.log("GeoJSON data:", geoJSON);
 
-
         mapboxgl.accessToken = 'pk.eyJ1IjoiYmVua29jaGFub3dza2kiLCJhIjoiY2t6eDdlZzRnOGUyeTJvbXphdXdvZnJjZSJ9.S1WS1tkPKQnGt3A5Y72ZUA';
-        if (!window.map) {
-          console.log('Initializing map');
-          window.map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v11',
-            center: [0, 0],
-            zoom: 9
-          });
-        }
 
-        window.map.on('load', function() {
-          console.log('Map loaded');
+        // Function to add data to map
+        const addDataToMap = () => {
           if (window.map.getSource('route')) {
             window.map.getSource('route').setData(geoJSON);
           } else {
@@ -138,13 +124,18 @@
           geoJSON.features[0].geometry.coordinates.forEach(coord => bounds.extend(coord));
           window.map.fitBounds(bounds, { padding: 20 });
           console.log('Added source and layer to map');
+        };
 
-        });
-
+        if (window.map.isStyleLoaded()) {
+          addDataToMap();
+        } else {
+          window.map.once('load', addDataToMap);
+        }
       } catch (error) {
         console.error('Error fetching trip data:', error);
       }
     }
+
 
 
 
