@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>{{Title}}</title>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css" rel="stylesheet">
-  <script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js" defer></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js"></script>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -52,6 +52,7 @@
     #map {
       height: 400px;
       width: 100%;
+      display: none;
     }
   </style>
   <script>
@@ -63,8 +64,26 @@
         element.style.display = "none";
       }
     }
+
+    function initializeMap() {
+      mapboxgl.accessToken = "pk.eyJ1IjoiYmVua29jaGFub3dza2kiLCJhIjoiY2t6eDdlZzRnOGUyeTJvbXphdXdvZnJjZSJ9.S1WS1tkPKQnGt3A5Y72ZUA";
+      window.map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [0, 0],
+        zoom: 9
+      });
+    }
+    window.onload = initializeMap;
+
     async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime) {
       try {
+        // Debugging: Check if map instance exists and is a Mapbox map
+        if (window.map) {
+          console.log('Map instance exists:', window.map instanceof mapboxgl.Map);
+        } else {
+          console.log('Map instance does not exist');
+        }
         const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
         const response = await fetch(url, {
           headers: {
@@ -88,35 +107,41 @@
           });
         }
 
-        if (window.map.getSource('route')) {
-          window.map.getSource('route').setData(geoJSON);
-        } else {
-          window.map.addSource('route', {
-            type: 'geojson',
-            data: geoJSON
-          });
-          window.map.addLayer({
-            id: 'route',
-            type: 'line',
-            source: 'route',
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round'
-            },
-            paint: {
-              'line-color': '#888',
-              'line-width': 6
-            }
-          });
-        }
+        window.map.once('load', function() {
+          if (window.map.getSource('route')) {
+            window.map.getSource('route').setData(geoJSON);
+          } else {
+            window.map.addSource('route', {
+              type: 'geojson',
+              data: geoJSON
+            });
+            window.map.addLayer({
+              id: 'route',
+              type: 'line',
+              source: 'route',
+              layout: {
+                'line-join': 'round',
+                'line-cap': 'round'
+              },
+              paint: {
+                'line-color': '#888',
+                'line-width': 6
+              }
+            });
+          }
 
-        const bounds = new mapboxgl.LngLatBounds();
-        geoJSON.features[0].geometry.coordinates.forEach(coord => bounds.extend(coord));
-        window.map.fitBounds(bounds, { padding: 20 });
+          const bounds = new mapboxgl.LngLatBounds();
+          geoJSON.features[0].geometry.coordinates.forEach(coord => bounds.extend(coord));
+          window.map.fitBounds(bounds, { padding: 20 });
+        });
+
       } catch (error) {
         console.error('Error fetching trip data:', error);
       }
     }
+
+
+
   </script>
 </head>
 <body>
