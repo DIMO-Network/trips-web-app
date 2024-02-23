@@ -161,27 +161,6 @@ export default function Home() {
 		);
 	}
 
-	async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime) {
-		try {
-			const response = await fetch(`http://localhost:3003/api/trip/${tripID}`, {
-				method: 'GET',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				credentials: 'include',
-			});
-
-			if (!response.ok) {
-				throw new Error('Failed to fetch trip data');
-			}
-
-			const geoJSON = await response.json();
-			renderMap(geoJSON); // Function to render the map
-		} catch (error) {
-			console.error('Error fetching trip data:', error);
-		}
-	}
-
 
 	return (
 		<>
