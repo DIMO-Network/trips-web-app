@@ -24,6 +24,35 @@ import (
 	"time"
 )
 
+type Trip struct {
+	ID    string    `json:"id"`
+	Start TimeEntry `json:"start"`
+	End   TimeEntry `json:"end"`
+}
+
+type TimeEntry struct {
+	Time string `json:"time"`
+}
+
+type TripsResponse struct {
+	Trips []Trip `json:"trips"`
+}
+
+type HistoryResponse struct {
+	Hits struct {
+		Hits []struct {
+			Source struct {
+				Data LocationData `json:"data"`
+			} `json:"_source"`
+		} `json:"hits"`
+	} `json:"hits"`
+}
+
+type LocationData struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+}
+
 var cacheInstance = cache.New(cache.DefaultExpiration, 10*time.Minute)
 
 type ChallengeResponse struct {
@@ -53,6 +82,7 @@ type Vehicle struct {
 		} `json:"manufacturer"`
 	} `json:"aftermarketDevice"`
 	DeviceStatusEntries []DeviceDataEntry `json:"deviceStatusEntries"`
+	Trips               []Trip            `json:"trips"`
 }
 
 type RawDeviceStatus struct {
@@ -88,6 +118,182 @@ type DeviceDataEntry struct {
 }
 
 type DeviceStatusEntries []DeviceDataEntry
+
+func extractLocationData(historyData HistoryResponse) []LocationData {
+	var locations []LocationData
+	for _, hit := range historyData.Hits.Hits {
+		locData := LocationData{
+			Latitude:  hit.Source.Data.Latitude,
+			Longitude: hit.Source.Data.Longitude,
+		}
+		locations = append(locations, locData)
+	}
+	return locations
+}
+
+func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
+	var historyResponse HistoryResponse
+
+	sessionCookie := c.Cookies("session_id")
+	privilegeTokenKey := "privilegeToken_" + sessionCookie
+
+	// Retrieve the privilege token from the cache
+	token, found := cacheInstance.Get(privilegeTokenKey)
+	if !found {
+		return nil, errors.New("privilege token not found in cache")
+	}
+
+	ddUrl := fmt.Sprintf("%s/v1/vehicle/%d/history?start=%s&end=%s", settings.DeviceDataAPIBaseURL, tokenID, url.QueryEscape(startTime), url.QueryEscape(endTime))
+
+	req, err := http.NewRequest("GET", ddUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token.(string))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&historyResponse); err != nil {
+		return nil, err
+	}
+
+	locations := extractLocationData(historyResponse)
+	return locations, nil
+}
+
+func convertToGeoJSON(locations []LocationData) GeoJSONFeatureCollection {
+	var coordinates [][]float64
+	for _, loc := range locations {
+		coordinates = append(coordinates, []float64{loc.Longitude, loc.Latitude})
+	}
+
+	geoJSON := GeoJSONFeatureCollection{
+		Type: "FeatureCollection",
+		Features: []GeoJSONFeature{
+			{
+				Type: "Feature",
+				Geometry: GeoJSONGeometry{
+					Type:        "LineString",
+					Coordinates: coordinates,
+				},
+			},
+		},
+	}
+
+	return geoJSON
+}
+
+type GeoJSONFeatureCollection struct {
+	Type     string           `json:"type"`
+	Features []GeoJSONFeature `json:"features"`
+}
+
+type GeoJSONFeature struct {
+	Type     string          `json:"type"`
+	Geometry GeoJSONGeometry `json:"geometry"`
+}
+
+type GeoJSONGeometry struct {
+	Type        string      `json:"type"`
+	Coordinates [][]float64 `json:"coordinates"`
+}
+
+func queryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Trip, error) {
+	var tripsResponse TripsResponse
+
+	sessionCookie := c.Cookies("session_id")
+	privilegeTokenKey := "privilegeToken_" + sessionCookie
+
+	// Retrieve the privilege token from the cache
+	token, found := cacheInstance.Get(privilegeTokenKey)
+	if !found {
+		return nil, errors.New("privilege token not found in cache")
+	}
+
+	url := fmt.Sprintf("%s/vehicle/%d/trips", settings.TripsAPIBaseURL, tokenID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token.(string))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&tripsResponse); err != nil {
+		return nil, err
+	}
+
+	// Log each trip ID
+	for _, trip := range tripsResponse.Trips {
+		log.Info().Msgf("Trip ID: %s", trip.ID)
+	}
+
+	return tripsResponse.Trips, nil
+}
+
+func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID string) error {
+	ethAddress := c.Locals("ethereum_address").(string)
+
+	// Fetch vehicles associated with the Ethereum address
+	vehicles, err := queryIdentityAPIForVehicles(ethAddress, settings)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if len(vehicles) == 0 {
+		return c.Status(fiber.StatusNotFound).SendString("No vehicles found")
+	}
+
+	var tokenID int64
+	var startTime, endTime string
+	tripFound := false
+
+	for _, vehicle := range vehicles {
+		trips, err := queryTripsAPI(vehicle.TokenID, settings, c)
+		if err != nil {
+			continue
+		}
+
+		for _, trip := range trips {
+			if trip.ID == tripID {
+				tokenID = vehicle.TokenID
+				startTime = trip.Start.Time
+				endTime = trip.End.Time
+				tripFound = true
+				break
+			}
+		}
+
+		if tripFound {
+			break
+		}
+	}
+
+	if !tripFound {
+		return c.Status(fiber.StatusNotFound).SendString("Trip not found")
+	}
+
+	// Fetch historical data for the specific trip
+	locations, err := queryDeviceDataHistory(tokenID, startTime, endTime, settings, c)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch historical data: " + err.Error()})
+	}
+
+	// Convert the historical data to GeoJSON
+	geoJSON := convertToGeoJSON(locations)
+	return c.JSON(geoJSON)
+}
 
 func processRawDeviceStatus(rawDeviceStatus RawDeviceStatus) DeviceStatusEntries {
 	var entries DeviceStatusEntries
@@ -184,12 +390,21 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 	}
 
 	for i := range vehicles {
+		// fetch raw status
 		rawStatus, err := queryDeviceDataAPI(vehicles[i].TokenID, settings, c)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to get raw device status")
 			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Failed to get raw device status for vehicle with TokenID: %d", vehicles[i].TokenID))
 		}
 		vehicles[i].DeviceStatusEntries = processRawDeviceStatus(rawStatus)
+
+		// fetch trips for each vehicle
+		trips, err := queryTripsAPI(vehicles[i].TokenID, settings, c)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to get trips for vehicle")
+			continue
+		}
+		vehicles[i].Trips = trips
 	}
 
 	return c.Render("vehicles", fiber.Map{
@@ -550,6 +765,11 @@ func main() {
 
 	app.Post("/api/token_exchange", AuthMiddleware(), func(c *fiber.Ctx) error {
 		return HandleTokenExchange(c, &settings)
+	})
+
+	app.Get("/api/trip/:tripID", func(c *fiber.Ctx) error {
+		tripID := c.Params("tripID")
+		return handleMapDataForTrip(c, &settings, tripID)
 	})
 
 	app.Get("/", func(c *fiber.Ctx) error {

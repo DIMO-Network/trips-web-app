@@ -7,7 +7,6 @@ import WalletConnectProvider from '@walletconnect/web3-provider';
 import { ethers } from "ethers";
 
 
-
 export default function Home() {
 	const [, setIsNetworkSwitchHighlighted] = useState(false);
 	const [, setIsConnectHighlighted] = useState(false);
@@ -160,6 +159,27 @@ export default function Home() {
 				<p>Loading vehicles...</p>
 			</div>
 		);
+	}
+
+	async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime) {
+		try {
+			const response = await fetch(`http://localhost:3003/api/trip/${tripID}`, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				credentials: 'include',
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to fetch trip data');
+			}
+
+			const geoJSON = await response.json();
+			renderMap(geoJSON); // Function to render the map
+		} catch (error) {
+			console.error('Error fetching trip data:', error);
+		}
 	}
 
 

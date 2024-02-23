@@ -14,4 +14,5 @@ type Settings struct {
 	DeviceDataAPIBaseURL      string `yaml:"DEVICE_DATA_API_BASE_URL"`
 	Port                      string `yaml:"PORT"`
 	LogLevel                  string `yaml:"LOG_LEVEL"`
+	TripsAPIBaseURL           string `yaml:"TRIPS_API_BASE_URL"`
 }

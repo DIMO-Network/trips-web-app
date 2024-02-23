@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>{{Title}}</title>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js" defer></script>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -47,6 +49,10 @@
     p {
       color: #555;
     }
+    #map {
+      height: 400px;
+      width: 100%;
+    }
   </style>
   <script>
     function toggleDeviceStatus(id) {
@@ -55,6 +61,60 @@
         element.style.display = "block";
       } else {
         element.style.display = "none";
+      }
+    }
+    async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime) {
+      try {
+        const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
+        const response = await fetch(url, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch trip data');
+        }
+        const geoJSON = await response.json();
+
+        mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
+        if (!window.map) {
+          window.map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [0, 0],
+            zoom: 9
+          });
+        }
+
+        if (window.map.getSource('route')) {
+          window.map.getSource('route').setData(geoJSON);
+        } else {
+          window.map.addSource('route', {
+            type: 'geojson',
+            data: geoJSON
+          });
+          window.map.addLayer({
+            id: 'route',
+            type: 'line',
+            source: 'route',
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': '#888',
+              'line-width': 6
+            }
+          });
+        }
+
+        const bounds = new mapboxgl.LngLatBounds();
+        geoJSON.features[0].geometry.coordinates.forEach(coord => bounds.extend(coord));
+        window.map.fitBounds(bounds, { padding: 20 });
+      } catch (error) {
+        console.error('Error fetching trip data:', error);
       }
     }
   </script>
@@ -99,11 +159,25 @@
               {{/each}}
             </table>
           </div>
+          {{#if this.Trips}}
+            <ul>
+              {{#each this.Trips}}
+                <li>
+                  Trip ID: {{this.id}}
+                  <button onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.id}}', '{{this.start.time}}', '{{this.end.time}}')">View Map</button>
+                </li>
+              {{/each}}
+            </ul>
+          {{else}}
+            <p>No trips available for this vehicle.</p>
+          {{/if}}
         </td>
       </tr>
     {{/each}}
     </tbody>
   </table>
+
+  <div id="map"></div>
 {{else}}
   <p>No vehicles to display.</p>
 {{/if}}
