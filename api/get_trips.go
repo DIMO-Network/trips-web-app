@@ -58,7 +58,6 @@ type LocationData struct {
 }
 
 func queryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Trip, error) {
-	log.Info().Msg("queryTripsAPI function called")
 
 	var tripsResponse TripsResponse
 
@@ -67,8 +66,6 @@ func queryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 
 	// Retrieve the privilege token from the cache
 	token, found := CacheInstance.Get(privilegeTokenKey)
-
-	log.Info().Msgf("privilege token in cache now for trips api: %d", token)
 
 	if !found {
 		return nil, errors.New("privilege token not found in cache")
@@ -103,7 +100,6 @@ func queryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 }
 
 func queryDeviceDataHistory(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
-	log.Info().Msgf("queryDeviceDataHistory function called for TokenID: %d", tokenID)
 
 	var historyResponse HistoryResponse
 
@@ -112,8 +108,6 @@ func queryDeviceDataHistory(tokenID int64, settings *config.Settings, c *fiber.C
 
 	// Retrieve the privilege token from the cache
 	token, found := CacheInstance.Get(privilegeTokenKey)
-
-	log.Info().Msgf("privilege token in cache now for device history: %d", token)
 
 	if !found {
 		log.Info().Msgf("priv token not found in cache")
@@ -144,8 +138,6 @@ func queryDeviceDataHistory(tokenID int64, settings *config.Settings, c *fiber.C
 }
 
 func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, startTime, endTime string) error {
-	log.Info().Msgf("handleMapDataForTrip function called for TripID: %s", tripID)
-
 	tokenID, exists := tripIDToTokenIDMap[tripID]
 	if !exists {
 		return c.Status(fiber.StatusNotFound).SendString("Trip not found")
@@ -165,7 +157,7 @@ func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 
 	geoJSONData, err := json.Marshal(geoJSON)
 	if err != nil {
-		log.Error().Msgf("Error with geojson: %v", err)
+		log.Error().Msgf("Error with GeoJSON: %v", err)
 	} else {
 		log.Info().Msgf("GeoJSON data: %s", string(geoJSONData))
 	}
@@ -185,8 +177,6 @@ func extractLocationData(historyData HistoryResponse) []LocationData {
 }
 
 func convertToGeoJSON(locations []LocationData, tripID string, tripStart string, tripEnd string) *geojson.FeatureCollection {
-	log.Info().Msg("convertToGeoJSON function called")
-
 	coords := make([][]float64, 0, len(locations))
 
 	for _, loc := range locations {

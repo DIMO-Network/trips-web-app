@@ -83,7 +83,6 @@ func main() {
 	})
 
 	app.Get("/api/trip/:tripID", func(c *fiber.Ctx) error {
-		log.Info().Msg("is this even being called")
 		tripID := c.Params("tripID")
 		startTime := c.Query("start")
 		endTime := c.Query("end")
