@@ -40,7 +40,7 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 	log.Info().Msgf("JWT being sent: %s", idToken)
 
 	nftContractAddress := "0xbA5738a18d83D41847dfFbDC6101d37C69c9B0cF"
-	privileges := []int{4}
+	privileges := []int{1, 4}
 	requestBody := map[string]interface{}{
 		"nftContractAddress": nftContractAddress,
 		"privileges":         privileges,

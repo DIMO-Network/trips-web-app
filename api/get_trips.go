@@ -8,7 +8,9 @@ import (
 	geojson "github.com/paulmach/go.geojson"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+	"io"
 	"net/http"
+	"net/url"
 )
 
 type Trip struct {
@@ -99,7 +101,7 @@ func queryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 	return tripsResponse.Trips, nil
 }
 
-func queryDeviceDataHistory(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
+func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
 
 	var historyResponse HistoryResponse
 
@@ -114,7 +116,7 @@ func queryDeviceDataHistory(tokenID int64, settings *config.Settings, c *fiber.C
 		return nil, errors.New("privilege token not found in cache")
 	}
 
-	ddUrl := fmt.Sprintf("%s/vehicle/%d/history", settings.DeviceDataAPIBaseURL, tokenID)
+	ddUrl := fmt.Sprintf("%s/vehicle/%d/history?startDate=%s&endDate=%s", settings.DeviceDataAPIBaseURL, tokenID, url.QueryEscape(startTime), url.QueryEscape(endTime))
 
 	req, err := http.NewRequest("GET", ddUrl, nil)
 	if err != nil {
@@ -128,8 +130,30 @@ func queryDeviceDataHistory(tokenID int64, settings *config.Settings, c *fiber.C
 		return nil, err
 	}
 	defer resp.Body.Close()
+	/*
 
-	if err := json.NewDecoder(resp.Body).Decode(&historyResponse); err != nil {
+
+		if err := json.NewDecoder(resp.Body).Decode(&historyResponse); err != nil {
+			return nil, err
+		}
+
+		locations := extractLocationData(historyResponse)
+		return locations, nil
+
+
+	*/
+
+	// Read the raw response body
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Log the raw response body
+	log.Info().Msgf("Raw response body: %s", string(responseBody))
+
+	err = json.Unmarshal(responseBody, &historyResponse)
+	if err != nil {
 		return nil, err
 	}
 
@@ -146,7 +170,7 @@ func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 	log.Info().Msgf("HandleMapDataForTrip: TripID: %s, StartTime: %s, EndTime: %s, TokenID: %d", tripID, startTime, endTime, tokenID)
 
 	// Fetch historical data for the specific trip
-	locations, err := queryDeviceDataHistory(tokenID, settings, c)
+	locations, err := queryDeviceDataHistory(tokenID, startTime, endTime, settings, c)
 
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch historical data: " + err.Error()})
