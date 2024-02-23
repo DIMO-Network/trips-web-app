@@ -242,10 +242,8 @@ func queryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 	return tripsResponse.Trips, nil
 }
 
-func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID string) error {
+func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, startTime, endTime string) error {
 	ethAddress := c.Locals("ethereum_address").(string)
-
-	// Fetch vehicles associated with the Ethereum address
 	vehicles, err := queryIdentityAPIForVehicles(ethAddress, settings)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
@@ -256,10 +254,12 @@ func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID string
 	}
 
 	var tokenID int64
-	var startTime, endTime string
-	tripFound := false
-
+	var tripFound = false
 	for _, vehicle := range vehicles {
+		if tripFound {
+			break
+		}
+
 		trips, err := queryTripsAPI(vehicle.TokenID, settings, c)
 		if err != nil {
 			continue
@@ -268,15 +268,9 @@ func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID string
 		for _, trip := range trips {
 			if trip.ID == tripID {
 				tokenID = vehicle.TokenID
-				startTime = trip.Start.Time
-				endTime = trip.End.Time
 				tripFound = true
 				break
 			}
-		}
-
-		if tripFound {
-			break
 		}
 	}
 
@@ -769,7 +763,11 @@ func main() {
 
 	app.Get("/api/trip/:tripID", func(c *fiber.Ctx) error {
 		tripID := c.Params("tripID")
-		return handleMapDataForTrip(c, &settings, tripID)
+
+		startTime := c.Query("start")
+		endTime := c.Query("end")
+
+		return handleMapDataForTrip(c, &settings, tripID, startTime, endTime)
 	})
 
 	app.Get("/", func(c *fiber.Ctx) error {

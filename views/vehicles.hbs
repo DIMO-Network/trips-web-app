@@ -162,9 +162,9 @@
           {{#if this.Trips}}
             <ul>
               {{#each this.Trips}}
-                <li>
-                  Trip ID: {{this.id}}
-                  <button onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.id}}', '{{this.start.time}}', '{{this.end.time}}')">View Map</button>
+                <li style="display: flex; align-items: center; justify-content: space-between;">
+                  <span>Trip ID: {{this.id}}</span>
+                  <button onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.id}}', '{{this.start.time}}', '{{this.end.time}}')" style="margin-left: 10px;">View Map</button>
                 </li>
               {{/each}}
             </ul>
