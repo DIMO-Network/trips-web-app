@@ -7,7 +7,6 @@ import WalletConnectProvider from '@walletconnect/web3-provider';
 import { ethers } from "ethers";
 
 
-
 export default function Home() {
 	const [, setIsNetworkSwitchHighlighted] = useState(false);
 	const [, setIsConnectHighlighted] = useState(false);
