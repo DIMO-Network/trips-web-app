@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
-	"time"
 )
 
 type ChallengeResponse struct {

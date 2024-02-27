@@ -3,15 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"sort"
+
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
 	geojson "github.com/paulmach/go.geojson"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
-	"io"
-	"net/http"
-	"net/url"
-	"sort"
 )
 
 type Trip struct {
@@ -90,9 +91,9 @@ func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, set
 		return nil, errors.New("privilege token not found in cache")
 	}
 
-	ddUrl := fmt.Sprintf("%s/vehicle/%d/history?startDate=%s&endDate=%s", settings.DeviceDataAPIBaseURL, tokenID, url.QueryEscape(startTime), url.QueryEscape(endTime))
+	ddURL := fmt.Sprintf("%s/vehicle/%d/history?startDate=%s&endDate=%s", settings.DeviceDataAPIURL, tokenID, url.QueryEscape(startTime), url.QueryEscape(endTime))
 
-	req, err := http.NewRequest("GET", ddUrl, nil)
+	req, err := http.NewRequest("GET", ddURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -161,15 +162,15 @@ func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 }
 
 func extractLocationData(hits []interface{}) []LocationData {
-	var locations []LocationData
-	for _, hit := range hits {
+	locations := make([]LocationData, len(hits))
+	for i, hit := range hits {
 		hitMap := hit.(map[string]interface{})
 		data := hitMap["_source"].(map[string]interface{})["data"].(map[string]interface{})
 		locData := LocationData{
 			Latitude:  data["latitude"].(float64),
 			Longitude: data["longitude"].(float64),
 		}
-		locations = append(locations, locData)
+		locations[i] = locData
 	}
 	return locations
 }

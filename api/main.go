@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/DIMO-Network/shared"
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
@@ -11,8 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"os"
-	"time"
 )
 
 var CacheInstance = cache.New(cache.DefaultExpiration, 10*time.Minute)
@@ -57,13 +58,15 @@ func main() {
 		ErrorHandler: ErrorHandler,
 		Views:        engine,
 	})
-
-	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:3000",
-		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH",
-		AllowHeaders:     "Accept, Content-Type, Content-Length, Authorization",
-		AllowCredentials: true,
-	}))
+	// allow cors for local dev
+	if settings.Environment == "local" {
+		app.Use(cors.New(cors.Config{
+			AllowOrigins:     "http://localhost:3000",
+			AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH",
+			AllowHeaders:     "Accept, Content-Type, Content-Length, Authorization",
+			AllowCredentials: true,
+		}))
+	}
 
 	// Protected route
 	app.Get("/api/vehicles/me", AuthMiddleware(), func(c *fiber.Ctx) error {

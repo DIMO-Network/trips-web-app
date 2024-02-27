@@ -3,12 +3,13 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io"
+	"net/http"
+
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/patrickmn/go-cache"
 	"github.com/rs/zerolog/log"
-	"io"
-	"net/http"
 )
 
 func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
@@ -21,7 +22,7 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 	if len(vehicles) == 0 {
 		return c.Status(fiber.StatusInternalServerError).SendString("No vehicles found")
 	}
-	tokenId := vehicles[0].TokenID
+	tokenID := vehicles[0].TokenID
 
 	log.Info().Msg("HandleTokenExchange called")
 
@@ -44,7 +45,7 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 	requestBody := map[string]interface{}{
 		"nftContractAddress": nftContractAddress,
 		"privileges":         privileges,
-		"tokenId":            tokenId,
+		"tokenID":            tokenID,
 	}
 
 	requestBodyBytes, err := json.Marshal(requestBody)

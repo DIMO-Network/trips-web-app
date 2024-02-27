@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
-	"net/http"
 )
 
 type DeviceDataEntry struct {
@@ -67,7 +68,7 @@ func queryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) 
 		return rawDeviceStatus, errors.New("privilege token not found in cache")
 	}
 
-	url := fmt.Sprintf("%s/vehicle/%d/status-raw", settings.DeviceDataAPIBaseURL, tokenID)
+	url := fmt.Sprintf("%s/vehicle/%d/status-raw", settings.DeviceDataAPIURL, tokenID)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

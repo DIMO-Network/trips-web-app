@@ -3,15 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dimo-network/trips-web-app/api/internal/config"
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/dimo-network/trips-web-app/api/internal/config"
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 )
 
 func HandleGenerateChallenge(c *fiber.Ctx, settings *config.Settings) error {
