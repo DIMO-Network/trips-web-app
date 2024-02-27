@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 )
 
 type Trip struct {
@@ -28,31 +29,6 @@ type TripsResponse struct {
 }
 
 var tripIDToTokenIDMap = make(map[string]int64)
-
-type GeoJSONFeatureCollection struct {
-	Type     string           `json:"type"`
-	Features []GeoJSONFeature `json:"features"`
-}
-
-type GeoJSONFeature struct {
-	Type     string          `json:"type"`
-	Geometry GeoJSONGeometry `json:"geometry"`
-}
-
-type GeoJSONGeometry struct {
-	Type        string      `json:"type"`
-	Coordinates [][]float64 `json:"coordinates"`
-}
-
-type HistoryResponse struct {
-	Hits struct {
-		Hits []struct {
-			Source struct {
-				Data LocationData `json:"data"`
-			} `json:"_source"`
-		} `json:"hits"`
-	} `json:"hits"`
-}
 
 type LocationData struct {
 	Latitude  float64 `json:"latitude"`
@@ -103,8 +79,6 @@ func queryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 
 func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
 
-	var historyResponse HistoryResponse
-
 	sessionCookie := c.Cookies("session_id")
 	privilegeTokenKey := "privilegeToken_" + sessionCookie
 
@@ -130,18 +104,6 @@ func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, set
 		return nil, err
 	}
 	defer resp.Body.Close()
-	/*
-
-
-		if err := json.NewDecoder(resp.Body).Decode(&historyResponse); err != nil {
-			return nil, err
-		}
-
-		locations := extractLocationData(historyResponse)
-		return locations, nil
-
-
-	*/
 
 	// Read the raw response body
 	responseBody, err := io.ReadAll(resp.Body)
@@ -149,15 +111,25 @@ func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, set
 		return nil, err
 	}
 
-	// Log the raw response body
-	log.Info().Msgf("Raw response body: %s", string(responseBody))
-
-	err = json.Unmarshal(responseBody, &historyResponse)
-	if err != nil {
+	// Dynamically parse the JSON response
+	var result map[string]interface{}
+	if err := json.Unmarshal(responseBody, &result); err != nil {
 		return nil, err
 	}
 
-	locations := extractLocationData(historyResponse)
+	// Extract the hits array
+	hits := result["hits"].(map[string]interface{})["hits"].([]interface{})
+
+	// Sort the hits based on the timestamp
+	sort.SliceStable(hits, func(i, j int) bool {
+		iTimestamp := hits[i].(map[string]interface{})["_source"].(map[string]interface{})["data"].(map[string]interface{})["timestamp"].(string)
+		jTimestamp := hits[j].(map[string]interface{})["_source"].(map[string]interface{})["data"].(map[string]interface{})["timestamp"].(string)
+		return iTimestamp < jTimestamp
+	})
+
+	// Convert sorted hits to LocationData
+	locations := extractLocationData(hits)
+
 	return locations, nil
 }
 
@@ -188,12 +160,14 @@ func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 	return c.JSON(geoJSON)
 }
 
-func extractLocationData(historyData HistoryResponse) []LocationData {
+func extractLocationData(hits []interface{}) []LocationData {
 	var locations []LocationData
-	for _, hit := range historyData.Hits.Hits {
+	for _, hit := range hits {
+		hitMap := hit.(map[string]interface{})
+		data := hitMap["_source"].(map[string]interface{})["data"].(map[string]interface{})
 		locData := LocationData{
-			Latitude:  hit.Source.Data.Latitude,
-			Longitude: hit.Source.Data.Longitude,
+			Latitude:  data["latitude"].(float64),
+			Longitude: data["longitude"].(float64),
 		}
 		locations = append(locations, locData)
 	}
