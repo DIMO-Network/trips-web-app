@@ -93,9 +93,17 @@ func main() {
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("can you see this")
 	})
+	app.Get("/health", healthCheck)
 
 	log.Info().Msgf("Starting server on port %s", settings.Port)
 	if err := app.Listen(":" + settings.Port); err != nil {
 		log.Fatal().Err(err).Msg("Server failed to start")
 	}
+}
+
+func healthCheck(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"code":    200,
+		"message": "server is up",
+	})
 }
