@@ -4,7 +4,6 @@ go 1.21
 
 require (
 	github.com/DIMO-Network/shared v0.10.4
-	github.com/gofiber/contrib/jwt v1.0.8
 	github.com/gofiber/fiber/v2 v2.52.0
 	github.com/gofiber/template/handlebars/v2 v2.1.7
 	github.com/golang-jwt/jwt/v5 v5.2.0
@@ -15,7 +14,6 @@ require (
 )
 
 require (
-	github.com/MicahParks/keyfunc/v2 v2.1.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/avast/retry-go/v4 v4.3.3 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.19.0 // indirect
