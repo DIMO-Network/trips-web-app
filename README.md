@@ -5,24 +5,27 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with
 
 ## Getting Started
 
-Make sure to have react and next installed. 
+The login view is built as Client Side code, based on example from wallet connect. This has been working with node v19.
+Once logged in, the rest of the application is Server Side Rendered from Go with handlebars for templating. Client code is used as needed. 
+
+### Build the login portion of the app
+
+`npm install`
 First, run the development server: 
 
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
 ```
 
-To run the backend server, navigate to directory where main.go is and run:
+rRun the backend server, which also hosts the SSR webapp, navigate to directory where main.go is and run:
 
 ```bash
 go run .
 ```
 
-The backend Fiber server will be hosted on http://localhost:3003
+The backend Go server will be hosted on http://localhost:3003
 
 ## Using the Application
 
