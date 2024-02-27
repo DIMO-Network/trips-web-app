@@ -24,7 +24,7 @@ export default function Home() {
 	const [showMyVehicles, setShowMyVehicles] = useState(false);
 
 
-	async function postForm(url, params) {
+	async function postForm(url: string, params: any) {
 		const formBody = [];
 		for (const property in params) {
 			const encodedKey = encodeURIComponent(property);
@@ -42,8 +42,15 @@ export default function Home() {
 		});
 	}
 
+	interface challengeParams {
+		client_id: string;
+		domain: string;
+		scope: string;
+		response_type: string;
+		address: string;
+	}
 
-	const fetchChallenge = async (address) => {
+	const fetchChallenge = async (address: string) => {
 		const response = await postForm('/auth/web3/generate_challenge', {
 			client_id: 'client_id',
 			domain: 'redirect_uri',
@@ -79,7 +86,7 @@ export default function Home() {
 
 		} catch (error) {
 			console.error('Error in token exchange:', error);
-			setErrorMessage(error.message);
+			// setErrorMessage(error);
 			throw error;
 		}
 	};
