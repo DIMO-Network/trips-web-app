@@ -1,0 +1,73 @@
+replicaCount: 2
+image:
+  repository: dimozone/trips-web-app
+  pullPolicy: IfNotPresent
+  tag:
+imagePullSecrets: []
+nameOverride: ''
+fullnameOverride: ''
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ''
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+env:
+  ENVIRONMENT: prod
+  PORT: '8080'
+  LOG_LEVEL: info
+  SERVICE_NAME: trips-web-app
+  CLIENT_ID: trips-signals-webapp
+  DOMAIN: https://sample-web-app.dimo.zone/oauth/callback
+  SCOPE: openid email
+  RESPONSE_TYPE: code
+  GRANT_TYPE: authorization_code
+  AUTH_URL: https://auth.dimo.zone/auth/web3/generate_challenge
+  SUBMIT_CHALLENGE_URL: https://auth.dimo.zone/auth/web3/submit_challenge
+  IDENTITY_API_URL: https://identity-api.dimo.zone/query
+  TOKEN_EXCHANGE_API_URL: https://token-exchange-api.dimo.zone/v1/tokens/exchange
+  DEVICE_DATA_API_URL: https://device-data-api.dimo.zone/v1
+service:
+  type: ClusterIP
+  ports:
+    http:
+      port: 8080
+      targetPort: http
+      protocol: TCP
+ports:
+  - name: http
+    containerPort: 8080
+    protocol: TCP
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/auth-tls-secret: ingress/cf-origin-ca
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: 'on'
+    nginx.ingress.kubernetes.io/enable-cors: 'false'
+    nginx.ingress.kubernetes.io/cors-allow-origin: '*'
+    external-dns.alpha.kubernetes.io/hostname: sample-web-app.dimo.zone
+  hosts:
+    - host: sample-web-app.dimo.zone
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+resources:
+  limits:
+    cpu: 250m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podDisruptionBudget:
+  minAvailable: 1

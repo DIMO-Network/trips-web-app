@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/DIMO-Network/shared"
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
@@ -11,8 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"os"
-	"time"
 )
 
 var CacheInstance = cache.New(cache.DefaultExpiration, 10*time.Minute)
@@ -57,13 +58,15 @@ func main() {
 		ErrorHandler: ErrorHandler,
 		Views:        engine,
 	})
-
-	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:3000",
-		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH",
-		AllowHeaders:     "Accept, Content-Type, Content-Length, Authorization",
-		AllowCredentials: true,
-	}))
+	// allow cors for local dev
+	if settings.Environment == "local" {
+		app.Use(cors.New(cors.Config{
+			AllowOrigins:     "http://localhost:3000",
+			AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH",
+			AllowHeaders:     "Accept, Content-Type, Content-Length, Authorization",
+			AllowCredentials: true,
+		}))
+	}
 
 	// Protected route
 	app.Get("/api/vehicles/me", AuthMiddleware(), func(c *fiber.Ctx) error {
@@ -90,12 +93,27 @@ func main() {
 		return handleMapDataForTrip(c, &settings, tripID, startTime, endTime)
 	})
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("can you see this")
-	})
+	// host the compiled frontend for the web3 login, which should be built to the dist folder
+	if settings.Environment != "local" {
+		staticConfig := fiber.Static{
+			Compress: true,
+			MaxAge:   0,
+			Index:    "index.html",
+		}
+		app.Static("/", "./dist", staticConfig)
+	}
+
+	app.Get("/health", healthCheck)
 
 	log.Info().Msgf("Starting server on port %s", settings.Port)
 	if err := app.Listen(":" + settings.Port); err != nil {
 		log.Fatal().Err(err).Msg("Server failed to start")
 	}
+}
+
+func healthCheck(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"code":    200,
+		"message": "server is up",
+	})
 }

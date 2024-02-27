@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
-	"io"
-	"net/http"
 )
 
 type GraphQLRequest struct {

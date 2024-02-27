@@ -1,0 +1,43 @@
+name: gotest
+
+on:
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  tests:
+    runs-on: [self-hosted, linux]
+
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21.x
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get dependencies
+        working-directory: ./api
+        run: |
+          go get -v -t ./...
+          go install gotest.tools/gotestsum@latest
+
+      - name: modVerify
+        working-directory: ./api
+        run: go mod verify
+
+      - name: modTidy
+        working-directory: ./api
+        run: go mod tidy
+
+      - name: Run Tests with go testsum
+        working-directory: ./api
+        run: gotestsum --format pkgname --jsonfile test.json
+
+      - name: Annotate tests
+        if: always()
+        uses: guyarb/golang-test-annotations@v0.6.0
+        with:
+          test-results: test.json
+          working-directory: ./api

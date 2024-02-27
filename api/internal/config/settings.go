@@ -11,8 +11,9 @@ type Settings struct {
 	IdentityAPIURL            string `yaml:"IDENTITY_API_URL"`
 	TokenExchangeJWTKeySetURL string `yaml:"TOKEN_EXCHANGE_JWK_KEY_SET_URL"`
 	TokenExchangeAPIURL       string `yaml:"TOKEN_EXCHANGE_API_URL"`
-	DeviceDataAPIBaseURL      string `yaml:"DEVICE_DATA_API_BASE_URL"`
+	DeviceDataAPIURL          string `yaml:"DEVICE_DATA_API_URL"`
 	Port                      string `yaml:"PORT"`
 	LogLevel                  string `yaml:"LOG_LEVEL"`
+	Environment               string `yaml:"ENVIRONMENT"`
 	TripsAPIBaseURL           string `yaml:"TRIPS_API_BASE_URL"`
 }
