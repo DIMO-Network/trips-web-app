@@ -7,33 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
 	"net/http"
-	"reflect"
 )
-
-type RawDeviceStatus struct {
-	DTC                       map[string]interface{} `json:"dtc"`
-	MAF                       map[string]interface{} `json:"maf"`
-	VIN                       map[string]interface{} `json:"vin"`
-	Cell                      map[string]interface{} `json:"cell"`
-	HDOP                      map[string]interface{} `json:"hdop"`
-	NSAT                      map[string]interface{} `json:"nsat"`
-	WiFi                      map[string]interface{} `json:"wifi"`
-	Speed                     map[string]interface{} `json:"speed"`
-	Device                    map[string]interface{} `json:"device"`
-	RunTime                   map[string]interface{} `json:"runTime"`
-	Altitude                  map[string]interface{} `json:"altitude"`
-	Timestamp                 map[string]interface{} `json:"timestamp"`
-	EngineLoad                map[string]interface{} `json:"engineLoad"`
-	IntakeTemp                map[string]interface{} `json:"intakeTemp"`
-	CoolantTemp               map[string]interface{} `json:"coolantTemp"`
-	EngineSpeed               map[string]interface{} `json:"engineSpeed"`
-	ThrottlePosition          map[string]interface{} `json:"throttlePosition"`
-	LongTermFuelTrim1         map[string]interface{} `json:"longTermFuelTrim1"`
-	BarometricPressure        map[string]interface{} `json:"barometricPressure"`
-	ShortTermFuelTrim1        map[string]interface{} `json:"shortTermFuelTrim1"`
-	AcceleratorPedalPositionD map[string]interface{} `json:"acceleratorPedalPositionD"`
-	AcceleratorPedalPositionE map[string]interface{} `json:"acceleratorPedalPositionE"`
-}
 
 type DeviceDataEntry struct {
 	SignalName string
@@ -44,17 +18,12 @@ type DeviceDataEntry struct {
 
 type DeviceStatusEntries []DeviceDataEntry
 
-func processRawDeviceStatus(rawDeviceStatus RawDeviceStatus) DeviceStatusEntries {
+func processRawDeviceStatus(rawDeviceStatus map[string]interface{}) DeviceStatusEntries {
 	var entries DeviceStatusEntries
 
-	v := reflect.ValueOf(rawDeviceStatus)
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		name := v.Type().Field(i).Name
-
-		if data, ok := field.Interface().(map[string]interface{}); ok {
+	for name, field := range rawDeviceStatus {
+		if data, ok := field.(map[string]interface{}); ok {
 			if value, exists := data["value"]; exists {
-				// Check if value is a nested map and process each entry
 				switch valueTyped := value.(type) {
 				case map[string]interface{}:
 					for k, v := range valueTyped {
@@ -86,8 +55,8 @@ func processRawDeviceStatus(rawDeviceStatus RawDeviceStatus) DeviceStatusEntries
 	return entries
 }
 
-func queryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) (RawDeviceStatus, error) {
-	var rawDeviceStatus RawDeviceStatus
+func queryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) (map[string]interface{}, error) {
+	var rawDeviceStatus map[string]interface{}
 
 	sessionCookie := c.Cookies("session_id")
 	privilegeTokenKey := "privilegeToken_" + sessionCookie
