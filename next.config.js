@@ -6,7 +6,9 @@ const nextConfig = {
 	},
 	typescript: {
 		ignoreBuildErrors: true
-	}
+	},
+	distDir: 'dist',
+	output: 'export',
 };
 
 module.exports = nextConfig;

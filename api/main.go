@@ -93,24 +93,22 @@ func main() {
 		return handleMapDataForTrip(c, &settings, tripID, startTime, endTime)
 	})
 
+	// host the compiled frontend for the web3 login, which should be built to the dist folder
 	if settings.Environment != "local" {
-		app.Get("/", loadStaticIndex)
+		staticConfig := fiber.Static{
+			Compress: true,
+			MaxAge:   0,
+			Index:    "index.html",
+		}
+		app.Static("/", "./dist", staticConfig)
 	}
+
 	app.Get("/health", healthCheck)
 
 	log.Info().Msgf("Starting server on port %s", settings.Port)
 	if err := app.Listen(":" + settings.Port); err != nil {
 		log.Fatal().Err(err).Msg("Server failed to start")
 	}
-}
-
-func loadStaticIndex(ctx *fiber.Ctx) error {
-	dat, err := os.ReadFile("dist/index.html")
-	if err != nil {
-		return err
-	}
-	ctx.Set("Content-Type", "text/html; charset=utf-8")
-	return ctx.Status(fiber.StatusOK).Send(dat)
 }
 
 func healthCheck(c *fiber.Ctx) error {
