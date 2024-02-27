@@ -5,6 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
+	"time"
 )
 
 type ChallengeResponse struct {
@@ -36,12 +37,22 @@ func ExtractEthereumAddressFromToken(tokenString string) (string, error) {
 
 func AuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Retrieve the session_id from the request cookie
 		sessionCookie := c.Cookies("session_id")
+		clearSessionCookie := func() {
+			c.Cookie(&fiber.Cookie{
+				Name:     "session_id",
+				Value:    "",
+				Expires:  time.Unix(0, 0),
+				HTTPOnly: true,
+			})
+		}
 
 		// Check if the session_id is in the cache
 		jwtToken, found := CacheInstance.Get(sessionCookie)
 		if !found {
+			//clear session cookie
+			clearSessionCookie()
+			// TODO: send back html prompt with button to redirect back to login screen
 			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 		}
 
