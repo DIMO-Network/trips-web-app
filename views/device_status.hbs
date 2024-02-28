@@ -35,6 +35,21 @@
     tr:hover {
       background-color: #ddd;
     }
+    .back-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .back-button:hover {
+      background-color: #367c39;
+    }
   </style>
 </head>
 <body>
@@ -59,6 +74,6 @@
   {{/each}}
   </tbody>
 </table>
-<a href="/devices/me">Back to Devices</a>
+<button class="back-button" onclick="window.location.href='/vehicles/me'">Back to My Vehicles</button>
 </body>
 </html>

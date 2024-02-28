@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"net/http"
 
 	"github.com/dimo-network/trips-web-app/api/internal/config"
@@ -69,6 +70,7 @@ func queryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) 
 	}
 
 	url := fmt.Sprintf("%s/vehicle/%d/status-raw", settings.DeviceDataAPIURL, tokenID)
+	log.Debug().Msgf("Request URL: %s", url)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

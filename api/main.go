@@ -63,7 +63,7 @@ func main() {
 	app.Use(cors.New())
 
 	// Protected route
-	app.Get("/api/vehicles/me", AuthMiddleware(), func(c *fiber.Ctx) error {
+	app.Get("/vehicles/me", AuthMiddleware(), func(c *fiber.Ctx) error {
 		return HandleGetVehicles(c, &settings)
 	})
 
@@ -83,9 +83,12 @@ func main() {
 				"error": "Failed to fetch device status",
 			})
 		}
+
+		log.Info().Msgf("Raw Device Status: %+v", rawDeviceStatus)
+
 		deviceStatus := processRawDeviceStatus(rawDeviceStatus)
 
-		return c.Render("deviceStatus", fiber.Map{
+		return c.Render("device_status", fiber.Map{
 			"TokenID":             tokenID,
 			"DeviceStatusEntries": deviceStatus,
 		})
@@ -108,7 +111,7 @@ func main() {
 			})
 		}
 
-		return c.Render("deviceTrips", fiber.Map{
+		return c.Render("device_trips", fiber.Map{
 			"TokenID": tokenID,
 			"Trips":   trips,
 		})
