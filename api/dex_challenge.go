@@ -15,8 +15,22 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+type ChallengeRequest struct {
+	Address string `json:"address"`
+}
+
+type SignatureRequest struct {
+	State     string `json:"state"`
+	Signature string `json:"signature"`
+}
+
 func HandleGenerateChallenge(c *fiber.Ctx, settings *config.Settings) error {
-	address := c.FormValue("address")
+	var challengeReq ChallengeRequest
+	if err := c.BodyParser(&challengeReq); err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid request body")
+	}
+
+	address := challengeReq.Address
 
 	formData := url.Values{}
 	formData.Add("client_id", settings.ClientID)
@@ -48,21 +62,27 @@ func HandleGenerateChallenge(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("State or Challenge incomplete from external service")
 	}
 
+	log.Info().Msgf("Response from generate challenge: %+v", apiResp)
+
 	return c.JSON(apiResp)
 }
 
 func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
-	state := c.FormValue("state")
-	signature := c.FormValue("signature")
+	var signatureReq SignatureRequest
+	if err := c.BodyParser(&signatureReq); err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid request body")
+	}
 
-	log.Info().Msgf("State: %s, Signature: %s", state, signature)
+	log.Info().Msgf("State: %s, Signature: %s", signatureReq.State, signatureReq.Signature)
 
 	formData := url.Values{}
 	formData.Add("client_id", settings.ClientID)
 	formData.Add("domain", settings.Domain)
 	formData.Add("grant_type", settings.GrantType)
-	formData.Add("state", state)
-	formData.Add("signature", signature)
+	formData.Add("state", signatureReq.State)
+	formData.Add("signature", signatureReq.Signature)
+
+	log.Info().Msgf("Response from submit challenge: %+v", formData)
 
 	encodedFormData := formData.Encode()
 	reqURL := settings.SubmitChallengeURL

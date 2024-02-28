@@ -113,9 +113,6 @@ export default function Home() {
 				setSignature(signedMessage); // Update the signature state
 
 				const verificationResponse = await postForm('/auth/web3/submit_challenge', {
-					client_id: 'client_id',
-					domain: 'redirect_uri',
-					grant_type: 'authorization_code',
 					state: challengeResponse.state,
 					signature: signedMessage,
 				});

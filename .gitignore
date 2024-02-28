@@ -40,3 +40,5 @@ api/api
 
 # build
 dist/
+
+/api/vendor

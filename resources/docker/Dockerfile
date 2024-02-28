@@ -5,14 +5,12 @@ RUN useradd -u 10001 dimo
 
 WORKDIR /go/src/github.com/dimo-network/trips-web-app/
 COPY /api /go/src/github.com/dimo-network/trips-web-app/
-COPY /app /go/src/github.com/dimo-network/trips-web-app/
+COPY /app-login /go/src/github.com/dimo-network/trips-web-app/
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOFLAGS=-mod=vendor
 ENV DIMO_API_BASEURL=/api/v1
-ENV DIMO_IDENTITY_API=https://identity-api.dimo.zone
-ENV DIMO_IDENTITY_DEV_API=https://identity-api.dev.dimo.zone
 
 RUN apt-get clean && apt-get update
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
