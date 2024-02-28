@@ -68,7 +68,7 @@ func main() {
 	})
 
 	// Device status route
-	app.Get("/device/:tokenid/status", func(c *fiber.Ctx) error {
+	app.Get("/vehicles/:tokenid/status", func(c *fiber.Ctx) error {
 		tokenID, err := strconv.ParseInt(c.Params("tokenid"), 10, 64)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -84,8 +84,6 @@ func main() {
 			})
 		}
 
-		log.Info().Msgf("Raw Device Status: %+v", rawDeviceStatus)
-
 		deviceStatus := processRawDeviceStatus(rawDeviceStatus)
 
 		return c.Render("device_status", fiber.Map{
@@ -95,7 +93,7 @@ func main() {
 	})
 
 	// Device trips route
-	app.Get("/device/:tokenid/trips", func(c *fiber.Ctx) error {
+	app.Get("/vehicles/:tokenid/trips", func(c *fiber.Ctx) error {
 		tokenID, err := strconv.ParseInt(c.Params("tokenid"), 10, 64)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
