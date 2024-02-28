@@ -11,7 +11,7 @@ AUTH_URL: https://auth.dimo.zone/auth/web3/generate_challenge
 SUBMIT_CHALLENGE_URL: https://auth.dimo.zone/auth/web3/submit_challenge
 IDENTITY_API_URL: https://identity-api.dimo.zone/query
 TOKEN_EXCHANGE_API_URL: https://token-exchange-api.dimo.zone/v1/tokens/exchange
-DEVICE_DATA_API_BASE_URL: https://device-data-api.dimo.zone/v1
+DEVICE_DATA_API_URL: https://device-data-api.dimo.zone/v1
 TRIPS_API_BASE_URL: https://trips-api.dimo.zone/v1
 
 
