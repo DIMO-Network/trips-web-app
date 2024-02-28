@@ -136,6 +136,13 @@
 
         // Add data to map
         const addDataToMap = () => {
+          if (!geoJSON || !geoJSON.features || !geoJSON.features.length || !geoJSON.features[0].geometry.coordinates.length) {
+            console.error('Invalid GeoJSON data', geoJSON);
+            alert("This trip doesn't have any location data to display.");
+
+            return;
+          }
+
           if (window.map.getSource('route')) {
             window.map.getSource('route').setData(geoJSON);
           } else {
@@ -159,9 +166,17 @@
           }
 
           const bounds = new mapboxgl.LngLatBounds();
-          geoJSON.features[0].geometry.coordinates.forEach(coord => bounds.extend(coord));
-          window.map.fitBounds(bounds, { padding: 20 });
-          console.log('Added source and layer to map');
+          geoJSON.features[0].geometry.coordinates.forEach(coord => {
+            if (coord.length >= 2) {
+              bounds.extend(coord);
+            }
+          });
+
+          if (!bounds.isEmpty()) {
+            window.map.fitBounds(bounds, { padding: 20 });
+          } else {
+            console.error('Cannot calculate bounds from GeoJSON data');
+          }
         };
 
         if (window.map.isStyleLoaded()) {
@@ -173,6 +188,8 @@
         console.error('Error fetching trip data:', error);
       }
     }
+
+
   </script>
 </head>
 <body>
