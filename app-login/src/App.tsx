@@ -16,31 +16,6 @@ class DIMODexMessage {
   }
 };
 
-const performTokenExchange = async () => {
-  try {
-    const response = await fetch('http://localhost:3003/api/token_exchange', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error('Failed to exchange token: ' + errorText);
-    }
-
-    const data = await response.json();
-    console.log('Exchanged token:', data);
-    return data.token; // Return the token
-
-  } catch (error) {
-    console.error('Error in token exchange:', error);
-    // setErrorMessage(error);
-    throw error;
-  }
-};
-
 function App() {
   const [status, setStatus] = useState<AuthenticationStatus>("unauthenticated");
   const account = useAccount();
