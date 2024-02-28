@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Device Status - {{TokenID}}</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f4f4;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #444444;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px;
+      text-align: left;
+    }
+    td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    tr:hover {
+      background-color: #ddd;
+    }
+  </style>
+</head>
+<body>
+<h1>Device Status for {{TokenID}}</h1>
+<table>
+  <thead>
+  <tr>
+    <th>Signal Name</th>
+    <th>Value</th>
+    <th>Timestamp</th>
+    <th>Source</th>
+  </tr>
+  </thead>
+  <tbody>
+  {{#each DeviceStatusEntries}}
+    <tr>
+      <td>{{this.SignalName}}</td>
+      <td>{{this.Value}}</td>
+      <td>{{this.Timestamp}}</td>
+      <td>{{this.Source}}</td>
+    </tr>
+  {{/each}}
+  </tbody>
+</table>
+<a href="/devices/me">Back to Devices</a>
+</body>
+</html>

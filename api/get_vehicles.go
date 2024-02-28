@@ -3,13 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
-	"github.com/rs/zerolog/log"
 )
 
 type GraphQLRequest struct {
@@ -43,24 +41,6 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 	vehicles, err := queryIdentityAPIForVehicles(ethAddress, settings)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
-	}
-
-	for i := range vehicles {
-		// fetch raw status
-		rawStatus, err := queryDeviceDataAPI(vehicles[i].TokenID, settings, c)
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to get raw device status")
-			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Failed to get raw device status for vehicle with TokenID: %d", vehicles[i].TokenID))
-		}
-		vehicles[i].DeviceStatusEntries = processRawDeviceStatus(rawStatus)
-
-		// fetch trips for each vehicle
-		trips, err := queryTripsAPI(vehicles[i].TokenID, settings, c)
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to get trips for vehicle")
-			continue
-		}
-		vehicles[i].Trips = trips
 	}
 
 	return c.Render("vehicles", fiber.Map{

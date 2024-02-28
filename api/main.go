@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/DIMO-Network/shared"
@@ -64,6 +65,53 @@ func main() {
 	// Protected route
 	app.Get("/api/vehicles/me", AuthMiddleware(), func(c *fiber.Ctx) error {
 		return HandleGetVehicles(c, &settings)
+	})
+
+	// Device status route
+	app.Get("/device/:tokenid/status", func(c *fiber.Ctx) error {
+		tokenID, err := strconv.ParseInt(c.Params("tokenid"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid token ID",
+			})
+		}
+
+		rawDeviceStatus, err := queryDeviceDataAPI(tokenID, &settings, c)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to query device data API")
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to fetch device status",
+			})
+		}
+		deviceStatus := processRawDeviceStatus(rawDeviceStatus)
+
+		return c.Render("deviceStatus", fiber.Map{
+			"TokenID":             tokenID,
+			"DeviceStatusEntries": deviceStatus,
+		})
+	})
+
+	// Device trips route
+	app.Get("/device/:tokenid/trips", func(c *fiber.Ctx) error {
+		tokenID, err := strconv.ParseInt(c.Params("tokenid"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid token ID",
+			})
+		}
+
+		trips, err := queryTripsAPI(tokenID, &settings, c)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to query trips API")
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to fetch trips",
+			})
+		}
+
+		return c.Render("deviceTrips", fiber.Map{
+			"TokenID": tokenID,
+			"Trips":   trips,
+		})
 	})
 
 	// Public Routes
