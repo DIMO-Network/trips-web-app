@@ -24,10 +24,34 @@
     li {
       margin-bottom: 10px;
     }
+    .container {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .trip-list {
+      flex: 1;
+      margin-right: 10px;
+    }
+    .lighter-teal {
+      background-color: #8ED6D9;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 10px 20px;
+    }
+
+    .lighter-teal:hover {
+      background-color: #6BC3C6;
+    }
+
     #map {
       height: 60vh;
-      width: 80vw;
-      margin-top: 20px;
+      flex: 2;
+      margin-right: 10px; /* Adjust as needed to create space between the map and the button */
+      margin-top: 50px; /* Add margin to the top */
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
     }
     .back-button {
@@ -35,7 +59,7 @@
       top: 20px;
       right: 20px;
       padding: 10px 20px;
-      background-color: #4CAF50;
+      background-color: #00CED1;
       color: white;
       border: none;
       border-radius: 5px;
@@ -43,7 +67,7 @@
       font-size: 16px;
     }
     .back-button:hover {
-      background-color: #367c39;
+      background-color: #00CED1;
     }
   </style>
   <script>
@@ -193,20 +217,24 @@
   </script>
 </head>
 <body>
-<h1>Trips for {{TokenID}}</h1>
-<ul>
-  {{#each Trips}}
-    <li>
-      Trip ID: {{this.ID}}
-      <div>Start Time: <span class="formatted-start-time" data-time="{{this.Start.Time}}"></span></div>
-      <div>End Time: <span class="formatted-end-time" data-time="{{this.End.Time}}"></span></div>
-      <div>When: <span class="timeago" datetime="{{this.End.Time}}"></span></div>
-      <div>Duration: <span class="trip-duration" data-start="{{this.Start.Time}}" data-end="{{this.End.Time}}"></span></div>
-      <button onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">View Map</button>
-    </li>
-  {{/each}}
-</ul>
-<div id="map"></div>
-<button class="back-button" onclick="window.location.href='/vehicles/me'">Back to My Vehicles</button>
+<div class="container">
+  <div class="trip-list">
+    <h1>Trips for {{TokenID}}</h1>
+    <ul>
+      {{#each Trips}}
+        <li>
+          Trip ID: {{this.ID}}
+          <div>Start Time: <span class="formatted-start-time" data-time="{{this.Start.Time}}"></span></div>
+          <div>End Time: <span class="formatted-end-time" data-time="{{this.End.Time}}"></span></div>
+          <div>When: <span class="timeago" datetime="{{this.End.Time}}"></span></div>
+          <div>Duration: <span class="trip-duration" data-start="{{this.Start.Time}}" data-end="{{this.End.Time}}"></span></div>
+          <button class="lighter-teal" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">View Map</button>
+        </li>
+      {{/each}}
+    </ul>
+        <button class="back-button" onclick="window.location.href='/vehicles/me'">Back to My Vehicles</button>
+      </div>
+      <div id="map"></div>
+</div>
 </body>
 </html>
