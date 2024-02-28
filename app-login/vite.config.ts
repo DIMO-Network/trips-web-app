@@ -6,5 +6,6 @@ export default defineConfig({
   build: {
     target: 'esnext',
   },
+  envPrefix: 'DIMO',
   plugins: [react()],
 })
