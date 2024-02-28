@@ -69,13 +69,22 @@ func queryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 		return nil, err
 	}
 
-	// Log each trip ID
-	for _, trip := range tripsResponse.Trips {
+	sort.Slice(tripsResponse.Trips, func(i, j int) bool {
+		return tripsResponse.Trips[i].End.Time > tripsResponse.Trips[j].End.Time
+	})
+
+	// 20 latest trips
+	latestTrips := tripsResponse.Trips
+	if len(latestTrips) > 20 {
+		latestTrips = latestTrips[:20]
+	}
+
+	for _, trip := range latestTrips {
 		tripIDToTokenIDMap[trip.ID] = tokenID
 		log.Info().Msgf("Trip ID: %s", trip.ID)
 	}
 
-	return tripsResponse.Trips, nil
+	return latestTrips, nil
 }
 
 func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
