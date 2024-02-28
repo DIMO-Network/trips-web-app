@@ -5,6 +5,7 @@
   <title>Device Trips - {{TokenID}}</title>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/timeago.js@4.0.2/dist/timeago.min.js"></script>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -46,6 +47,51 @@
     }
   </style>
   <script>
+    function displayTripDurations() {
+      document.querySelectorAll('.trip-duration').forEach(function(element) {
+        const start = new Date(element.getAttribute('data-start'));
+        const end = new Date(element.getAttribute('data-end'));
+
+        console.log('Parsed Start:', start.toISOString());
+        console.log('Parsed End:', end.toISOString());
+
+        const durationMs = end - start;
+        const minutes = Math.floor(durationMs / 60000);
+        element.textContent = `${minutes} minutes`;
+      });
+    }
+
+    function updateTimeago() {
+      document.querySelectorAll('.timeago').forEach(function(element) {
+        const dateTime = element.getAttribute('datetime');
+        element.textContent = timeago.format(dateTime);
+      });
+    }
+
+    function formatDateTime() {
+      document.querySelectorAll('.formatted-start-time, .formatted-end-time').forEach(function(element) {
+        const dateTimeStr = element.getAttribute('data-time');
+        const dateTime = new Date(dateTimeStr);
+
+        const formattedTime = dateTime.toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        element.textContent = formattedTime;
+      });
+    }
+
+    window.addEventListener('load', function() {
+      initializeMap();
+      updateTimeago();
+      displayTripDurations();
+      formatDateTime();
+    });
+
     function initializeMap() {
       mapboxgl.accessToken = "pk.eyJ1IjoiYmVua29jaGFub3dza2kiLCJhIjoiY2t6eDdlZzRnOGUyeTJvbXphdXdvZnJjZSJ9.S1WS1tkPKQnGt3A5Y72ZUA";
       window.map = new mapboxgl.Map({
@@ -135,6 +181,10 @@
   {{#each Trips}}
     <li>
       Trip ID: {{this.ID}}
+      <div>Start Time: <span class="formatted-start-time" data-time="{{this.Start.Time}}"></span></div>
+      <div>End Time: <span class="formatted-end-time" data-time="{{this.End.Time}}"></span></div>
+      <div>When: <span class="timeago" datetime="{{this.End.Time}}"></span></div>
+      <div>Duration: <span class="trip-duration" data-start="{{this.Start.Time}}" data-end="{{this.End.Time}}"></span></div>
       <button onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">View Map</button>
     </li>
   {{/each}}

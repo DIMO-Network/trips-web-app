@@ -86,7 +86,7 @@ func main() {
 
 		deviceStatus := processRawDeviceStatus(rawDeviceStatus)
 
-		return c.Render("device_status", fiber.Map{
+		return c.Render("vehicle_status", fiber.Map{
 			"TokenID":             tokenID,
 			"DeviceStatusEntries": deviceStatus,
 		})
@@ -109,7 +109,7 @@ func main() {
 			})
 		}
 
-		return c.Render("device_trips", fiber.Map{
+		return c.Render("vehicle_trips", fiber.Map{
 			"TokenID": tokenID,
 			"Trips":   trips,
 		})
