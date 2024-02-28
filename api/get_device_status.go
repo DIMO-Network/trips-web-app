@@ -3,8 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"net/http"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
