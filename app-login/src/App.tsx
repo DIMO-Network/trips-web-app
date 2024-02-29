@@ -2,7 +2,6 @@ import { AuthenticationStatus, ConnectButton } from '@rainbow-me/rainbowkit';
 import './App.css'
 import { useAccount } from 'wagmi';
 import { useEffect, useState } from 'react';
-import { SiweMessage } from 'siwe';
 import { RainbowKitProvider, createAuthenticationAdapter,
   RainbowKitAuthenticationProvider } from '@rainbow-me/rainbowkit';
 

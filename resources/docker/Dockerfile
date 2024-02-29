@@ -11,6 +11,7 @@ ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOFLAGS=-mod=vendor
 ENV DIMO_API_BASEURL=/api/v1
+ENV DIMO_PROJECT_ID=d16b9a51a03ecf7d3a617416144f70fb
 
 RUN apt-get clean && apt-get update
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -

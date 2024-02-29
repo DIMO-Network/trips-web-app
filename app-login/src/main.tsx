@@ -2,7 +2,7 @@ import './polyfill';
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
+import App from './App'
 import './index.css'
 import '@rainbow-me/rainbowkit/styles.css';
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
@@ -12,7 +12,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const config = getDefaultConfig({
   appName: 'Trips Web App',
-  projectId: 'd16b9a51a03ecf7d3a617416144f70fb',
+  projectId: import.meta.env.DIMO_PROJECT_ID,
   chains: [mainnet, polygon, optimism, arbitrum, base, zora],
 })
 
