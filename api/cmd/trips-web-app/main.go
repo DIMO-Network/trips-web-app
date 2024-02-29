@@ -132,6 +132,8 @@ func main() {
 		return controllers.HandleMapDataForTrip(c, &settings, tripID, startTime, endTime)
 	})
 
+	app.Get("/", loadStaticIndex)
+
 	// host the compiled frontend for the web3 login, which should be built to the dist folder
 	staticConfig := fiber.Static{
 		Compress: true,
@@ -153,4 +155,13 @@ func healthCheck(c *fiber.Ctx) error {
 		"code":    200,
 		"message": "server is up",
 	})
+}
+
+func loadStaticIndex(ctx *fiber.Ctx) error {
+	dat, err := os.ReadFile("dist/index.html")
+	if err != nil {
+		return err
+	}
+	ctx.Set("Content-Type", "text/html; charset=utf-8")
+	return ctx.Status(fiber.StatusOK).Send(dat)
 }
