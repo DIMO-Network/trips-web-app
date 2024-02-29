@@ -75,12 +75,13 @@ func RequestPriviledgeToken(c *fiber.Ctx, settings *config.Settings, tokenID int
 
 	var responseMap map[string]interface{}
 	if err := json.Unmarshal(respBody, &responseMap); err != nil {
-		log.Error().Err(err).Msg("Error processing response")
+		log.Error().Err(err).Str("body", string(respBody)).Msg("Error processing response")
 		return nil, fmt.Errorf("error processing response from token exchange API")
 	}
 
 	token, exists := responseMap["token"]
 	if !exists {
+		log.Error().Interface("response", responseMap).Msg("Token not found in response")
 		return nil, fmt.Errorf("token not found in response from token exchange API")
 	}
 
