@@ -124,7 +124,6 @@ func HandleSubmitChallenge(c *fiber.Ctx, settings *config.Settings) error {
 	cookie.Value = sessionID
 	cookie.Expires = time.Now().Add(2 * time.Hour)
 	cookie.HTTPOnly = true
-	cookie.Domain = settings.Domain
 
 	c.Cookie(cookie)
 
