@@ -18,7 +18,7 @@ RUN apt-get install -y nodejs
 RUN go mod download
 RUN go mod tidy
 RUN go mod vendor
-RUN make install
+##RUN make install
 RUN npm install && npm run build
 
 FROM busybox AS package
