@@ -23,7 +23,7 @@ jobs:
         id: tag
         uses: CumulusDS/get-yaml-paths-action@v0.1.1
         with:
-          file: charts/dimo-admin/values.yaml
+          file: charts/trips-web-app/values.yaml
           buildtag: image.tag
 
       - name: Update Image Version in the related HelmChart values.yaml
