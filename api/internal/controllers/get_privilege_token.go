@@ -36,8 +36,6 @@ func RequestPriviledgeToken(c *fiber.Ctx, settings *config.Settings, tokenID int
 	if !ok {
 		return nil, fmt.Errorf("JWT token value is not valid")
 	}
-	// temporary
-	log.Info().Msgf("privilege token being requested with following JWT: %s", accessToken)
 
 	privileges := []int{1, 4}
 	requestBody := map[string]interface{}{
@@ -70,8 +68,9 @@ func RequestPriviledgeToken(c *fiber.Ctx, settings *config.Settings, tokenID int
 	if err != nil {
 		return nil, fmt.Errorf("error reading response from token exchange API")
 	}
-	//temporary
-	log.Info().Msgf("token exchange request response: %s", string(respBody))
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("invalid response from token exchange server: %d,  %s", resp.StatusCode, string(respBody))
+	}
 
 	var responseMap map[string]interface{}
 	if err := json.Unmarshal(respBody, &responseMap); err != nil {
