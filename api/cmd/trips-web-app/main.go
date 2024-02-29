@@ -120,11 +120,6 @@ func main() {
 		return controllers.HandleSubmitChallenge(c, &settings)
 	})
 
-	// todo: remove this once implement inline priv token exchange
-	app.Get("/api/token_exchange", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
-		return controllers.HandleTokenExchange(c, &settings)
-	})
-
 	app.Get("/api/trip/:tripID", func(c *fiber.Ctx) error {
 		tripID := c.Params("tripID")
 		startTime := c.Query("start")

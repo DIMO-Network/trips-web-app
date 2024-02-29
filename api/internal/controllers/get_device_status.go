@@ -61,15 +61,10 @@ func ProcessRawDeviceStatus(rawDeviceStatus map[string]interface{}) DeviceStatus
 func QueryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) (map[string]interface{}, error) {
 	var rawDeviceStatus map[string]interface{}
 
-	sessionCookie := c.Cookies("session_id")
-	privilegeTokenKey := "privilegeToken_" + sessionCookie
+	privilegeToken, err := RequestPriviledgeToken(c, settings, tokenID)
 
-	// Retrieve the privilege token from the cache
-	token, found := CacheInstance.Get(privilegeTokenKey)
-	// todo if not found, request a new one & persist
-	// todo if JWT expired (parse it), request a new one & persist
-	if !found {
-		return rawDeviceStatus, errors.New("privilege token not found in cache")
+	if err != nil {
+		return rawDeviceStatus, errors.Wrap(err, "error getting privilege token")
 	}
 
 	url := fmt.Sprintf("%s/vehicle/%d/status-raw", settings.DeviceDataAPIURL, tokenID)
@@ -79,7 +74,7 @@ func QueryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) 
 	if err != nil {
 		return rawDeviceStatus, err
 	}
-	req.Header.Set("Authorization", "Bearer "+token.(string))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", *privilegeToken))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

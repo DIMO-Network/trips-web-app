@@ -40,14 +40,10 @@ func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 
 	var tripsResponse TripsResponse
 
-	sessionCookie := c.Cookies("session_id")
-	privilegeTokenKey := "privilegeToken_" + sessionCookie
+	privilegeToken, err := RequestPriviledgeToken(c, settings, tokenID)
 
-	// Retrieve the privilege token from the cache
-	token, found := CacheInstance.Get(privilegeTokenKey)
-
-	if !found {
-		return nil, errors.New("privilege token not found in cache")
+	if err != nil {
+		return []Trip{}, errors.Wrap(err, "error getting privilege token")
 	}
 
 	url := fmt.Sprintf("%s/vehicle/%d/trips", settings.TripsAPIBaseURL, tokenID)
@@ -56,7 +52,7 @@ func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+token.(string))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", *privilegeToken))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -89,15 +85,10 @@ func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 
 func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
 
-	sessionCookie := c.Cookies("session_id")
-	privilegeTokenKey := "privilegeToken_" + sessionCookie
+	privilegeToken, err := RequestPriviledgeToken(c, settings, tokenID)
 
-	// Retrieve the privilege token from the cache
-	token, found := CacheInstance.Get(privilegeTokenKey)
-
-	if !found {
-		log.Info().Msgf("priv token not found in cache")
-		return nil, errors.New("privilege token not found in cache")
+	if err != nil {
+		return []LocationData{}, errors.Wrap(err, "error getting privilege token")
 	}
 
 	ddURL := fmt.Sprintf("%s/vehicle/%d/history?startDate=%s&endDate=%s", settings.DeviceDataAPIURL, tokenID, url.QueryEscape(startTime), url.QueryEscape(endTime))
@@ -106,7 +97,7 @@ func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, set
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+token.(string))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", *privilegeToken))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

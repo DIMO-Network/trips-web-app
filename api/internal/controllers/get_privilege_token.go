@@ -3,6 +3,7 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -12,34 +13,31 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// todo: this should be handled within endpoints that need a Privilege Token. Refactor this out as helper and put inline with eg. device status endpoint
-func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
-
-	ethAddress := c.Locals("ethereum_address").(string)
-	vehicles, err := queryIdentityAPIForVehicles(ethAddress, settings)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to query vehicles")
-	}
-	if len(vehicles) == 0 {
-		return c.Status(fiber.StatusInternalServerError).SendString("No vehicles found")
-	}
-	tokenID := vehicles[0].TokenID
-
-	log.Info().Msg("HandleTokenExchange called")
-
+func RequestPriviledgeToken(c *fiber.Ctx, settings *config.Settings, tokenID int64) (*string, error) {
 	sessionCookie := c.Cookies("session_id")
+	privilegeTokenKey := fmt.Sprintf("privilegeToken_%s", sessionCookie)
+
+	privilegeToken, exists := CacheInstance.Get(privilegeTokenKey)
+
+	if exists {
+		privilegeTokenString, ok := privilegeToken.(string)
+		if !ok {
+			return nil, fmt.Errorf("privilege token value is not valid")
+		}
+		return &privilegeTokenString, nil
+	}
 
 	jwtToken, found := CacheInstance.Get(sessionCookie)
 	if !found {
-		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized: No session found")
+		return nil, fmt.Errorf("JWT token not found in cache")
 	}
 
-	idToken, ok := jwtToken.(string)
+	accessToken, ok := jwtToken.(string)
 	if !ok {
-		return c.Status(fiber.StatusInternalServerError).SendString("Internal Error: Token format is invalid")
+		return nil, fmt.Errorf("JWT token value is not valid")
 	}
 
-	log.Info().Msgf("JWT being sent: %s", idToken)
+	log.Info().Msgf("JWT being sent: %s", accessToken)
 
 	nftContractAddress := settings.PrivilegeNFTContractAddr
 	privileges := []int{1, 4}
@@ -51,47 +49,47 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 
 	requestBodyBytes, err := json.Marshal(requestBody)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error marshaling request body")
+		return nil, fmt.Errorf("error marshalling request body")
 	}
-
-	log.Info().Msgf("Request body being sent: %s", string(requestBodyBytes))
 
 	req, err := http.NewRequest("POST", settings.TokenExchangeAPIURL, bytes.NewBuffer(requestBodyBytes))
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error creating new request")
+		return nil, fmt.Errorf("error creating request to token exchange API")
 	}
 
-	req.Header.Set("Authorization", "Bearer "+idToken)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error sending request to token exchange API")
+		return nil, fmt.Errorf("error making request to token exchange API")
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error reading response from token exchange API")
+		return nil, fmt.Errorf("error reading response from token exchange API")
 	}
 
 	var responseMap map[string]interface{}
 	if err := json.Unmarshal(respBody, &responseMap); err != nil {
 		log.Error().Err(err).Msg("Error processing response")
-		return c.Status(fiber.StatusInternalServerError).SendString("Error processing response")
+		return nil, fmt.Errorf("error processing response from token exchange API")
 	}
 
 	token, exists := responseMap["token"]
 	if !exists {
-		return c.Status(fiber.StatusInternalServerError).SendString("Token not found in response from token exchange API")
+		return nil, fmt.Errorf("token not found in response from token exchange API")
 	}
 
-	// privilege token storage
-	privilegeTokenKey := "privilegeToken_" + sessionCookie
+	privilegeTokenString, ok := token.(string)
+	if !ok {
+		return nil, fmt.Errorf("token value is not valid")
+	}
+
 	CacheInstance.Set(privilegeTokenKey, token, cache.DefaultExpiration)
 
-	log.Info().Msgf("Token exchange successful: %s", token)
-	return c.JSON(fiber.Map{"token": token})
+	return &privilegeTokenString, nil
 }
