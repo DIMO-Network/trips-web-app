@@ -36,13 +36,12 @@ func RequestPriviledgeToken(c *fiber.Ctx, settings *config.Settings, tokenID int
 	if !ok {
 		return nil, fmt.Errorf("JWT token value is not valid")
 	}
+	// temporary
+	log.Info().Msgf("privilege token being requested with following JWT: %s", accessToken)
 
-	log.Info().Msgf("JWT being sent: %s", accessToken)
-
-	nftContractAddress := settings.PrivilegeNFTContractAddr
 	privileges := []int{1, 4}
 	requestBody := map[string]interface{}{
-		"nftContractAddress": nftContractAddress,
+		"nftContractAddress": settings.PrivilegeNFTContractAddr,
 		"privileges":         privileges,
 		"tokenID":            tokenID,
 	}
@@ -56,7 +55,6 @@ func RequestPriviledgeToken(c *fiber.Ctx, settings *config.Settings, tokenID int
 	if err != nil {
 		return nil, fmt.Errorf("error creating request to token exchange API")
 	}
-
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -72,6 +70,8 @@ func RequestPriviledgeToken(c *fiber.Ctx, settings *config.Settings, tokenID int
 	if err != nil {
 		return nil, fmt.Errorf("error reading response from token exchange API")
 	}
+	//temporary
+	log.Info().Msgf("token exchange request response: %s", string(respBody))
 
 	var responseMap map[string]interface{}
 	if err := json.Unmarshal(respBody, &responseMap); err != nil {
