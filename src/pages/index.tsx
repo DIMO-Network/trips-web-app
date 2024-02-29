@@ -51,7 +51,7 @@ export default function Home() {
 	}
 
 	const fetchChallenge = async (address: string) => {
-		const response = await postForm('/auth/web3/generate_challenge', {
+		const response = await postForm('http://localhost:3003/auth/web3/generate_challenge', {
 			client_id: 'client_id',
 			domain: 'redirect_uri',
 			scope: 'openid email',
@@ -67,7 +67,7 @@ export default function Home() {
 
 	const performTokenExchange = async () => {
 		try {
-			const response = await fetch('/api/token_exchange', {
+			const response = await fetch('http://localhost:3003/api/token_exchange', {
 				method: 'POST',
 				credentials: 'include',
 				headers: {
@@ -112,7 +112,10 @@ export default function Home() {
 				console.log('Signature:', signedMessage);
 				setSignature(signedMessage); // Update the signature state
 
-				const verificationResponse = await postForm('/auth/web3/submit_challenge', {
+				const verificationResponse = await postForm('http://localhost:3003/auth/web3/submit_challenge', {
+					client_id: 'client_id',
+					domain: 'redirect_uri',
+					grant_type: 'authorization_code',
 					state: challengeResponse.state,
 					signature: signedMessage,
 				});
@@ -120,7 +123,7 @@ export default function Home() {
 				if (verificationResponse.ok) {
 					const token = await performTokenExchange(); // Wait for token exchange
 					if (token) {
-						window.location.href = '/api/vehicles/me'; // Redirect after successful token exchange
+						window.location.href = 'http://localhost:3003/vehicles/me'; // Redirect after successful token exchange
 					}
 				} else {
 					throw new Error('Error submitting challenge');

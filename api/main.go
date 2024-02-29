@@ -60,7 +60,14 @@ func main() {
 		Views:        engine,
 	})
 
-	app.Use(cors.New())
+	if settings.Environment == "local" {
+		app.Use(cors.New(cors.Config{
+			AllowOrigins:     "http://localhost:3000",
+			AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH",
+			AllowHeaders:     "Accept, Content-Type, Content-Length, Authorization",
+			AllowCredentials: true,
+		}))
+	}
 
 	// Protected route
 	app.Get("/vehicles/me", AuthMiddleware(), func(c *fiber.Ctx) error {
@@ -123,7 +130,7 @@ func main() {
 		return HandleSubmitChallenge(c, &settings)
 	})
 
-	app.Get("/api/token_exchange", AuthMiddleware(), func(c *fiber.Ctx) error {
+	app.Post("/api/token_exchange", AuthMiddleware(), func(c *fiber.Ctx) error {
 		return HandleTokenExchange(c, &settings)
 	})
 
