@@ -66,6 +66,8 @@ func QueryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) 
 
 	// Retrieve the privilege token from the cache
 	token, found := CacheInstance.Get(privilegeTokenKey)
+	// todo if not found, request a new one & persist
+	// todo if JWT expired (parse it), request a new one & persist
 	if !found {
 		return rawDeviceStatus, errors.New("privilege token not found in cache")
 	}

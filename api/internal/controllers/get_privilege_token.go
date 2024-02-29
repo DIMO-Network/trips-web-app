@@ -12,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// todo: this should be handled within endpoints that need a Privilege Token. Refactor this out as helper and put inline with eg. device status endpoint
 func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 
 	ethAddress := c.Locals("ethereum_address").(string)
@@ -40,7 +41,7 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 
 	log.Info().Msgf("JWT being sent: %s", idToken)
 
-	nftContractAddress := "0xbA5738a18d83D41847dfFbDC6101d37C69c9B0cF"
+	nftContractAddress := settings.PrivilegeNFTContractAddr
 	privileges := []int{1, 4}
 	requestBody := map[string]interface{}{
 		"nftContractAddress": nftContractAddress,
