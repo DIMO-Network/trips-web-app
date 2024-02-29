@@ -78,7 +78,7 @@ function App() {
   useEffect(() => {
     if (status === 'authenticated') {
       // redirect to handlebars
-      window.location.href = `${import.meta.env.DIMO_API_BASEURL}/api/vehicles/me`;
+      window.location.href = `${import.meta.env.DIMO_API_BASEURL}/vehicles/me`;
     }
   }
   , [status]);
