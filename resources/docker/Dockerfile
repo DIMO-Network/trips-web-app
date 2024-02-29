@@ -11,7 +11,7 @@ COPY /views /go/src/github.com/dimo-network/trips-web-app/
 ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOFLAGS=-mod=vendor
-ENV DIMO_API_BASEURL=/
+ENV DIMO_API_BASEURL= 
 ENV DIMO_PROJECT_ID=d16b9a51a03ecf7d3a617416144f70fb
 
 RUN apt-get clean && apt-get update
