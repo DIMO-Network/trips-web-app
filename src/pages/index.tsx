@@ -186,16 +186,9 @@ export default function Home() {
 			<main className={styles.main}>
 				<div className={styles.wrapper}>
 					<div className={styles.containerCentered}>
-						<div onClick={onAccountConnected} className={styles.highlight}>
-							<w3m-button />
-						</div>
-						<div onClick={closeAll} className={styles.highlight}>
-							<w3m-network-button />
-						</div>
 						<button onClick={onAccountConnected} className={styles.signButton}>
-							Sign Message
+							Login to DIMO
 						</button>
-
 						{signature && (
 							<div className={styles.successBanner}>
 								<p>Message successfully signed! Signature:</p>
