@@ -59,6 +59,7 @@ func AuthMiddleware() fiber.Handler {
 			// TODO: send back html prompt with button to redirect back to login screen
 			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 		}
+		// check if main auth jwt token has expired here, if not show same render of session expired etc.
 
 		ethAddress, err := ExtractEthereumAddressFromToken(jwtToken.(string))
 		if err != nil {
