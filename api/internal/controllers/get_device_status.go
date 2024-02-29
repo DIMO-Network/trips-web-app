@@ -1,4 +1,4 @@
-package main
+package controllers
 
 import (
 	"encoding/json"
@@ -21,7 +21,7 @@ type DeviceDataEntry struct {
 
 type DeviceStatusEntries []DeviceDataEntry
 
-func processRawDeviceStatus(rawDeviceStatus map[string]interface{}) DeviceStatusEntries {
+func ProcessRawDeviceStatus(rawDeviceStatus map[string]interface{}) DeviceStatusEntries {
 	var entries DeviceStatusEntries
 
 	for name, field := range rawDeviceStatus {
@@ -58,7 +58,7 @@ func processRawDeviceStatus(rawDeviceStatus map[string]interface{}) DeviceStatus
 	return entries
 }
 
-func queryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) (map[string]interface{}, error) {
+func QueryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) (map[string]interface{}, error) {
 	var rawDeviceStatus map[string]interface{}
 
 	sessionCookie := c.Cookies("session_id")

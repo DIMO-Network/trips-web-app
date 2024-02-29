@@ -4,20 +4,17 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/DIMO-Network/shared"
 	"github.com/dimo-network/trips-web-app/api/internal/config"
+	"github.com/dimo-network/trips-web-app/api/internal/controllers"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/template/handlebars/v2"
-	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
-
-var CacheInstance = cache.New(cache.DefaultExpiration, 10*time.Minute)
 
 func ErrorHandler(ctx *fiber.Ctx, err error) error {
 	code := fiber.StatusInternalServerError
@@ -63,8 +60,8 @@ func main() {
 	app.Use(cors.New())
 
 	// Protected route
-	app.Get("/vehicles/me", AuthMiddleware(), func(c *fiber.Ctx) error {
-		return HandleGetVehicles(c, &settings)
+	app.Get("/vehicles/me", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
+		return controllers.HandleGetVehicles(c, &settings)
 	})
 
 	// Device status route
@@ -76,7 +73,7 @@ func main() {
 			})
 		}
 
-		rawDeviceStatus, err := queryDeviceDataAPI(tokenID, &settings, c)
+		rawDeviceStatus, err := controllers.QueryDeviceDataAPI(tokenID, &settings, c)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to query device data API")
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -84,7 +81,7 @@ func main() {
 			})
 		}
 
-		deviceStatus := processRawDeviceStatus(rawDeviceStatus)
+		deviceStatus := controllers.ProcessRawDeviceStatus(rawDeviceStatus)
 
 		return c.Render("vehicle_status", fiber.Map{
 			"TokenID":             tokenID,
@@ -101,7 +98,7 @@ func main() {
 			})
 		}
 
-		trips, err := queryTripsAPI(tokenID, &settings, c)
+		trips, err := controllers.QueryTripsAPI(tokenID, &settings, c)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to query trips API")
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -117,14 +114,14 @@ func main() {
 
 	// Public Routes
 	app.Post("/auth/web3/generate_challenge", func(c *fiber.Ctx) error {
-		return HandleGenerateChallenge(c, &settings)
+		return controllers.HandleGenerateChallenge(c, &settings)
 	})
 	app.Post("/auth/web3/submit_challenge", func(c *fiber.Ctx) error {
-		return HandleSubmitChallenge(c, &settings)
+		return controllers.HandleSubmitChallenge(c, &settings)
 	})
 
-	app.Get("/api/token_exchange", AuthMiddleware(), func(c *fiber.Ctx) error {
-		return HandleTokenExchange(c, &settings)
+	app.Get("/api/token_exchange", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
+		return controllers.HandleTokenExchange(c, &settings)
 	})
 
 	app.Get("/api/trip/:tripID", func(c *fiber.Ctx) error {
@@ -132,7 +129,7 @@ func main() {
 		startTime := c.Query("start")
 		endTime := c.Query("end")
 
-		return handleMapDataForTrip(c, &settings, tripID, startTime, endTime)
+		return controllers.HandleMapDataForTrip(c, &settings, tripID, startTime, endTime)
 	})
 
 	// host the compiled frontend for the web3 login, which should be built to the dist folder

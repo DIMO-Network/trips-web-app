@@ -1,4 +1,4 @@
-package main
+package controllers
 
 import (
 	"encoding/json"
@@ -29,14 +29,14 @@ type TripsResponse struct {
 	Trips []Trip `json:"trips"`
 }
 
-var tripIDToTokenIDMap = make(map[string]int64)
+var TripIDToTokenIDMap = make(map[string]int64)
 
 type LocationData struct {
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
 }
 
-func queryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Trip, error) {
+func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Trip, error) {
 
 	var tripsResponse TripsResponse
 
@@ -80,7 +80,7 @@ func queryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 	}
 
 	for _, trip := range latestTrips {
-		tripIDToTokenIDMap[trip.ID] = tokenID
+		TripIDToTokenIDMap[trip.ID] = tokenID
 		log.Info().Msgf("Trip ID: %s", trip.ID)
 	}
 
@@ -143,8 +143,8 @@ func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, set
 	return locations, nil
 }
 
-func handleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, startTime, endTime string) error {
-	tokenID, exists := tripIDToTokenIDMap[tripID]
+func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, startTime, endTime string) error {
+	tokenID, exists := TripIDToTokenIDMap[tripID]
 	if !exists {
 		return c.Status(fiber.StatusNotFound).SendString("Trip not found")
 	}

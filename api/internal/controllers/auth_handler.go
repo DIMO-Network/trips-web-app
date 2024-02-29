@@ -1,4 +1,4 @@
-package main
+package controllers
 
 import (
 	"fmt"
@@ -6,8 +6,11 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
+
+var CacheInstance = cache.New(cache.DefaultExpiration, 10*time.Minute)
 
 type ChallengeResponse struct {
 	State     string `json:"state"`
