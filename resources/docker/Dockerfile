@@ -6,7 +6,6 @@ RUN useradd -u 10001 dimo
 WORKDIR /go/src/github.com/dimo-network/trips-web-app/
 COPY /api /go/src/github.com/dimo-network/trips-web-app/
 COPY /app-login /go/src/github.com/dimo-network/trips-web-app/
-COPY /views /go/src/github.com/dimo-network/trips-web-app/
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux
@@ -33,6 +32,7 @@ COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /etc/passwd /etc/passwd
 COPY --from=build /go/src/github.com/dimo-network/trips-web-app/target/bin/trips-web-app .
 COPY --from=build /go/src/github.com/dimo-network/trips-web-app/dist /dist
+COPY --from=build /go/src/github.com/dimo-network/trips-web-app/api/views /views
 
 USER dimo
 

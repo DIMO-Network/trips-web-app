@@ -50,7 +50,7 @@ func main() {
 	}
 	zerolog.SetGlobalLevel(level)
 
-	engine := handlebars.New("../views", ".hbs")
+	engine := handlebars.New("./views", ".hbs")
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: ErrorHandler,
