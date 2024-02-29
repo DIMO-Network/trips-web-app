@@ -28,7 +28,7 @@ env:
   IDENTITY_API_URL: https://identity-api.dimo.zone/query
   TOKEN_EXCHANGE_API_URL: https://token-exchange-api.dimo.zone/v1/tokens/exchange
   DEVICE_DATA_API_URL: https://device-data-api.dimo.zone/v1
-  PRIVILEGE_NFT_CONTRACT_ADDR: 1.0638173814670853e+48
+  PRIVILEGE_NFT_CONTRACT_ADDR: '0xbA5738a18d83D41847dfFbDC6101d37C69c9B0cF'
 service:
   type: ClusterIP
   ports:
