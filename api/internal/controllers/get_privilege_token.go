@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
-	"github.com/patrickmn/go-cache"
 	"github.com/rs/zerolog/log"
 )
 
@@ -89,7 +89,7 @@ func RequestPriviledgeToken(c *fiber.Ctx, settings *config.Settings, tokenID int
 		return nil, fmt.Errorf("token value is not valid")
 	}
 
-	CacheInstance.Set(privilegeTokenKey, token, cache.DefaultExpiration)
+	CacheInstance.Set(privilegeTokenKey, token, time.Second*30)
 
 	return &privilegeTokenString, nil
 }

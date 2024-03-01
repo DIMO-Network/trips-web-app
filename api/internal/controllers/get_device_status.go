@@ -87,13 +87,13 @@ func QueryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) 
 	// Read the raw response body
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error().Msgf("Error reading response body: %v", err)
+		log.Error().Interface("response", resp).Msgf("Error reading response body: %v", err)
 		return rawDeviceStatus, err
 	}
 
 	// Dynamically parse the JSON response
 	if err := json.Unmarshal(responseBody, &rawDeviceStatus); err != nil {
-		log.Error().Msgf("Error parsing JSON response: %v", err)
+		log.Error().Str("body", string(responseBody)).Msgf("Error parsing JSON response: %v", err)
 		return rawDeviceStatus, err
 	}
 
