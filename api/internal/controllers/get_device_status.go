@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/rs/zerolog/log"
@@ -83,7 +84,16 @@ func QueryDeviceDataAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) 
 	}
 	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&rawDeviceStatus); err != nil {
+	// Read the raw response body
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error().Msgf("Error reading response body: %v", err)
+		return rawDeviceStatus, err
+	}
+
+	// Dynamically parse the JSON response
+	if err := json.Unmarshal(responseBody, &rawDeviceStatus); err != nil {
+		log.Error().Msgf("Error parsing JSON response: %v", err)
 		return rawDeviceStatus, err
 	}
 
