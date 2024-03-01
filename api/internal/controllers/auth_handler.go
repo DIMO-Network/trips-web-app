@@ -41,29 +41,22 @@ func ExtractEthereumAddressFromToken(tokenString string) (string, error) {
 
 func AuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// check if session_id cookie exists
 		sessionCookie := c.Cookies("session_id")
-		clearSessionCookie := func() {
-			c.Cookie(&fiber.Cookie{
-				Name:     "session_id",
-				Value:    "",
-				Expires:  time.Unix(0, 0),
-				HTTPOnly: true,
-			})
-		}
-
-		// Check if the session_id is in the cache
-		jwtToken, found := CacheInstance.Get(sessionCookie)
-		if !found {
-			//clear session cookie
-			clearSessionCookie()
-
+		if sessionCookie == "" {
 			return c.Render("session_expired", fiber.Map{})
 		}
-		// check if main auth jwt token has expired here, if not show same render of session expired etc.
 
+		// check if the session_id is in the cache
+		jwtToken, found := CacheInstance.Get(sessionCookie)
+		if !found {
+			return c.Render("session_expired", fiber.Map{})
+		}
+
+		// check if main auth jwt token has expired here, if not show same render of session expired etc.
 		ethAddress, err := ExtractEthereumAddressFromToken(jwtToken.(string))
 		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token: " + err.Error())
+			return c.Render("session_expired", fiber.Map{})
 		}
 
 		c.Locals("ethereum_address", ethAddress)

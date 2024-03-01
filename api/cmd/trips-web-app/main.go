@@ -65,7 +65,7 @@ func main() {
 	})
 
 	// Device status route
-	app.Get("/vehicles/:tokenid/status", func(c *fiber.Ctx) error {
+	app.Get("/vehicles/:tokenid/status", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
 		tokenID, err := strconv.ParseInt(c.Params("tokenid"), 10, 64)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -90,7 +90,7 @@ func main() {
 	})
 
 	// Device trips route
-	app.Get("/vehicles/:tokenid/trips", func(c *fiber.Ctx) error {
+	app.Get("/vehicles/:tokenid/trips", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
 		tokenID, err := strconv.ParseInt(c.Params("tokenid"), 10, 64)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -112,20 +112,20 @@ func main() {
 		})
 	})
 
+	app.Get("/api/trip/:tripID", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
+		tripID := c.Params("tripID")
+		startTime := c.Query("start")
+		endTime := c.Query("end")
+
+		return controllers.HandleMapDataForTrip(c, &settings, tripID, startTime, endTime)
+	})
+
 	// Public Routes
 	app.Post("/auth/web3/generate_challenge", func(c *fiber.Ctx) error {
 		return controllers.HandleGenerateChallenge(c, &settings)
 	})
 	app.Post("/auth/web3/submit_challenge", func(c *fiber.Ctx) error {
 		return controllers.HandleSubmitChallenge(c, &settings)
-	})
-
-	app.Get("/api/trip/:tripID", func(c *fiber.Ctx) error {
-		tripID := c.Params("tripID")
-		startTime := c.Query("start")
-		endTime := c.Query("end")
-
-		return controllers.HandleMapDataForTrip(c, &settings, tripID, startTime, endTime)
 	})
 
 	app.Get("/", loadStaticIndex)
