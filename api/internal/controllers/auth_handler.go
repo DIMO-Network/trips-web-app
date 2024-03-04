@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var CacheInstance = cache.New(cache.DefaultExpiration, 10*time.Minute)
+var CacheInstance = cache.New(cache.NoExpiration, 10*time.Hour)
 
 type ChallengeResponse struct {
 	State     string `json:"state"`
