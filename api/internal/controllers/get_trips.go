@@ -175,6 +175,11 @@ func extractLocationData(hits []interface{}) []LocationData {
 	for i, hit := range hits {
 		hitMap := hit.(map[string]interface{})
 		data := hitMap["_source"].(map[string]interface{})["data"].(map[string]interface{})
+
+		if data["latitude"] == nil || data["longitude"] == nil {
+			continue
+		}
+
 		locData := LocationData{
 			Latitude:  data["latitude"].(float64),
 			Longitude: data["longitude"].(float64),
