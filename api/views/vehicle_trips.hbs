@@ -47,11 +47,16 @@
       background-color: #6BC3C6;
     }
 
+    .active-trip {
+        background-color: #6BC3C6;
+        border: 2px solid #333333;
+    }
+
     #map {
       height: 60vh;
       flex: 2;
-      margin-right: 10px; /* Adjust as needed to create space between the map and the button */
-      margin-top: 50px; /* Add margin to the top */
+      margin-right: 10px;
+      margin-top: 50px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
     }
     .back-button {
@@ -71,7 +76,19 @@
     }
   </style>
   <script>
-    function displayTripDurations() {
+      window.addEventListener('load', function() {
+          initializeMap();
+          updateTimeago();
+          displayTripDurations();
+          formatDateTime();
+
+          const firstTripButton = document.querySelector('.trip-list li:first-child .lighter-teal');
+          if (firstTripButton) {
+              firstTripButton.click();
+          }
+      });
+
+      function displayTripDurations() {
       document.querySelectorAll('.trip-duration').forEach(function(element) {
         const start = new Date(element.getAttribute('data-start'));
         const end = new Date(element.getAttribute('data-end'));
@@ -127,7 +144,11 @@
     }
     window.onload = initializeMap;
 
-    async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime) {
+    async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime, tripElement) {
+
+      document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
+      tripElement.classList.add('active-trip');
+
       const mapContainer = document.getElementById('map');
       mapContainer.style.display = 'block';
 
@@ -157,6 +178,18 @@
         }
         const geoJSON = await response.json();
         console.log("GeoJSON data:", geoJSON);
+
+        const startPoint = geoJSON.features[0].geometry.coordinates[0];
+        const endPoint = geoJSON.features[0].geometry.coordinates[geoJSON.features[0].geometry.coordinates.length - 1];
+
+        new mapboxgl.Popup({ offset: 25 })
+                  .setLngLat(startPoint)
+                  .setHTML(`<h3>Start Time</h3><p>${new Date(startTime).toLocaleString()}</p>`)
+                  .addTo(map);
+        new mapboxgl.Popup({ offset: 25 })
+                  .setLngLat(endPoint)
+                  .setHTML(`<h3>End Time</h3><p>${new Date(endTime).toLocaleString()}</p>`)
+                  .addTo(map);
 
         // Add data to map
         const addDataToMap = () => {
@@ -228,7 +261,7 @@
           <div>End Time: <span class="formatted-end-time" data-time="{{this.End.Time}}"></span></div>
           <div>When: <span class="timeago" datetime="{{this.End.Time}}"></span></div>
           <div>Duration: <span class="trip-duration" data-start="{{this.Start.Time}}" data-end="{{this.End.Time}}"></span></div>
-          <button class="lighter-teal" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">View Map</button>
+            <button class="lighter-teal" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode)">View Map</button>
         </li>
       {{/each}}
     </ul>
