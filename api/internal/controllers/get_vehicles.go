@@ -52,16 +52,27 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
 	// GraphQL query
 	graphqlQuery := `{
-        {
-		  vehicles(first:10, filterBy: {privileged: "0x20Ca3bE69a8B95D3093383375F0473A8c6341727" } ) {
-			nodes {
-			  tokenId,
-			  name,
-			  definition { make, model, year}
-			  
-			}
-		  }
-		}
+        vehicles(first: 200, filterBy: {privileged: "` + ethAddress + `" }) {
+            nodes {
+                tokenId,
+				name,
+                earnings {
+                    totalTokens
+                },
+                definition {
+                    make,
+                    model,
+                    year
+                },
+                aftermarketDevice {
+                    address,
+                    serial,
+                    manufacturer {
+                        name
+                    }
+                }
+            }
+        }
     }`
 
 	// GraphQL request
