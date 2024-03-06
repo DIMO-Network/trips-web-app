@@ -92,5 +92,38 @@
 {{else}}
   <p>No vehicles to display.</p>
 {{/if}}
+{{#if SharedVehicles}}
+    <h2>Vehicles Shared With Me</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Make</th>
+            <th>Model</th>
+            <th>Year</th>
+            <th>Device Status</th>
+            <th>Trips</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{#each SharedVehicles}}
+            <tr>
+                <td>{{this.TokenID}}</td>
+                <td>{{this.Definition.make}}</td>
+                <td>{{this.Definition.model}}</td>
+                <td>{{this.Definition.year}}</td>
+                <td>
+                    <button class="link-button" onclick="window.location.href='/vehicles/{{this.TokenID}}/status'">View Device Status</button>
+                </td>
+                <td>
+                    <button class="link-button" onclick="window.location.href='/vehicles/{{this.TokenID}}/trips'">View Trips</button>
+                </td>
+            </tr>
+        {{/each}}
+        </tbody>
+    </table>
+{{else}}
+    <p>No shared vehicles to display.</p>
+{{/if}}
 </body>
 </html>
