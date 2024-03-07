@@ -3,9 +3,10 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/rs/zerolog/log"
 	"io"
 	"net/http"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
@@ -153,9 +154,7 @@ func fetchVehiclesWithQuery(query string, settings *config.Settings) ([]Vehicle,
 	}
 
 	vehicles := make([]Vehicle, 0, len(vehicleResponse.Data.Vehicles.Nodes))
-	for _, v := range vehicleResponse.Data.Vehicles.Nodes {
-		vehicles = append(vehicles, v)
-	}
+	vehicles = append(vehicles, vehicleResponse.Data.Vehicles.Nodes...)
 
 	return vehicles, nil
 }
