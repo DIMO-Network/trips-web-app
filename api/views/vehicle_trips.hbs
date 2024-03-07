@@ -182,17 +182,20 @@
         const startPoint = geoJSON.features[0].geometry.coordinates[0];
         const endPoint = geoJSON.features[0].geometry.coordinates[geoJSON.features[0].geometry.coordinates.length - 1];
 
-        // green and red markers for start and end trip
           new mapboxgl.Marker({ color: 'green' })
                   .setLngLat(startPoint)
+                  .setPopup(new mapboxgl.Popup({ offset: 25 })
+                          .setHTML(`<p><strong>Start Time:</strong> ${new Date(startTime).toLocaleString()}</p>`))
                   .addTo(map);
 
-          // Create a red marker for the end point
           new mapboxgl.Marker({ color: 'red' })
                   .setLngLat(endPoint)
+                  .setPopup(new mapboxgl.Popup({ offset: 25 })
+                          .setHTML(`<p><strong>End Time:</strong> ${new Date(endTime).toLocaleString()}</p>`))
                   .addTo(map);
 
-        // Add data to map
+
+          // Add data to map
         const addDataToMap = () => {
           if (!geoJSON || !geoJSON.features || !geoJSON.features.length || !geoJSON.features[0].geometry.coordinates.length) {
             console.error('Invalid GeoJSON data', geoJSON);
