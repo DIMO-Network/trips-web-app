@@ -3,6 +3,7 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/rs/zerolog/log"
 	"io"
 	"net/http"
 
@@ -40,12 +41,20 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 
 	vehicles, err := queryIdentityAPIForVehicles(ethAddress, settings)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
+		log.Printf("Error querying My Vehicles: %v", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Error querying my vehicles: " + err.Error())
+	}
+
+	sharedVehicles, err := querySharedVehicles(ethAddress, settings)
+	if err != nil {
+		log.Printf("Error querying Shared Vehicles: %v", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Error querying shared vehicles: " + err.Error())
 	}
 
 	return c.Render("vehicles", fiber.Map{
-		"Title":    "My Vehicles",
-		"Vehicles": vehicles,
+		"Title":          "My Vehicles",
+		"Vehicles":       vehicles,
+		"SharedVehicles": sharedVehicles,
 	})
 }
 
@@ -55,6 +64,83 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
         vehicles(first: 50, filterBy: { owner: "` + ethAddress + `" }) {
             nodes {
                 tokenId,
+                earnings {
+                    totalTokens
+                },
+                definition {
+                    make,
+                    model,
+                    year
+                },
+                aftermarketDevice {
+                    address,
+                    serial,
+                    manufacturer {
+                        name
+                    }
+                }
+            }
+        }
+    }`
+
+	// GraphQL request
+	requestPayload := GraphQLRequest{Query: graphqlQuery}
+	payloadBytes, err := json.Marshal(requestPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	// POST request
+	req, err := http.NewRequest("POST", settings.IdentityAPIURL, bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var vehicleResponse struct {
+		Data struct {
+			Vehicles struct {
+				Nodes []Vehicle `json:"nodes"`
+			} `json:"vehicles"`
+		} `json:"data"`
+	}
+
+	if err := json.Unmarshal(body, &vehicleResponse); err != nil {
+		return nil, err
+	}
+
+	vehicles := make([]Vehicle, 0, len(vehicleResponse.Data.Vehicles.Nodes))
+	for _, v := range vehicleResponse.Data.Vehicles.Nodes {
+		vehicles = append(vehicles, Vehicle{
+			TokenID:           v.TokenID,
+			Earnings:          v.Earnings,
+			Definition:        v.Definition,
+			AftermarketDevice: v.AftermarketDevice,
+		})
+	}
+
+	return vehicles, nil
+}
+
+func querySharedVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
+	// GraphQL query for shared vehicles
+	graphqlQuery := `{
+        vehicles(first: 50, filterBy: {privileged: "` + ethAddress + `" }) {
+            nodes {
+                tokenId,
+				name,
                 earnings {
                     totalTokens
                 },
