@@ -182,13 +182,14 @@
         const startPoint = geoJSON.features[0].geometry.coordinates[0];
         const endPoint = geoJSON.features[0].geometry.coordinates[geoJSON.features[0].geometry.coordinates.length - 1];
 
-        new mapboxgl.Popup({ offset: 25 })
+        // green and red markers for start and end trip
+          new mapboxgl.Marker({ color: 'green' })
                   .setLngLat(startPoint)
-                  .setHTML(`<h3>Start Time</h3><p>${new Date(startTime).toLocaleString()}</p>`)
                   .addTo(map);
-        new mapboxgl.Popup({ offset: 25 })
+
+          // Create a red marker for the end point
+          new mapboxgl.Marker({ color: 'red' })
                   .setLngLat(endPoint)
-                  .setHTML(`<h3>End Time</h3><p>${new Date(endTime).toLocaleString()}</p>`)
                   .addTo(map);
 
         // Add data to map
