@@ -20,7 +20,7 @@ func HandleTokenExchange(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to query vehicles")
 	}
 	if len(vehicles) == 0 {
-		return c.Status(fiber.StatusInternalServerError).SendString("No vehicles found")
+		return c.Status(fiber.StatusInternalServerError).SendString("No vehicles found!!!")
 	}
 	tokenID := vehicles[0].TokenID
 
