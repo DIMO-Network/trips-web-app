@@ -52,7 +52,7 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
 	// GraphQL query
 	graphqlQuery := `{
-        vehicles(first: 200, filterBy: { owner: "` + ethAddress + `" }) {
+        vehicles(first: 50, filterBy: { owner: "` + ethAddress + `" }) {
             nodes {
                 tokenId,
                 earnings {
