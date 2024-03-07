@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
 )
@@ -38,19 +40,26 @@ type Vehicle struct {
 func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 	ethAddress := c.Locals("ethereum_address").(string)
 
-	vehicles, err := queryIdentityAPIForVehicles(ethAddress, settings)
+	vehicles, err := queryMyVehicles(ethAddress, settings)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
+		log.Printf("Error querying My Vehicles: %v", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Error querying my vehicles: " + err.Error())
+	}
+
+	sharedVehicles, err := querySharedVehicles(ethAddress, settings)
+	if err != nil {
+		log.Printf("Error querying Shared Vehicles: %v", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Error querying shared vehicles: " + err.Error())
 	}
 
 	return c.Render("vehicles", fiber.Map{
-		"Title":    "My Vehicles",
-		"Vehicles": vehicles,
+		"Title":          "My Vehicles",
+		"Vehicles":       vehicles,
+		"SharedVehicles": sharedVehicles,
 	})
 }
 
-func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
-	// GraphQL query
+func queryMyVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
 	graphqlQuery := `{
         vehicles(first: 50, filterBy: { owner: "` + ethAddress + `" }) {
             nodes {
@@ -74,8 +83,40 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
         }
     }`
 
+	return fetchVehiclesWithQuery(graphqlQuery, settings)
+}
+
+func querySharedVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
+	graphqlQuery := `{
+        vehicles(first: 50, filterBy: {privileged: "` + ethAddress + `" }) {
+            nodes {
+                tokenId,
+                name,
+                earnings {
+                    totalTokens
+                },
+                definition {
+                    make,
+                    model,
+                    year
+                },
+                aftermarketDevice {
+                    address,
+                    serial,
+                    manufacturer {
+                        name
+                    }
+                }
+            }
+        }
+    }`
+
+	return fetchVehiclesWithQuery(graphqlQuery, settings)
+}
+
+func fetchVehiclesWithQuery(query string, settings *config.Settings) ([]Vehicle, error) {
 	// GraphQL request
-	requestPayload := GraphQLRequest{Query: graphqlQuery}
+	requestPayload := GraphQLRequest{Query: query}
 	payloadBytes, err := json.Marshal(requestPayload)
 	if err != nil {
 		return nil, err
@@ -113,14 +154,7 @@ func queryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
 	}
 
 	vehicles := make([]Vehicle, 0, len(vehicleResponse.Data.Vehicles.Nodes))
-	for _, v := range vehicleResponse.Data.Vehicles.Nodes {
-		vehicles = append(vehicles, Vehicle{
-			TokenID:           v.TokenID,
-			Earnings:          v.Earnings,
-			Definition:        v.Definition,
-			AftermarketDevice: v.AftermarketDevice,
-		})
-	}
+	vehicles = append(vehicles, vehicleResponse.Data.Vehicles.Nodes...)
 
 	return vehicles, nil
 }

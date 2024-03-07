@@ -1,96 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>{{Title}}</title>
-  <style>
-    body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f4f4f4;
-      color: #333;
-      margin: 0;
-      padding: 20px;
-    }
+    <meta charset="UTF-8">
+    <title>{{Title}}</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
 
-    h1 {
-      color: #444444;
-    }
+        h1 {
+            color: #444444;
+        }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
 
-    th {
-      background-color: #00CED1;
-      color: white;
-      font-weight: bold;
-      padding: 10px;
-      text-align: left;
-    }
+        th {
+            background-color: #00CED1;
+            color: white;
+            font-weight: bold;
+            padding: 10px;
+            text-align: left;
+        }
 
-    td {
-      padding: 10px;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-    }
+        td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
 
-    tr:nth-child(even) {
-      background-color: #f2f2f2;
-    }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
 
-    tr:hover {
-      background-color: #ddd;
-    }
+        tr:hover {
+            background-color: #ddd;
+        }
 
-    .link-button {
-      background: none;
-      border: none;
-      color: blue;
-      text-decoration: underline;
-      cursor: pointer;
-      font-size: inherit;
-    }
+        .link-button {
+            background: none;
+            border: none;
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: inherit;
+        }
 
-    .link-button:hover {
-      text-decoration: none;
-    }
-  </style>
+        .link-button:hover {
+            text-decoration: none;
+        }
+    </style>
 </head>
 <body>
 <h1>{{Title}}</h1>
 {{#if Vehicles}}
-  <table>
-    <thead>
-    <tr>
-      <th>ID</th>
-      <th>Make</th>
-      <th>Model</th>
-      <th>Year</th>
-      <th>Device Status</th>
-      <th>Trips</th>
-    </tr>
-    </thead>
-    <tbody>
-    {{#each Vehicles}}
-      <tr>
-        <td>{{this.TokenID}}</td>
-        <td>{{this.Definition.make}}</td>
-        <td>{{this.Definition.model}}</td>
-        <td>{{this.Definition.year}}</td>
-        <td>
-          <button class="link-button" onclick="window.location.href='/vehicles/{{this.TokenID}}/status'">View Device Status</button>
-        </td>
-        <td>
-          <button class="link-button" onclick="window.location.href='/vehicles/{{this.TokenID}}/trips'">View Trips</button>
-        </td>
-      </tr>
-    {{/each}}
-    </tbody>
-  </table>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Make</th>
+            <th>Model</th>
+            <th>Year</th>
+            <th>Device Status</th>
+            <th>Trips</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{#each Vehicles}}
+            <tr>
+                <td>{{this.TokenID}}</td>
+                <td>{{this.Definition.make}}</td>
+                <td>{{this.Definition.model}}</td>
+                <td>{{this.Definition.year}}</td>
+                <td>
+                    <button class="link-button" onclick="window.location.href='/vehicles/{{this.TokenID}}/status'">View Device Status</button>
+                </td>
+                <td>
+                    <button class="link-button" onclick="window.location.href='/vehicles/{{this.TokenID}}/trips'">View Trips</button>
+                </td>
+            </tr>
+        {{/each}}
+        </tbody>
+    </table>
 {{else}}
-  <p>No vehicles to display.</p>
+    <p>No vehicles to display.</p>
+{{/if}}
+{{#if SharedVehicles}}
+    <h2>Vehicles Shared With Me</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Make</th>
+            <th>Model</th>
+            <th>Year</th>
+            <th>Device Status</th>
+            <th>Trips</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{#each SharedVehicles}}
+            <tr>
+                <td>{{this.TokenID}}</td>
+                <td>{{this.Definition.make}}</td>
+                <td>{{this.Definition.model}}</td>
+                <td>{{this.Definition.year}}</td>
+                <td>
+                    <button class="link-button" onclick="window.location.href='/vehicles/{{this.TokenID}}/status'">View Device Status</button>
+                </td>
+                <td>
+                    <button class="link-button" onclick="window.location.href='/vehicles/{{this.TokenID}}/trips'">View Trips</button>
+                </td>
+            </tr>
+        {{/each}}
+        </tbody>
+    </table>
+{{else}}
+    <p>No shared vehicles to display.</p>
 {{/if}}
 </body>
 </html>
