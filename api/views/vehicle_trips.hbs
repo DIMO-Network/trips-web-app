@@ -351,10 +351,8 @@
       }
 
       function updateRouteLayerForSpeedGradient(geoJSON, speedGradient) {
-
           console.log('Speed Gradient:', speedGradient);
 
-          // Create gradient stops for the Mapbox line-color property
           let gradientStops = ['interpolate', ['linear'], ['line-progress']];
 
           let stepSize = 1 / (speedGradient.length - 1);
@@ -364,20 +362,20 @@
               gradientStops.push(stop, color);
           }
 
-          // Update or create source for the route
           if (!window.map.getSource('route')) {
               window.map.addSource('route', {
                   type: 'geojson',
-                  data: geoJSON
+                  data: geoJSON,
+                  lineMetrics: true
               });
           } else {
               window.map.getSource('route').setData(geoJSON);
           }
 
-          // Remove existing route layer if it exists and add the new one
           if (window.map.getLayer('route')) {
               window.map.removeLayer('route');
           }
+
           window.map.addLayer({
               id: 'route',
               type: 'line',
@@ -392,10 +390,6 @@
               }
           });
       }
-
-
-
-
 
   </script>
 </head>
