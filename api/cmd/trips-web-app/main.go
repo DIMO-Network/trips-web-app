@@ -39,7 +39,7 @@ func main() {
 
 	fmt.Print("Server is starting...")
 
-	settings, err := shared.LoadConfig[config.Settings]("settings.yaml")
+	settings, err := shared.LoadConfig[config.Settings]("settings.prod.yaml")
 	if err != nil {
 		log.Fatal().Err(err).Msg("could not load settings")
 	}
