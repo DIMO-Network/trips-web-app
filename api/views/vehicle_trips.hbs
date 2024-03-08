@@ -351,16 +351,18 @@
       }
 
       function updateRouteLayerForSpeedGradient(geoJSON, speedGradient) {
-          console.log('Speed Gradient:', speedGradient);
+          console.log('Speed Gradient Array:', speedGradient);
+          //testing
+          speedGradient = [0, 'green', 0.5, 'yellow', 1, 'red'];
 
           let gradientStops = ['interpolate', ['linear'], ['line-progress']];
-
           let stepSize = 1 / (speedGradient.length - 1);
-          for (let i = 0; i < speedGradient.length; i++) {
-              let stop = stepSize * i;
-              let color = speedGradient[i];
+          for (let i = 0; i < speedGradient.length; i += 2) {
+              let stop = speedGradient[i];     // Stop value btwn 0 and 1
+              let color = speedGradient[i + 1]; // Color value is string?
               gradientStops.push(stop, color);
           }
+          console.log('Gradient Stops:', gradientStops);
 
           if (!window.map.getSource('route')) {
               window.map.addSource('route', {
@@ -389,6 +391,8 @@
                   'line-width': 6
               }
           });
+
+          console.log('Added new route layer with gradient');
       }
 
   </script>
