@@ -34,6 +34,18 @@ var TripIDToTokenIDMap = make(map[string]int64)
 type LocationData struct {
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
+	Speed     float64 `json:"speed"`
+}
+
+var SpeedGradient = []struct {
+	Threshold float64
+	Color     string
+}{
+	{10, "blue"},
+	{30, "green"},
+	{50, "yellow"},
+	{70, "orange"},
+	{90, "red"},
 }
 
 func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Trip, error) {
@@ -160,6 +172,7 @@ func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 
 	// Convert the historical data to GeoJSON
 	geoJSON := convertToGeoJSON(locations, tripID, startTime, endTime)
+	speedGradient := calculateSpeedGradient(locations)
 
 	geoJSONData, err := json.Marshal(geoJSON)
 	if err != nil {
@@ -167,23 +180,30 @@ func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 	} else {
 		log.Info().Msgf("GeoJSON data: %s", string(geoJSONData))
 	}
-	return c.JSON(geoJSON)
+
+	response := map[string]interface{}{
+		"geojson":       geoJSON,
+		"speedGradient": speedGradient,
+	}
+
+	return c.JSON(response)
 }
 
 func extractLocationData(hits []interface{}) []LocationData {
 	locations := make([]LocationData, len(hits))
 	for i, hit := range hits {
 		hitMap := hit.(map[string]interface{})
-		data := hitMap["_source"].(map[string]interface{})["data"].(map[string]interface{})
-
-		if data["latitude"] == nil || data["longitude"] == nil {
-			continue
-		}
+		sourceData := hitMap["_source"].(map[string]interface{})["data"].(map[string]interface{})
 
 		locData := LocationData{
-			Latitude:  data["latitude"].(float64),
-			Longitude: data["longitude"].(float64),
+			Latitude:  sourceData["latitude"].(float64),
+			Longitude: sourceData["longitude"].(float64),
 		}
+
+		if speed, ok := sourceData["speed"].(float64); ok {
+			locData.Speed = speed
+		}
+
 		locations[i] = locData
 	}
 	return locations
@@ -214,4 +234,21 @@ func convertToGeoJSON(locations []LocationData, tripID string, tripStart string,
 	fc.AddFeature(feature)
 
 	return fc
+}
+
+func calculateSpeedGradient(locations []LocationData) []string {
+	colors := make([]string, len(locations))
+	for i, loc := range locations {
+		colors[i] = getSpeedColor(loc.Speed)
+	}
+	return colors
+}
+
+func getSpeedColor(speed float64) string {
+	for _, sg := range SpeedGradient {
+		if speed <= sg.Threshold {
+			return sg.Color
+		}
+	}
+	return "black"
 }
