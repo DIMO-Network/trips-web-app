@@ -69,7 +69,7 @@
           margin-top: 20px;
           border-collapse: collapse;
           width: 100%;
-          max-width: 600px; /* Adjust as needed */
+          max-width: 600px;
           margin: auto;
       }
       .coordinates-table h3 {
@@ -209,14 +209,12 @@
           let expression = ['interpolate', ['linear'], ['line-progress']];
           let totalColors = speedColors.length;
 
-          // Distribute the stops more evenly across the line
           for (let i = 0; i < totalColors; i++) {
-              // This gives a more even distribution of colors along the line
               let stop = i / (totalColors - 1);
               let color = speedColors[i];
               expression.push(stop, color);
           }
-          console.log('Gradient Stops:', expression); // Debugging: Print the gradient stops
+          console.log('Gradient Stops:', expression);
 
           return expression;
       }
@@ -374,7 +372,7 @@
                       // Toggle visibility of the existing table
                       existingTable.style.display = existingTable.style.display === 'none' ? '' : 'none';
                   } else {
-                      const geoJSON = data.geojson; // assuming 'data' is the response JSON that contains GeoJSON
+                      const geoJSON = data.geojson;
                       displayCoordinatesTable(geoJSON, tripIdForTable);
                   }
               }
@@ -402,7 +400,6 @@
 
           tableHtml += '</table></div>';
 
-          // Append the table in a designated area, e.g., below the map
           const mapContainer = document.getElementById('map');
           mapContainer.insertAdjacentHTML('afterend', tableHtml);
       }
@@ -417,7 +414,7 @@
               }
 
               const { geojson } = await response.json();
-              const locations = geojson.features[0].geometry.coordinates; // Assuming coordinates are in this path
+              const locations = geojson.features[0].geometry.coordinates;
               const csvContent = convertToCSV(locations, tripID);
 
               downloadCSV(csvContent, `Trip_${tripID}.csv`);
