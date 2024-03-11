@@ -35,6 +35,7 @@ type LocationData struct {
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
 	Speed     float64 `json:"speed"`
+	Timestamp string  `json:"timestamp"`
 }
 
 var SpeedGradient = []struct {
@@ -105,15 +106,12 @@ func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 }
 
 func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
-
 	privilegeToken, err := RequestPriviledgeToken(c, settings, tokenID)
-
 	if err != nil {
 		return []LocationData{}, errors.Wrap(err, "error getting privilege token")
 	}
 
 	ddURL := fmt.Sprintf("%s/vehicle/%d/history?startDate=%s&endDate=%s", settings.DeviceDataAPIURL, tokenID, url.QueryEscape(startTime), url.QueryEscape(endTime))
-
 	req, err := http.NewRequest("GET", ddURL, nil)
 	if err != nil {
 		return nil, err
@@ -127,30 +125,30 @@ func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, set
 	}
 	defer resp.Body.Close()
 
-	// Read the raw response body
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	// Dynamically parse the JSON response
 	var result map[string]interface{}
 	if err := json.Unmarshal(responseBody, &result); err != nil {
 		return nil, err
 	}
 
-	// Extract the hits array
-	hits := result["hits"].(map[string]interface{})["hits"].([]interface{})
+	hitsInterface, ok := result["hits"].(map[string]interface{})["hits"]
+	if !ok {
+		return nil, errors.New("unexpected data structure for hits")
+	}
 
-	// Sort the hits based on the timestamp
-	sort.SliceStable(hits, func(i, j int) bool {
-		iTimestamp := hits[i].(map[string]interface{})["_source"].(map[string]interface{})["data"].(map[string]interface{})["timestamp"].(string)
-		jTimestamp := hits[j].(map[string]interface{})["_source"].(map[string]interface{})["data"].(map[string]interface{})["timestamp"].(string)
-		return iTimestamp < jTimestamp
-	})
+	hits, ok := hitsInterface.([]interface{})
+	if !ok {
+		return nil, errors.New("unexpected data structure for hits array")
+	}
 
-	// Convert sorted hits to LocationData
-	locations := extractLocationData(hits)
+	locations, err := extractLocationData(hits)
+	if err != nil {
+		return nil, err
+	}
 
 	return locations, nil
 }
@@ -189,51 +187,63 @@ func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 	return c.JSON(response)
 }
 
-func extractLocationData(hits []interface{}) []LocationData {
-	locations := make([]LocationData, len(hits))
-	for i, hit := range hits {
-		hitMap := hit.(map[string]interface{})
-		sourceData := hitMap["_source"].(map[string]interface{})["data"].(map[string]interface{})
+func extractLocationData(hits []interface{}) ([]LocationData, error) {
+	// Sort the hits based on the timestamp
+	sort.SliceStable(hits, func(i, j int) bool {
+		iData := hits[i].(map[string]interface{})["_source"].(map[string]interface{})["data"].(map[string]interface{})
+		jData := hits[j].(map[string]interface{})["_source"].(map[string]interface{})["data"].(map[string]interface{})
+		iTimestamp, iOk := iData["timestamp"].(string)
+		jTimestamp, jOk := jData["timestamp"].(string)
+		return iOk && jOk && iTimestamp < jTimestamp
+	})
+
+	locations := make([]LocationData, 0, len(hits))
+	for _, hitInterface := range hits {
+		hitMap, _ := hitInterface.(map[string]interface{})
+		source, _ := hitMap["_source"].(map[string]interface{})
+		data, _ := source["data"].(map[string]interface{})
+
+		latitude, _ := data["latitude"].(float64)
+		longitude, _ := data["longitude"].(float64)
+		speed, _ := data["speed"].(float64)
+		timestamp, _ := data["timestamp"].(string)
 
 		locData := LocationData{
-			Latitude:  sourceData["latitude"].(float64),
-			Longitude: sourceData["longitude"].(float64),
+			Latitude:  latitude,
+			Longitude: longitude,
+			Speed:     speed,
+			Timestamp: timestamp,
 		}
-
-		if speed, ok := sourceData["speed"].(float64); ok {
-			locData.Speed = speed
-		}
-
-		locations[i] = locData
+		locations = append(locations, locData)
 	}
-	return locations
+
+	return locations, nil
 }
 
 func convertToGeoJSON(locations []LocationData, tripID string, tripStart string, tripEnd string) *geojson.FeatureCollection {
-	coords := make([][]float64, 0, len(locations))
+	featureCollection := geojson.NewFeatureCollection()
 
 	for _, loc := range locations {
-		// Append each location as a coordinate pair in the coords slice
-		coords = append(coords, []float64{loc.Longitude, loc.Latitude})
+		// Create a new point feature with the current location's coordinates
+		point := geojson.NewPointFeature([]float64{loc.Longitude, loc.Latitude})
+
+		// Add properties to the point feature, including speed and timestamp
+		point.Properties["speed"] = loc.Speed
+		point.Properties["timestamp"] = loc.Timestamp
+
+		// Add additional properties as needed
+		point.Properties["trip_id"] = tripID
+		point.Properties["trip_start"] = tripStart
+		point.Properties["trip_end"] = tripEnd
+		point.Properties["privacy_zone"] = 1
+		point.Properties["color"] = "black"
+		point.Properties["point-color"] = "black"
+
+		// Append the point feature to the feature collection
+		featureCollection.AddFeature(point)
 	}
 
-	feature := geojson.NewLineStringFeature(coords)
-
-	feature.Properties = map[string]interface{}{
-		"type":         "LineString",
-		"trip_id":      tripID,
-		"trip_start":   tripStart,
-		"trip_end":     tripEnd,
-		"privacy_zone": 1,
-		"color":        "black",
-		"point-color":  "black",
-	}
-
-	// Create a feature collection and add the LineString feature to it
-	fc := geojson.NewFeatureCollection()
-	fc.AddFeature(feature)
-
-	return fc
+	return featureCollection
 }
 
 func calculateSpeedGradient(locations []LocationData) []string {

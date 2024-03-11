@@ -265,6 +265,7 @@
     });
 
 
+
       async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime, tripElement, showCoords = false, tripIdForTable = '') {
           document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
           tripElement.classList.add('active-trip');
@@ -311,20 +312,30 @@
                   console.error('GeoJSON feature geometry is not formatted correctly', geoJSON.features[0]);
                   return;
               }
+              const startPointFeature = geoJSON.features[0];
+              const endPointFeature = geoJSON.features[geoJSON.features.length - 1];
 
-              const startPoint = geoJSON.features[0].geometry.coordinates[0];
-              const endPoint = geoJSON.features[0].geometry.coordinates[geoJSON.features[0].geometry.coordinates.length - 1];
+              const startPoint = startPointFeature.geometry.coordinates;
+              const endPoint = endPointFeature.geometry.coordinates;
 
+              // Make sure the coordinates are valid numbers
+              if (!startPoint || startPoint.length !== 2 || !endPoint || endPoint.length !== 2) {
+                  console.error('Start or end point is not a valid coordinate array');
+                  return;
+              }
+
+              // Add start marker
               new mapboxgl.Marker({ color: 'green' })
-                      .setLngLat(startPoint)
+                      .setLngLat({ lng: startPoint[0], lat: startPoint[1] }) // Make sure the order is [longitude, latitude]
                       .setPopup(new mapboxgl.Popup({ offset: 25 })
-                              .setHTML(`<p><strong>Start Time:</strong> ${new Date(startTime).toLocaleString()}</p>`))
+                              .setHTML(`<p><strong>Start Time:</strong> ${startPointFeature.properties.timestamp}</p>`))
                       .addTo(window.map);
 
+              // Add end marker
               new mapboxgl.Marker({ color: 'red' })
-                      .setLngLat(endPoint)
+                      .setLngLat({ lng: endPoint[0], lat: endPoint[1] }) // Make sure the order is [longitude, latitude]
                       .setPopup(new mapboxgl.Popup({ offset: 25 })
-                              .setHTML(`<p><strong>End Time:</strong> ${new Date(endTime).toLocaleString()}</p>`))
+                              .setHTML(`<p><strong>End Time:</strong> ${endPointFeature.properties.timestamp}</p>`))
                       .addTo(window.map);
 
               if (!window.map.getSource('route')) {
@@ -356,8 +367,13 @@
 
               // Fit map bounds to the GeoJSON data
               const bounds = new mapboxgl.LngLatBounds();
-              geoJSON.features[0].geometry.coordinates.forEach(coord => {
-                  bounds.extend(coord);
+              geoJSON.features.forEach(feature => {
+                  const coordinates = feature.geometry.coordinates;
+                  if (Array.isArray(coordinates) && coordinates.length === 2 && !isNaN(coordinates[0]) && !isNaN(coordinates[1])) {
+                      bounds.extend(coordinates);
+                  } else {
+                      console.error('Invalid coordinates in feature:', feature);
+                  }
               });
 
               if (!bounds.isEmpty()) {
@@ -385,17 +401,25 @@
 
 
       function displayCoordinatesTable(geojson, tripIdForTable) {
-          const coordinates = geojson.features[0].geometry.coordinates;
           let tableHtml = `<div id="coords-table-${tripIdForTable}" class="coordinates-table">
                        <h3>Coordinates for Trip: ${tripIdForTable}</h3>
                        <table>
                          <tr>
                            <th>Latitude</th>
                            <th>Longitude</th>
+                           <th>Speed</th>
+                           <th>Timestamp</th>
                          </tr>`;
 
-          coordinates.forEach(coord => {
-              tableHtml += `<tr><td>${coord[1]}</td><td>${coord[0]}</td></tr>`;
+          geojson.features.forEach(feature => {
+              const coord = feature.geometry.coordinates;
+              const props = feature.properties;
+              tableHtml += `<tr>
+                        <td>${coord[1]}</td>
+                        <td>${coord[0]}</td>
+                        <td>${props.speed}</td>
+                        <td>${props.timestamp}</td>
+                      </tr>`;
           });
 
           tableHtml += '</table></div>';
@@ -404,30 +428,52 @@
           mapContainer.insertAdjacentHTML('afterend', tableHtml);
       }
 
-      async function downloadTripDataAsCSV(tripID, startTime, endTime) {
+      function convertToCSV(geojson) {
+          if (!geojson || !geojson.features) {
+              console.error('Invalid or undefined GeoJSON data');
+              return 'Invalid data';
+          }
+
+          const headers = 'Latitude, Longitude, Speed, Timestamp\n';
+          const rows = geojson.features.map(feature => {
+              const coord = feature.geometry.coordinates;
+              const props = feature.properties;
+              const speed = props.speed || 'No speed data';
+              const timestamp = props.timestamp || 'No timestamp data';
+              return `${coord[1]}, ${coord[0]}, ${speed}, ${timestamp}`;
+          }).join('\n');
+
+          return headers + rows;
+      }
+
+      async function downloadTripDataAsCSV(tripId, startTime, endTime) {
           try {
-              const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
-              const response = await fetch(url);
+              const url = `/api/trip/${tripId}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
+              const response = await fetch(url, {
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  credentials: 'include',
+              });
 
               if (!response.ok) {
                   throw new Error('Failed to fetch trip data');
               }
 
-              const { geojson } = await response.json();
-              const locations = geojson.features[0].geometry.coordinates;
-              const csvContent = convertToCSV(locations, tripID);
+              const data = await response.json();
+              if (!data || !data.geojson) {
+                  console.error('Invalid or missing GeoJSON data', data);
+                  alert("No data available for download.");
+                  return;
+              }
 
-              downloadCSV(csvContent, `Trip_${tripID}.csv`);
+              const csvContent = convertToCSV(data.geojson);
+              downloadCSV(csvContent, `Trip_${tripId}.csv`);
           } catch (error) {
               console.error('Error downloading trip data:', error);
           }
       }
 
-      function convertToCSV(coordinates, tripID) {
-          const headers = 'TripID, Latitude, Longitude\n';
-          const rows = coordinates.map(coord => `${tripID}, ${coord[1]}, ${coord[0]}`).join('\n');
-          return headers + rows;
-      }
 
       function downloadCSV(csvContent, fileName) {
           const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -439,6 +485,7 @@
           link.click();
           document.body.removeChild(link);
       }
+
   </script>
 </head>
 <body>
