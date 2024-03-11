@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{Title}}</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #444444;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            background-color: #00CED1;
+            color: white;
+            font-weight: bold;
+            padding: 10px;
+            text-align: left;
+        }
+
+        td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #ddd;
+        }
+
+        .link-button {
+            background: none;
+            border: none;
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: inherit;
+        }
+
+        .link-button:hover {
+            text-decoration: none;
+        }
+    </style>
+    <script src="https://unpkg.com/@streamr/sdk@latest/streamr-sdk.web.min.js"></script>
+    <script>
+        // todo: use stream with nft address
+        const streamId = "streams.dimo.eth/firehose/weather"
+
+        // todo: we need the decrypt key - ask user to sign message to get the decrypt key
+        const client = new StreamrClient({
+            auth: {
+              privateKey: crypto.randomBytes(32).toString('hex')
+            },
+          });
+
+          const stream = await client.getStream(streamId);
+
+          const onMessage = (content) => {
+           console.log(JSON.stringify(content, undefined, 2));
+          };
+
+          const subscriptions = await Promise.all(
+            stream.getStreamParts().map(async (partition) => {
+              await client.subscribe(
+                partition,
+                onMessage
+              );
+            })
+          );
+    </script
+</head>
+<body>
+<h1>{{Title}}</h1>
+
+
+</body>

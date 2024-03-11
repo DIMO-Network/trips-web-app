@@ -89,6 +89,20 @@ func main() {
 		})
 	})
 
+	app.Get("vehicles/:tokenId/live", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
+		tokenID, err := strconv.ParseInt(c.Params("tokenid"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid token ID",
+			})
+		}
+
+		return c.Render("streamr_live", fiber.Map{
+			"TokenID":       tokenID,
+			"WalletAddress": "0xTODO",
+		})
+	})
+
 	// Device trips route
 	app.Get("/vehicles/:tokenid/trips", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
 		tokenID, err := strconv.ParseInt(c.Params("tokenid"), 10, 64)
