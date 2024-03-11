@@ -75,6 +75,7 @@
             const stream = await client.getStream(streamId);
 
             const onMessage = (content) => {
+                //TODO: output to screen via DOM
                 console.log(JSON.stringify(content, undefined, 2));
             };
 
