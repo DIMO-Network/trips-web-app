@@ -6,7 +6,9 @@
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/timeago.js@4.0.2/dist/timeago.min.js"></script>
-  <style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
       body {
           font-family: 'Arial', sans-serif;
           background-color: #f4f4f4;
@@ -114,6 +116,8 @@
       }
       window.onload = initializeMap;
       let isSpeedGradientShown = false;
+      window.mapMarkers = [];
+      window.routeLayerId = null;
 
       async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime, tripElement, showCoords = false, tripIdForTable = '', toggleGradient = false) {
           document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
@@ -132,6 +136,23 @@
               });
           } else {
               window.map.resize();
+          }
+
+          // Clear existing markers and route layer if they exist
+          if (window.mapMarkers.length > 0) {
+              window.mapMarkers.forEach(marker => marker.remove());
+              window.mapMarkers = [];
+          }
+          if (window.routeLayerId && window.map.getLayer(window.routeLayerId)) {
+              window.map.removeLayer(window.routeLayerId);
+              window.map.removeSource(window.routeLayerId);
+              window.routeLayerId = null;
+          }
+
+          // Only proceed if the checkbox for this trip is checked
+          const checkbox = document.querySelector(`input[type=checkbox][onclick*="'${tripID}'"]`);
+          if (!checkbox || !checkbox.checked) {
+              return; // Exit the function if the checkbox is not checked
           }
 
           try {
@@ -160,15 +181,19 @@
               const startPoint = lineCoordinates[0];
               const endPoint = lineCoordinates[lineCoordinates.length - 1];
 
-              new mapboxgl.Marker({ color: 'green' })
+              const startMarker = new mapboxgl.Marker({ color: 'green' })
                       .setLngLat(startPoint)
                       .setPopup(new mapboxgl.Popup({ offset: 25 }).setText("Start of Trip"))
                       .addTo(window.map);
-
-              new mapboxgl.Marker({ color: 'red' })
+              const endMarker = new mapboxgl.Marker({ color: 'red' })
                       .setLngLat(endPoint)
                       .setPopup(new mapboxgl.Popup({ offset: 25 }).setText("End of Trip"))
                       .addTo(window.map);
+
+              window.mapMarkers.push(startMarker, endMarker);
+
+              const routeLayerId = `route-${tripID}`; // Unique ID for the route layer
+              window.routeLayerId = routeLayerId;
 
               const lineFeature = {
                   type: 'Feature',
@@ -186,33 +211,30 @@
               if (isSpeedGradientShown) {
                   updateRouteLayerForSpeedGradient(lineFeature, data.speedGradient);
               } else {
-                  // Switch to a simple black line
-                  if (!window.map.getSource('route')) {
-                      window.map.addSource('route', {
+                  if (!window.map.getSource(routeLayerId)) {
+                      window.map.addSource(routeLayerId, {
                           type: 'geojson',
                           data: lineFeature
                       });
                   } else {
-                      window.map.getSource('route').setData(lineFeature);
+                      window.map.getSource(routeLayerId).setData(lineFeature);
                   }
 
-                  if (window.map.getLayer('route')) {
-                      window.map.removeLayer('route');
+                  if (!window.map.getLayer(routeLayerId)) {
+                      window.map.addLayer({
+                          id: routeLayerId,
+                          type: 'line',
+                          source: routeLayerId,
+                          layout: {
+                              'line-join': 'round',
+                              'line-cap': 'round'
+                          },
+                          paint: {
+                              'line-color': 'black',
+                              'line-width': 6
+                          }
+                      });
                   }
-
-                  window.map.addLayer({
-                      id: 'route',
-                      type: 'line',
-                      source: 'route',
-                      layout: {
-                          'line-join': 'round',
-                          'line-cap': 'round'
-                      },
-                      paint: {
-                          'line-color': 'black',
-                          'line-width': 6
-                      }
-                  });
               }
 
               const bounds = new mapboxgl.LngLatBounds();
@@ -227,10 +249,31 @@
 
               if (showCoords) {
                   const existingTable = document.getElementById(`coords-table-${tripIdForTable}`);
+                  const graphContainer = document.getElementById(`speedGraphContainer-${tripIdForTable}`);
+
                   if (existingTable) {
-                      existingTable.style.display = existingTable.style.display === 'none' ? '' : 'none';
+                      const isHidden = existingTable.style.display === 'none';
+                      existingTable.style.display = isHidden ? '' : 'none';
+                      graphContainer.style.display = isHidden ? '' : 'none';
+
+                      if (isHidden) {
+                          const locationData = data.geojson.features.map(feature => ({
+                              timestamp: feature.properties.timestamp,
+                              speed: feature.properties.speed
+                          }));
+
+                          renderSpeedGraph(locationData, tripIdForTable);
+                      }
                   } else {
                       displayCoordinatesTable(geoJSON, tripIdForTable);
+                      document.getElementById(`speedGraphContainer-${tripIdForTable}`).style.display = '';
+
+                      const locationData = data.geojson.features.map(feature => ({
+                          timestamp: feature.properties.timestamp,
+                          speed: feature.properties.speed
+                      }));
+
+                      renderSpeedGraph(locationData, tripIdForTable);
                   }
               }
           } catch (error) {
@@ -335,24 +378,32 @@
     });
 
       function displayCoordinatesTable(geojson, tripIdForTable) {
-          let tableHtml = `<div id="coords-table-${tripIdForTable}" class="coordinates-table">
-                       <h3>Coordinates for Trip: ${tripIdForTable}</h3>
-                       <table>
-                         <tr>
-                           <th>Latitude</th>
-                           <th>Longitude</th>
-                           <th>Speed</th>
-                           <th>Timestamp</th>
-                         </tr>`;
+          let tableHtml = '';
+
+          // speed graph
+          tableHtml += `<div id="speedGraphContainer-${tripIdForTable}" class="speed-graph-container" style="display: none;">
+                      <canvas id="speedGraph-${tripIdForTable}"></canvas>
+                  </div>`;
+
+          // coordinates table
+          tableHtml += `<div id="coords-table-${tripIdForTable}" class="coordinates-table">
+                      <h3>Coordinates for Trip: ${tripIdForTable}</h3>
+                      <table>
+                        <tr>
+                          <th>Latitude</th>
+                          <th>Longitude</th>
+                          <th>Speed</th>
+                          <th>Timestamp</th>
+                        </tr>`;
 
           geojson.features.forEach(feature => {
               const coord = feature.geometry.coordinates;
               const props = feature.properties;
               tableHtml += `<tr>
-                        <td>${coord[1]}</td>
-                        <td>${coord[0]}</td>
-                        <td>${props.speed}</td>
-                        <td>${props.timestamp}</td>
+                          <td>${coord[1]}</td>
+                          <td>${coord[0]}</td>
+                          <td>${props.speed}</td>
+                          <td>${props.timestamp}</td>
                       </tr>`;
           });
 
@@ -361,6 +412,7 @@
           const mapContainer = document.getElementById('map');
           mapContainer.insertAdjacentHTML('afterend', tableHtml);
       }
+
 
       function convertToCSV(geojson) {
           if (!geojson || !geojson.features) {
@@ -408,7 +460,6 @@
           }
       }
 
-
       function downloadCSV(csvContent, fileName) {
           const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
           const link = document.createElement('a');
@@ -419,6 +470,42 @@
           link.click();
           document.body.removeChild(link);
       }
+
+      function renderSpeedGraph(data, tripIdForTable) {
+          const canvasId = `speedGraph-${tripIdForTable}`;
+          const canvas = document.getElementById(canvasId);
+
+          if (!canvas) {
+              console.error(`Canvas with ID ${canvasId} not found`);
+              return;
+          }
+
+          const ctx = canvas.getContext('2d');
+          const timestamps = data.map(d => new Date(d.timestamp).toLocaleTimeString());
+          const speeds = data.map(d => d.speed);
+
+          new Chart(ctx, {
+              type: 'line',
+              data: {
+                  labels: timestamps,
+                  datasets: [{
+                      label: 'Speed over Time',
+                      data: speeds,
+                      borderColor: 'rgb(75, 192, 192)',
+                      tension: 0.1
+                  }]
+              },
+              options: {
+                  scales: {
+                      y: {
+                          beginAtZero: true
+                      }
+                  }
+              }
+          });
+      }
+
+
 
   </script>
 </head>
@@ -435,7 +522,11 @@
                 <th>Start Time</th>
                 <th>End Time</th>
                 <th>Duration</th>
-                <th>Action</th>
+                <th>View Trip</th>
+                <th>Snap to Road</th>
+                <th>Toggle Speed Gradient</th>
+                <th>Show/Hide Raw Data</th>
+                <th>Download as CSV</th>
             </tr>
             </thead>
             <tbody>
@@ -446,13 +537,16 @@
                     <td><span class="formatted-start-time" data-time="{{this.Start.Time}}"></span></td>
                     <td><span class="formatted-end-time" data-time="{{this.End.Time}}"></span></td>
                     <td><span class="trip-duration" data-start="{{this.Start.Time}}" data-end="{{this.End.Time}}"></span></td>
+                    <td><input type="checkbox" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', false)"></td>
+                    <td><input type="checkbox" onclick="snapToRoad('{{this.ID}}')"></td>
+                    <td><input type="checkbox" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', true)"></td>
+                    <td><input type="checkbox" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, true, '{{this.ID}}', false)"></td>
                     <td>
-                        <button class="lighter-teal" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode)">View Trip</button>
-                        <button class="lighter-teal" onclick="snapToRoad('{{this.ID}}')">Snap to Road</button>
-                        <button class="lighter-teal" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode, false, '', true)">Toggle Speed Gradient</button>
-                        <button class="lighter-teal" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode, true, '{{this.ID}}', false)">Show/Hide Coordinates</button>
-                        <button class="lighter-teal" onclick="downloadTripDataAsCSV('{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">Download as CSV</button>
+                        <button class="lighter-teal" onclick="downloadTripDataAsCSV('{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">
+                            &#x21E9;
+                        </button>
                     </td>
+
                 </tr>
             {{/each}}
             </tbody>
