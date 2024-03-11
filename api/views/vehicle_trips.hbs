@@ -118,6 +118,8 @@
       let isSpeedGradientShown = false;
       window.mapMarkers = [];
       window.routeLayerId = null;
+      window.currentTripCoordinates = [];
+
 
       function displayTripDurations() {
           document.querySelectorAll('.trip-duration').forEach(function(element) {
@@ -256,6 +258,17 @@
               }
 
               const data = await response.json();
+
+              console.log("Raw GeoJSON data:", data.geojson);
+
+              window.currentTripCoordinates = data.geojson.features.map(feature => {
+                  const coords = feature.geometry.coordinates;
+                  return coords && coords.length === 2 ? coords : null;
+              }).filter(coord => coord !== null);
+
+              console.log("Processed trip coordinates:", window.currentTripCoordinates);
+
+
               if (!data || !data.geojson || !data.geojson.features || data.geojson.features.length === 0) {
                   console.error('Invalid or missing GeoJSON data', data);
                   alert("This trip doesn't have any location data to display.");
@@ -550,6 +563,103 @@
               }
           });
       }
+
+      async function snapToRoad(tripID, isChecked) {
+          const snappedLayerId = `snapped-path-${tripID}`;
+          const originalLayerId = `route-${tripID}`;
+
+          if (!isChecked) {
+              // If unchecked, remove the snapped path layer and show the original route
+              if (window.map.getLayer(snappedLayerId)) {
+                  window.map.removeLayer(snappedLayerId);
+                  window.map.removeSource(snappedLayerId);
+              }
+              if (window.map.getLayer(originalLayerId)) {
+                  window.map.setLayoutProperty(originalLayerId, 'visibility', 'visible');
+              }
+              return;
+          }
+
+          // Processing the snapped path when checkbox is checked
+          console.log("Current trip coordinates before snap to road:", window.currentTripCoordinates);
+
+          try {
+              let snappedFeatures = [];
+
+              for (let i = 0; i < window.currentTripCoordinates.length; i += 50) {
+                  const coordBatch = window.currentTripCoordinates.slice(i, i + 50);
+                  const coordQuery = coordBatch.map(c => `${c[0]},${c[1]}`).join(';');
+                  const radiuses = new Array(coordBatch.length).fill(25).join(';');
+
+                  const matchUrl = `https://api.mapbox.com/matching/v5/mapbox/driving/${coordQuery}?geometries=geojson&radiuses=${radiuses}&access_token=${mapboxgl.accessToken}`;
+
+                  console.log("Map Matching API URL:", matchUrl);
+
+                  const matchResponse = await fetch(matchUrl);
+                  const matchData = await matchResponse.json();
+
+                  console.log("Map Matching API response:", matchData);
+
+                  if (matchData.code !== "Ok") {
+                      console.error('Error with Map Matching:', matchData.message);
+                      continue;
+                  }
+
+                  const snappedFeature = {
+                      type: "Feature",
+                      geometry: matchData.matchings[0].geometry,
+                  };
+                  console.log("Processed feature for batch:", snappedFeature);
+
+                  snappedFeatures.push(snappedFeature);
+              }
+              console.log("All snapped features:", snappedFeatures);
+
+              updateMapWithSnappedPath(snappedFeatures, tripID);
+          } catch (error) {
+              console.error('Error in snapToRoad:', error);
+          }
+
+          // Hiding the original route when the snapped path is displayed
+          if (window.map.getLayer(originalLayerId)) {
+              window.map.setLayoutProperty(originalLayerId, 'visibility', 'none');
+          }
+      }
+
+
+
+
+      function updateMapWithSnappedPath(features, tripID) {
+          const snappedLayerId = `snapped-path-${tripID}`;
+          const snappedGeoJSON = {
+              type: "FeatureCollection",
+              features: features
+          };
+
+          if (window.map.getSource(snappedLayerId)) {
+              window.map.getSource(snappedLayerId).setData(snappedGeoJSON);
+          } else {
+              window.map.addSource(snappedLayerId, {
+                  type: 'geojson',
+                  data: snappedGeoJSON
+              });
+
+              window.map.addLayer({
+                  id: snappedLayerId,
+                  type: 'line',
+                  source: snappedLayerId,
+                  layout: {
+                      'line-join': 'round',
+                      'line-cap': 'round'
+                  },
+                  paint: {
+                      'line-color': '#00ff00',
+                      'line-width': 5
+                  }
+              });
+          }
+      }
+
   </script>
 </head>
 <body>
@@ -581,7 +691,7 @@
                     <td><span class="formatted-end-time" data-time="{{this.End.Time}}"></span></td>
                     <td><span class="trip-duration" data-start="{{this.Start.Time}}" data-end="{{this.End.Time}}"></span></td>
                     <td><input type="checkbox" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', false)"></td>
-                    <td><input type="checkbox" onclick="snapToRoad('{{this.ID}}')"></td>
+                    <td><input type="checkbox" onclick="snapToRoad('{{this.ID}}', this.checked)"></td>
                     <td><input type="checkbox" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', this.checked)"></td>
                     <td><input type="checkbox" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, true, '{{this.ID}}', false)"></td>
                     <td>
