@@ -113,9 +113,9 @@
           });
       }
       window.onload = initializeMap;
+      let isSpeedGradientShown = false;
 
-      async function fetchAndDisplayMapWithGradient(tokenID, tripID, startTime, endTime, tripElement) {
-          // Remove 'active-trip' class from all trip elements and add it to the current one
+      async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime, tripElement, showCoords = false, tripIdForTable = '', toggleGradient = false) {
           document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
           tripElement.classList.add('active-trip');
 
@@ -155,14 +155,84 @@
               }
 
               const geoJSON = data.geojson;
-              updateRouteLayerForSpeedGradient(geoJSON, data.speedGradient);
+              const lineCoordinates = geoJSON.features.map(feature => feature.geometry.coordinates);
 
-              // Fit map bounds to the GeoJSON data
+              const startPoint = lineCoordinates[0];
+              const endPoint = lineCoordinates[lineCoordinates.length - 1];
+
+              new mapboxgl.Marker({ color: 'green' })
+                      .setLngLat(startPoint)
+                      .setPopup(new mapboxgl.Popup({ offset: 25 }).setText("Start of Trip"))
+                      .addTo(window.map);
+
+              new mapboxgl.Marker({ color: 'red' })
+                      .setLngLat(endPoint)
+                      .setPopup(new mapboxgl.Popup({ offset: 25 }).setText("End of Trip"))
+                      .addTo(window.map);
+
+              const lineFeature = {
+                  type: 'Feature',
+                  geometry: {
+                      type: 'LineString',
+                      coordinates: lineCoordinates
+                  },
+                  properties: {}
+              };
+
+              if (toggleGradient) {
+                  isSpeedGradientShown = !isSpeedGradientShown;
+              }
+
+              if (isSpeedGradientShown) {
+                  updateRouteLayerForSpeedGradient(lineFeature, data.speedGradient);
+              } else {
+                  // Switch to a simple black line
+                  if (!window.map.getSource('route')) {
+                      window.map.addSource('route', {
+                          type: 'geojson',
+                          data: lineFeature
+                      });
+                  } else {
+                      window.map.getSource('route').setData(lineFeature);
+                  }
+
+                  if (window.map.getLayer('route')) {
+                      window.map.removeLayer('route');
+                  }
+
+                  window.map.addLayer({
+                      id: 'route',
+                      type: 'line',
+                      source: 'route',
+                      layout: {
+                          'line-join': 'round',
+                          'line-cap': 'round'
+                      },
+                      paint: {
+                          'line-color': 'black',
+                          'line-width': 6
+                      }
+                  });
+              }
+
               const bounds = new mapboxgl.LngLatBounds();
-              geoJSON.features[0].geometry.coordinates.forEach(coord => {
+              lineCoordinates.forEach(coord => {
                   bounds.extend(coord);
               });
-              window.map.fitBounds(bounds, { padding: 20 });
+              if (!bounds.isEmpty()) {
+                  window.map.fitBounds(bounds, { padding: 20 });
+              } else {
+                  console.error('Cannot calculate bounds from GeoJSON data');
+              }
+
+              if (showCoords) {
+                  const existingTable = document.getElementById(`coords-table-${tripIdForTable}`);
+                  if (existingTable) {
+                      existingTable.style.display = existingTable.style.display === 'none' ? '' : 'none';
+                  } else {
+                      displayCoordinatesTable(geoJSON, tripIdForTable);
+                  }
+              }
           } catch (error) {
               console.error('Error fetching trip data:', error);
           }
@@ -263,142 +333,6 @@
       displayTripDurations();
       formatDateTime();
     });
-
-
-
-      async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime, tripElement, showCoords = false, tripIdForTable = '') {
-          document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
-          tripElement.classList.add('active-trip');
-
-          const mapContainer = document.getElementById('map');
-          mapContainer.style.display = 'block';
-
-          if (!window.map) {
-              console.log('Initializing map');
-              window.map = new mapboxgl.Map({
-                  container: 'map',
-                  style: 'mapbox://styles/mapbox/dark-v10',
-                  center: [0, 0],
-                  zoom: 9
-              });
-          } else {
-              window.map.resize();
-          }
-
-          try {
-              const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
-              const response = await fetch(url, {
-                  headers: {
-                      'Content-Type': 'application/json',
-                  },
-                  credentials: 'include',
-              });
-
-              if (!response.ok) {
-                  throw new Error('Failed to fetch trip data');
-              }
-
-              const data = await response.json();
-              if (!data || !data.geojson || !data.geojson.features || data.geojson.features.length === 0) {
-                  console.error('Invalid or missing GeoJSON data', data);
-                  alert("This trip doesn't have any location data to display.");
-                  return;
-              }
-
-              const geoJSON = data.geojson;
-
-              // Check if the features have proper geometry and coordinates
-              if (!geoJSON.features[0].geometry || !geoJSON.features[0].geometry.coordinates || geoJSON.features[0].geometry.coordinates.length === 0) {
-                  console.error('GeoJSON feature geometry is not formatted correctly', geoJSON.features[0]);
-                  return;
-              }
-              const startPointFeature = geoJSON.features[0];
-              const endPointFeature = geoJSON.features[geoJSON.features.length - 1];
-
-              const startPoint = startPointFeature.geometry.coordinates;
-              const endPoint = endPointFeature.geometry.coordinates;
-
-              // Make sure the coordinates are valid numbers
-              if (!startPoint || startPoint.length !== 2 || !endPoint || endPoint.length !== 2) {
-                  console.error('Start or end point is not a valid coordinate array');
-                  return;
-              }
-
-              // Add start marker
-              new mapboxgl.Marker({ color: 'green' })
-                      .setLngLat({ lng: startPoint[0], lat: startPoint[1] }) // Make sure the order is [longitude, latitude]
-                      .setPopup(new mapboxgl.Popup({ offset: 25 })
-                              .setHTML(`<p><strong>Start Time:</strong> ${startPointFeature.properties.timestamp}</p>`))
-                      .addTo(window.map);
-
-              // Add end marker
-              new mapboxgl.Marker({ color: 'red' })
-                      .setLngLat({ lng: endPoint[0], lat: endPoint[1] }) // Make sure the order is [longitude, latitude]
-                      .setPopup(new mapboxgl.Popup({ offset: 25 })
-                              .setHTML(`<p><strong>End Time:</strong> ${endPointFeature.properties.timestamp}</p>`))
-                      .addTo(window.map);
-
-              if (!window.map.getSource('route')) {
-                  window.map.addSource('route', {
-                      type: 'geojson',
-                      data: geoJSON
-                  });
-              } else {
-                  window.map.getSource('route').setData(geoJSON);
-              }
-
-              if (window.map.getLayer('route')) {
-                  window.map.removeLayer('route');
-              }
-
-              window.map.addLayer({
-                  id: 'route',
-                  type: 'line',
-                  source: 'route',
-                  layout: {
-                      'line-join': 'round',
-                      'line-cap': 'round'
-                  },
-                  paint: {
-                      'line-color': 'black',
-                      'line-width': 6
-                  }
-              });
-
-              // Fit map bounds to the GeoJSON data
-              const bounds = new mapboxgl.LngLatBounds();
-              geoJSON.features.forEach(feature => {
-                  const coordinates = feature.geometry.coordinates;
-                  if (Array.isArray(coordinates) && coordinates.length === 2 && !isNaN(coordinates[0]) && !isNaN(coordinates[1])) {
-                      bounds.extend(coordinates);
-                  } else {
-                      console.error('Invalid coordinates in feature:', feature);
-                  }
-              });
-
-              if (!bounds.isEmpty()) {
-                  window.map.fitBounds(bounds, { padding: 20 });
-              } else {
-                  console.error('Cannot calculate bounds from GeoJSON data');
-              }
-
-              if (showCoords) {
-                  const existingTable = document.getElementById(`coords-table-${tripIdForTable}`);
-                  if (existingTable) {
-                      // Toggle visibility of the existing table
-                      existingTable.style.display = existingTable.style.display === 'none' ? '' : 'none';
-                  } else {
-                      const geoJSON = data.geojson;
-                      displayCoordinatesTable(geoJSON, tripIdForTable);
-                  }
-              }
-
-
-          } catch (error) {
-              console.error('Error fetching trip data:', error);
-          }
-      }
-
 
       function displayCoordinatesTable(geojson, tripIdForTable) {
           let tableHtml = `<div id="coords-table-${tripIdForTable}" class="coordinates-table">
@@ -515,10 +449,9 @@
                     <td>
                         <button class="lighter-teal" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode)">View Trip</button>
                         <button class="lighter-teal" onclick="snapToRoad('{{this.ID}}')">Snap to Road</button>
-                        <button class="lighter-teal" onclick="fetchAndDisplayMapWithGradient('{{this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode)">Show Speed Gradient</button>
-                        <button class="lighter-teal" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode, true, '{{this.ID}}')">Show Coordinates</button>
+                        <button class="lighter-teal" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode, false, '', true)">Toggle Speed Gradient</button>
+                        <button class="lighter-teal" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode, true, '{{this.ID}}', false)">Show/Hide Coordinates</button>
                         <button class="lighter-teal" onclick="downloadTripDataAsCSV('{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">Download as CSV</button>
-
                     </td>
                 </tr>
             {{/each}}
