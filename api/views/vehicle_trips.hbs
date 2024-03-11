@@ -407,10 +407,41 @@
           mapContainer.insertAdjacentHTML('afterend', tableHtml);
       }
 
+      async function downloadTripDataAsCSV(tripID, startTime, endTime) {
+          try {
+              const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
+              const response = await fetch(url);
 
+              if (!response.ok) {
+                  throw new Error('Failed to fetch trip data');
+              }
 
+              const { geojson } = await response.json();
+              const locations = geojson.features[0].geometry.coordinates; // Assuming coordinates are in this path
+              const csvContent = convertToCSV(locations, tripID);
 
+              downloadCSV(csvContent, `Trip_${tripID}.csv`);
+          } catch (error) {
+              console.error('Error downloading trip data:', error);
+          }
+      }
 
+      function convertToCSV(coordinates, tripID) {
+          const headers = 'TripID, Latitude, Longitude\n';
+          const rows = coordinates.map(coord => `${tripID}, ${coord[1]}, ${coord[0]}`).join('\n');
+          return headers + rows;
+      }
+
+      function downloadCSV(csvContent, fileName) {
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = fileName;
+          link.style.visibility = 'hidden';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+      }
   </script>
 </head>
 <body>
@@ -442,6 +473,7 @@
                         <button class="lighter-teal" onclick="snapToRoad('{{this.ID}}')">Snap to Road</button>
                         <button class="lighter-teal" onclick="fetchAndDisplayMapWithGradient('{{this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode)">Show Speed Gradient</button>
                         <button class="lighter-teal" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode, true, '{{this.ID}}')">Show Coordinates</button>
+                        <button class="lighter-teal" onclick="downloadTripDataAsCSV('{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">Download as CSV</button>
 
                     </td>
                 </tr>
