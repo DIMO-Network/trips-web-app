@@ -61,7 +61,41 @@ func main() {
 
 	// Protected route
 	app.Get("/vehicles/me", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
+
 		return controllers.HandleGetVehicles(c, &settings)
+	})
+
+	app.Get("/account", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
+		sessionCookie := c.Cookies("session_id")
+		if sessionCookie == "" {
+			fmt.Println("No session_id cookie")
+			return c.Render("session_expired", fiber.Map{})
+		}
+
+		// check if the session_id is in the cache
+		jwtToken, found := controllers.CacheInstance.Get(sessionCookie)
+		if !found {
+			fmt.Println("Session expired")
+			return c.Render("session_expired", fiber.Map{})
+		}
+
+		ethAddress := c.Locals("ethereum_address").(string)
+
+		vehicles, err := controllers.QueryIdentityAPIForVehicles(ethAddress, &settings)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
+		}
+
+		privilegeToken, err := controllers.RequestPriviledgeToken(c, &settings, vehicles[0].TokenID)
+
+		if err != nil {
+			return c.Render("session_expired", fiber.Map{})
+		}
+
+		return c.Render("account", fiber.Map{
+			"Token":          jwtToken,
+			"PrivilegeToken": privilegeToken,
+		})
 	})
 
 	// Device status route

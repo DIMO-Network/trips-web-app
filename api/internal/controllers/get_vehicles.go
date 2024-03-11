@@ -40,7 +40,7 @@ type Vehicle struct {
 func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 	ethAddress := c.Locals("ethereum_address").(string)
 
-	vehicles, err := queryMyVehicles(ethAddress, settings)
+	vehicles, err := QueryIdentityAPIForVehicles(ethAddress, settings)
 	if err != nil {
 		log.Printf("Error querying My Vehicles: %v", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying my vehicles: " + err.Error())
@@ -59,7 +59,8 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 	})
 }
 
-func queryMyVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
+func QueryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
+	// GraphQL query
 	graphqlQuery := `{
         vehicles(first: 50, filterBy: { owner: "` + ethAddress + `" }) {
             nodes {
