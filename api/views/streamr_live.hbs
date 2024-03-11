@@ -59,31 +59,37 @@
     </style>
     <script src="https://unpkg.com/@streamr/sdk@latest/streamr-sdk.web.min.js"></script>
     <script>
-        // todo: use stream with nft address
-        const streamId = "streams.dimo.eth/firehose/weather"
 
-        // todo: we need the decrypt key - ask user to sign message to get the decrypt key
-        const client = new StreamrClient({
-            auth: {
-              privateKey: crypto.randomBytes(32).toString('hex')
-            },
-          });
+        const main = async () => {
 
-          const stream = await client.getStream(streamId);
+            // todo: use stream with nft address
+            const streamId = "streams.dimo.eth/firehose/weather"
 
-          const onMessage = (content) => {
-           console.log(JSON.stringify(content, undefined, 2));
-          };
+            // todo: we need the decrypt key - ask user to sign message to get the decrypt key
+            const client = new StreamrClient({
+                auth: {
+                    privateKey: "0xdfc8bc5958f7635a7573da5baef69eeec48609247340a187646bf33ab8280548"
+                },
+            });
 
-          const subscriptions = await Promise.all(
-            stream.getStreamParts().map(async (partition) => {
-              await client.subscribe(
-                partition,
-                onMessage
-              );
-            })
-          );
-    </script
+            const stream = await client.getStream(streamId);
+
+            const onMessage = (content) => {
+                console.log(JSON.stringify(content, undefined, 2));
+            };
+
+            const subscriptions = await Promise.all(
+                    stream.getStreamParts().map(async (partition) => {
+                        await client.subscribe(
+                                partition,
+                                onMessage
+                        );
+                    })
+            );
+        }
+
+        main();
+    </script>
 </head>
 <body>
 <h1>{{Title}}</h1>
