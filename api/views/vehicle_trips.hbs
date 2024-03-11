@@ -79,28 +79,84 @@
           }
       });
 
-      async function showSpeedGradient(tripID) {
+      function initializeMap() {
+          mapboxgl.accessToken = "pk.eyJ1IjoiYmVua29jaGFub3dza2kiLCJhIjoiY2t6eDdlZzRnOGUyeTJvbXphdXdvZnJjZSJ9.S1WS1tkPKQnGt3A5Y72ZUA";
+          window.map = new mapboxgl.Map({
+              container: 'map',
+              style: 'mapbox://styles/mapbox/dark-v10',
+              center: [0, 0],
+              zoom: 9
+          });
+      }
+      window.onload = initializeMap;
+
+      async function fetchAndDisplayMapWithGradient(tokenID, tripID, startTime, endTime, tripElement) {
+          // Remove 'active-trip' class from all trip elements and add it to the current one
+          document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
+          tripElement.classList.add('active-trip');
+
+          const mapContainer = document.getElementById('map');
+          mapContainer.style.display = 'block';
+
+          if (!window.map) {
+              console.log('Initializing map');
+              window.map = new mapboxgl.Map({
+                  container: 'map',
+                  style: 'mapbox://styles/mapbox/dark-v10',
+                  center: [0, 0],
+                  zoom: 9
+              });
+          } else {
+              window.map.resize();
+          }
+
           try {
-              const response = await fetch(`/your-backend-endpoint/${tripID}`);
+              const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
+              const response = await fetch(url, {
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  credentials: 'include',
+              });
+
               if (!response.ok) {
                   throw new Error('Failed to fetch trip data');
               }
-              const data = await response.json();
 
-              updateMapWithSpeedGradient(data.geojson, data.speedGradient);
+              const data = await response.json();
+              if (!data || !data.geojson || !data.geojson.features || data.geojson.features.length === 0) {
+                  console.error('Invalid or missing GeoJSON data', data);
+                  alert("This trip doesn't have any location data to display.");
+                  return;
+              }
+
+              const geoJSON = data.geojson;
+              updateRouteLayerForSpeedGradient(geoJSON, data.speedGradient);
+
+              // Fit map bounds to the GeoJSON data
+              const bounds = new mapboxgl.LngLatBounds();
+              geoJSON.features[0].geometry.coordinates.forEach(coord => {
+                  bounds.extend(coord);
+              });
+              window.map.fitBounds(bounds, { padding: 20 });
           } catch (error) {
-              console.error('Error:', error);
+              console.error('Error fetching trip data:', error);
           }
       }
 
-      function updateMapWithSpeedGradient(geojsonData, speedGradient) {
+      function updateRouteLayerForSpeedGradient(geoJSON, speedGradient) {
+          console.log('Speed Gradient Array:', speedGradient);
+
+          let gradientStops = mapSpeedColorsToMapboxStyle(speedGradient);
+
           if (!window.map.getSource('route')) {
               window.map.addSource('route', {
                   type: 'geojson',
-                  data: geojsonData
+                  data: geoJSON,
+                  lineMetrics: true
               });
           } else {
-              window.map.getSource('route').setData(geojsonData);
+              window.map.getSource('route').setData(geoJSON);
           }
 
           if (window.map.getLayer('route')) {
@@ -116,23 +172,30 @@
                   'line-cap': 'round'
               },
               paint: {
-                  'line-color': ["match", ["get", "speed"], ...mapSpeedColorsToMapboxStyle(speedGradient)],
-                  'line-width': 5
+                  'line-color': gradientStops,
+                  'line-width': 6
               }
           });
+
+          console.log('Added new route layer with gradient');
       }
 
-      function mapSpeedColorsToMapboxStyle(speedGradient) {
-          // Maps the speedGradient to a Mapbox style expression
-          let expression = ['interpolate', ['linear'], ['line-progress']];
 
-          speedGradient.forEach((color, index) => {
-              expression.push(index / (speedGradient.length - 1), color);
-          });
+      function mapSpeedColorsToMapboxStyle(speedColors) {
+          let expression = ['interpolate', ['linear'], ['line-progress']];
+          let totalColors = speedColors.length;
+
+          // Distribute the stops more evenly across the line
+          for (let i = 0; i < totalColors; i++) {
+              // This gives a more even distribution of colors along the line
+              let stop = i / (totalColors - 1);
+              let color = speedColors[i];
+              expression.push(stop, color);
+          }
+          console.log('Gradient Stops:', expression); // Debugging: Print the gradient stops
 
           return expression;
       }
-
 
       function displayTripDurations() {
       document.querySelectorAll('.trip-duration').forEach(function(element) {
@@ -179,16 +242,6 @@
       formatDateTime();
     });
 
-    function initializeMap() {
-      mapboxgl.accessToken = "pk.eyJ1IjoiYmVua29jaGFub3dza2kiLCJhIjoiY2t6eDdlZzRnOGUyeTJvbXphdXdvZnJjZSJ9.S1WS1tkPKQnGt3A5Y72ZUA";
-      window.map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/dark-v10',
-        center: [0, 0],
-        zoom: 9
-      });
-    }
-    window.onload = initializeMap;
 
       async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime, tripElement) {
           document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
@@ -296,104 +349,8 @@
           }
       }
 
-      async function fetchAndDisplayMapWithGradient(tokenID, tripID, startTime, endTime, tripElement) {
-          // Remove 'active-trip' class from all trip elements and add it to the current one
-          document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
-          tripElement.classList.add('active-trip');
 
-          const mapContainer = document.getElementById('map');
-          mapContainer.style.display = 'block';
 
-          if (!window.map) {
-              console.log('Initializing map');
-              window.map = new mapboxgl.Map({
-                  container: 'map',
-                  style: 'mapbox://styles/mapbox/dark-v10',
-                  center: [0, 0],
-                  zoom: 9
-              });
-          } else {
-              window.map.resize();
-          }
-
-          try {
-              const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
-              const response = await fetch(url, {
-                  headers: {
-                      'Content-Type': 'application/json',
-                  },
-                  credentials: 'include',
-              });
-
-              if (!response.ok) {
-                  throw new Error('Failed to fetch trip data');
-              }
-
-              const data = await response.json();
-              if (!data || !data.geojson || !data.geojson.features || data.geojson.features.length === 0) {
-                  console.error('Invalid or missing GeoJSON data', data);
-                  alert("This trip doesn't have any location data to display.");
-                  return;
-              }
-
-              const geoJSON = data.geojson;
-              updateRouteLayerForSpeedGradient(geoJSON, data.speedGradient);
-
-              // Fit map bounds to the GeoJSON data
-              const bounds = new mapboxgl.LngLatBounds();
-              geoJSON.features[0].geometry.coordinates.forEach(coord => {
-                  bounds.extend(coord);
-              });
-              window.map.fitBounds(bounds, { padding: 20 });
-          } catch (error) {
-              console.error('Error fetching trip data:', error);
-          }
-      }
-
-      function updateRouteLayerForSpeedGradient(geoJSON, speedGradient) {
-          console.log('Speed Gradient Array:', speedGradient);
-          //testing
-          speedGradient = [0, 'green', 0.5, 'yellow', 1, 'red'];
-
-          let gradientStops = ['interpolate', ['linear'], ['line-progress']];
-          let stepSize = 1 / (speedGradient.length - 1);
-          for (let i = 0; i < speedGradient.length; i += 2) {
-              let stop = speedGradient[i];     // Stop value btwn 0 and 1
-              let color = speedGradient[i + 1]; // Color value is string?
-              gradientStops.push(stop, color);
-          }
-          console.log('Gradient Stops:', gradientStops);
-
-          if (!window.map.getSource('route')) {
-              window.map.addSource('route', {
-                  type: 'geojson',
-                  data: geoJSON,
-                  lineMetrics: true
-              });
-          } else {
-              window.map.getSource('route').setData(geoJSON);
-          }
-
-          if (window.map.getLayer('route')) {
-              window.map.removeLayer('route');
-          }
-
-          window.map.addLayer({
-              id: 'route',
-              type: 'line',
-              source: 'route',
-              layout: {
-                  'line-join': 'round',
-                  'line-cap': 'round'
-              },
-              paint: {
-                  'line-color': gradientStops,
-                  'line-width': 6
-              }
-          });
-
-          console.log('Added new route layer with gradient');
-      }
 
   </script>
 </head>
