@@ -660,6 +660,21 @@
           }
       }
 
+      function toggleTripOptions(viewTripCheckbox, tripID) {
+          const isEnabled = viewTripCheckbox.checked;
+          document.getElementById(`snap-to-road-${tripID}`).disabled = !isEnabled;
+          document.getElementById(`toggle-gradient-${tripID}`).disabled = !isEnabled;
+          document.getElementById(`show-raw-data-${tripID}`).disabled = !isEnabled;
+
+          if (!isEnabled) {
+              document.getElementById(`snap-to-road-${tripID}`).checked = false;
+              snapToRoad(tripID, false);
+              document.getElementById(`toggle-gradient-${tripID}`).checked = false;
+              document.getElementById(`show-raw-data-${tripID}`).checked = false;
+          }
+      }
+
+
   </script>
 </head>
 <body>
@@ -690,10 +705,10 @@
                     <td><span class="formatted-start-time" data-time="{{this.Start.Time}}"></span></td>
                     <td><span class="formatted-end-time" data-time="{{this.End.Time}}"></span></td>
                     <td><span class="trip-duration" data-start="{{this.Start.Time}}" data-end="{{this.End.Time}}"></span></td>
-                    <td><input type="checkbox" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', false)"></td>
-                    <td><input type="checkbox" onclick="snapToRoad('{{this.ID}}', this.checked)"></td>
-                    <td><input type="checkbox" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', this.checked)"></td>
-                    <td><input type="checkbox" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, true, '{{this.ID}}', false)"></td>
+                    <td><input type="checkbox" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', false)" onchange="toggleTripOptions(this, '{{this.ID}}')"></td>
+                    <td><input type="checkbox" id="snap-to-road-{{this.ID}}" disabled onclick="snapToRoad('{{this.ID}}', this.checked)"></td>
+                    <td><input type="checkbox" id="toggle-gradient-{{this.ID}}" disabled onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', this.checked)"></td>
+                    <td><input type="checkbox" id="show-raw-data-{{this.ID}}" disabled onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, true, '{{this.ID}}', false)"></td>
                     <td>
                         <button class="lighter-teal" onclick="downloadTripDataAsCSV('{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">
                             &#x21E9;
