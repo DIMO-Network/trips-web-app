@@ -44,18 +44,21 @@ func AuthMiddleware() fiber.Handler {
 		// check if session_id cookie exists
 		sessionCookie := c.Cookies("session_id")
 		if sessionCookie == "" {
+			fmt.Println("No session_id cookie")
 			return c.Render("session_expired", fiber.Map{})
 		}
 
 		// check if the session_id is in the cache
 		jwtToken, found := CacheInstance.Get(sessionCookie)
 		if !found {
+			fmt.Println("Session expired")
 			return c.Render("session_expired", fiber.Map{})
 		}
 
 		// check if main auth jwt token has expired here, if not show same render of session expired etc.
 		ethAddress, err := ExtractEthereumAddressFromToken(jwtToken.(string))
 		if err != nil {
+			fmt.Println("Error extracting ethereum address from token:", err)
 			return c.Render("session_expired", fiber.Map{})
 		}
 
