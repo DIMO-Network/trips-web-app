@@ -6,74 +6,91 @@
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/timeago.js@4.0.2/dist/timeago.min.js"></script>
-  <style>
-    body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f4f4f4;
-      color: #333;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      color: #444444;
-    }
-    ul {
-      list-style-type: none;
-      padding: 0;
-    }
-    li {
-      margin-bottom: 10px;
-    }
-    .container {
-      display: flex;
-      justify-content: space-between;
-    }
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    .trip-list {
-      flex: 1;
-      margin-right: 10px;
-    }
-    .lighter-teal {
-      background-color: #8ED6D9;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-      padding: 10px 20px;
-    }
+    <style>
+      body {
+          font-family: 'Arial', sans-serif;
+          background-color: #f4f4f4;
+          color: #333;
+          margin: 0;
+          padding: 20px;
+      }
+      h1 {
+          color: #444444;
+      }
+      .container {
+          display: flex;
+          flex-direction: column;
+      }
+      #map {
+          height: 60vh;
+          margin-bottom: 20px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+      }
+      .trip-table {
+          width: 100%;
+          border-collapse: collapse;
+      }
+      .trip-table th, .trip-table td {
+          border: 1px solid #ddd;
+          padding: 8px;
+      }
+      .trip-table th {
+          background-color: #6BC3C6;
+          color: white;
+      }
+      .lighter-teal {
+          background-color: #8ED6D9;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 16px;
+          padding: 10px 20px;
+      }
+      .lighter-teal:hover {
+          background-color: #6BC3C6;
+      }
+      .back-button {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          padding: 10px 20px;
+          background-color: #00CED1;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 16px;
+      }
+      .back-button:hover {
+          background-color: #00CED1;
+      }
+      .coordinates-table {
+          margin-top: 20px;
+          border-collapse: collapse;
+          width: 100%;
+          max-width: 600px;
+          margin: auto;
+      }
+      .coordinates-table h3 {
+          text-align: center;
+          margin-bottom: 10px;
+      }
+      .coordinates-table table {
+          width: 100%;
+          border-collapse: collapse;
+      }
+      .coordinates-table th, .coordinates-table td {
+          border: 1px solid #ddd;
+          padding: 8px;
+          text-align: left;
+      }
+      .coordinates-table th {
+          background-color: #f2f2f2;
+      }
 
-    .lighter-teal:hover {
-      background-color: #6BC3C6;
-    }
-
-    .active-trip {
-        background-color: #6BC3C6;
-        border: 2px solid #333333;
-    }
-
-    #map {
-      height: 60vh;
-      flex: 2;
-      margin-right: 10px;
-      margin-top: 50px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-    }
-    .back-button {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 10px 20px;
-      background-color: #00CED1;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    .back-button:hover {
-      background-color: #00CED1;
-    }
   </style>
   <script>
       window.addEventListener('load', function() {
@@ -88,190 +105,622 @@
           }
       });
 
+      function initializeMap() {
+          mapboxgl.accessToken = "pk.eyJ1IjoiYmVua29jaGFub3dza2kiLCJhIjoiY2t6eDdlZzRnOGUyeTJvbXphdXdvZnJjZSJ9.S1WS1tkPKQnGt3A5Y72ZUA";
+          window.map = new mapboxgl.Map({
+              container: 'map',
+              style: 'mapbox://styles/mapbox/dark-v10',
+              center: [0, 0],
+              zoom: 9
+          });
+      }
+      window.onload = initializeMap;
+      let isSpeedGradientShown = false;
+      window.mapMarkers = [];
+      window.routeLayerId = null;
+      window.currentTripCoordinates = [];
+
+
       function displayTripDurations() {
-      document.querySelectorAll('.trip-duration').forEach(function(element) {
-        const start = new Date(element.getAttribute('data-start'));
-        const end = new Date(element.getAttribute('data-end'));
+          document.querySelectorAll('.trip-duration').forEach(function(element) {
+              const start = new Date(element.getAttribute('data-start'));
+              const end = new Date(element.getAttribute('data-end'));
 
-        console.log('Parsed Start:', start.toISOString());
-        console.log('Parsed End:', end.toISOString());
+              console.log('Parsed Start:', start.toISOString());
+              console.log('Parsed End:', end.toISOString());
 
-        const durationMs = end - start;
-        const minutes = Math.floor(durationMs / 60000);
-        element.textContent = `${minutes} minutes`;
-      });
-    }
-
-    function updateTimeago() {
-      document.querySelectorAll('.timeago').forEach(function(element) {
-        const dateTime = element.getAttribute('datetime');
-        element.textContent = timeago.format(dateTime);
-      });
-    }
-
-    function formatDateTime() {
-      document.querySelectorAll('.formatted-start-time, .formatted-end-time').forEach(function(element) {
-        const dateTimeStr = element.getAttribute('data-time');
-        const dateTime = new Date(dateTimeStr);
-
-        const formattedTime = dateTime.toLocaleString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-
-        element.textContent = formattedTime;
-      });
-    }
-
-    window.addEventListener('load', function() {
-      initializeMap();
-      updateTimeago();
-      displayTripDurations();
-      formatDateTime();
-    });
-
-    function initializeMap() {
-      mapboxgl.accessToken = "pk.eyJ1IjoiYmVua29jaGFub3dza2kiLCJhIjoiY2t6eDdlZzRnOGUyeTJvbXphdXdvZnJjZSJ9.S1WS1tkPKQnGt3A5Y72ZUA";
-      window.map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/dark-v10',
-        center: [0, 0],
-        zoom: 9
-      });
-    }
-    window.onload = initializeMap;
-
-    async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime, tripElement) {
-
-      document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
-      tripElement.classList.add('active-trip');
-
-      const mapContainer = document.getElementById('map');
-      mapContainer.style.display = 'block';
-
-      if (!window.map) {
-        console.log('Initializing map');
-        window.map = new mapboxgl.Map({
-          container: 'map',
-          style: 'mapbox://styles/mapbox/dark-v10',
-          center: [0, 0],
-          zoom: 9
-        });
-      } else {
-        window.map.resize();
+              const durationMs = end - start;
+              const minutes = Math.floor(durationMs / 60000);
+              element.textContent = `${minutes} minutes`;
+          });
       }
 
-      try {
-        const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
-        const response = await fetch(url, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
+      function updateTimeago() {
+          document.querySelectorAll('.timeago').forEach(function(element) {
+              const dateTime = element.getAttribute('datetime');
+              element.textContent = timeago.format(dateTime);
+          });
+      }
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch trip data');
-        }
-        const geoJSON = await response.json();
-        console.log("GeoJSON data:", geoJSON);
+      function formatDateTime() {
+          document.querySelectorAll('.formatted-start-time, .formatted-end-time').forEach(function(element) {
+              const dateTimeStr = element.getAttribute('data-time');
+              const dateTime = new Date(dateTimeStr);
 
-        const startPoint = geoJSON.features[0].geometry.coordinates[0];
-        const endPoint = geoJSON.features[0].geometry.coordinates[geoJSON.features[0].geometry.coordinates.length - 1];
+              const formattedTime = dateTime.toLocaleString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+              });
 
-          new mapboxgl.Marker({ color: 'green' })
-                  .setLngLat(startPoint)
-                  .setPopup(new mapboxgl.Popup({ offset: 25 })
-                          .setHTML(`<p><strong>Start Time:</strong> ${new Date(startTime).toLocaleString()}</p>`))
-                  .addTo(map);
+              element.textContent = formattedTime;
+          });
+      }
 
-          new mapboxgl.Marker({ color: 'red' })
-                  .setLngLat(endPoint)
-                  .setPopup(new mapboxgl.Popup({ offset: 25 })
-                          .setHTML(`<p><strong>End Time:</strong> ${new Date(endTime).toLocaleString()}</p>`))
-                  .addTo(map);
-
-
-          // Add data to map
-        const addDataToMap = () => {
-          if (!geoJSON || !geoJSON.features || !geoJSON.features.length || !geoJSON.features[0].geometry.coordinates.length) {
-            console.error('Invalid GeoJSON data', geoJSON);
-            alert("This trip doesn't have any location data to display.");
-
-            return;
+      function clearTripDisplay(tripID) {
+          // Clear markers
+          if (window.mapMarkers.length > 0) {
+              window.mapMarkers.forEach(marker => marker.remove());
+              window.mapMarkers = [];
           }
 
-          if (window.map.getSource('route')) {
-            window.map.getSource('route').setData(geoJSON);
+          // Clear route layer
+          const routeLayerId = `route-${tripID}`;
+          if (window.map.getLayer(routeLayerId)) {
+              window.map.removeLayer(routeLayerId);
+              window.map.removeSource(routeLayerId);
+          }
+      }
+
+      function displaySimpleRoute(lineFeature, routeLayerId) {
+          if (!window.map.getSource(routeLayerId)) {
+              window.map.addSource(routeLayerId, {
+                  type: 'geojson',
+                  data: lineFeature
+              });
           } else {
-            window.map.addSource('route', {
-              type: 'geojson',
-              data: geoJSON
-            });
-            window.map.addLayer({
-              id: 'route',
+              window.map.getSource(routeLayerId).setData(lineFeature);
+          }
+
+          if (!window.map.getLayer(routeLayerId)) {
+              window.map.addLayer({
+                  id: routeLayerId,
+                  type: 'line',
+                  source: routeLayerId,
+                  layout: {
+                      'line-join': 'round',
+                      'line-cap': 'round'
+                  },
+                  paint: {
+                      'line-color': 'white',
+                      'line-width': 6
+                  }
+              });
+          }
+      }
+
+      async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime, tripElement, showCoords = false, tripIdForTable = '', toggleGradient) {
+          document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
+          tripElement.classList.add('active-trip');
+
+          const mapContainer = document.getElementById('map');
+          mapContainer.style.display = 'block';
+
+          if (!window.map) {
+              console.log('Initializing map');
+              window.map = new mapboxgl.Map({
+                  container: 'map',
+                  style: 'mapbox://styles/mapbox/dark-v10',
+                  center: [0, 0],
+                  zoom: 9
+              });
+          } else {
+              window.map.resize();
+          }
+
+          const routeLayerId = `route-${tripID}`;
+          const gradientLayerId = `route-gradient-${tripID}`;
+
+          const tripCheckbox = document.querySelector(`input[type=checkbox][onclick*="'${tripID}'"]`);
+          if (!tripCheckbox || !tripCheckbox.checked) {
+              clearTripDisplay(tripID); // Removes both markers and line
+              return; // Exit if trip checkbox is not checked
+          }
+
+          // Clear existing markers and route layer if they exist
+          if (window.mapMarkers.length > 0) {
+              window.mapMarkers.forEach(marker => marker.remove());
+              window.mapMarkers = [];
+          }
+          if (window.routeLayerId && window.map.getLayer(window.routeLayerId)) {
+              window.map.removeLayer(window.routeLayerId);
+              window.map.removeSource(window.routeLayerId);
+              window.routeLayerId = null;
+          }
+          const checkbox = document.querySelector(`input[type=checkbox][onclick*="'${tripID}'"]`);
+          if (!checkbox) {
+              return;
+          }
+
+          try {
+              const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
+              const response = await fetch(url, {
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  credentials: 'include',
+              });
+
+              if (!response.ok) {
+                  throw new Error('Failed to fetch trip data');
+              }
+
+              const data = await response.json();
+
+              console.log("Raw GeoJSON data:", data.geojson);
+
+              window.currentTripCoordinates = data.geojson.features.map(feature => {
+                  const coords = feature.geometry.coordinates;
+                  return coords && coords.length === 2 ? coords : null;
+              }).filter(coord => coord !== null);
+
+              console.log("Processed trip coordinates:", window.currentTripCoordinates);
+
+
+              if (!data || !data.geojson || !data.geojson.features || data.geojson.features.length === 0) {
+                  console.error('Invalid or missing GeoJSON data', data);
+                  alert("This trip doesn't have any location data to display.");
+                  return;
+              }
+
+              const geoJSON = data.geojson;
+              const lineCoordinates = geoJSON.features.map(feature => feature.geometry.coordinates);
+
+              const startPoint = lineCoordinates[0];
+              const endPoint = lineCoordinates[lineCoordinates.length - 1];
+
+              const startMarker = new mapboxgl.Marker({ color: 'green' })
+                      .setLngLat(startPoint)
+                      .setPopup(new mapboxgl.Popup({ offset: 25 }).setText("Start of Trip"))
+                      .addTo(window.map);
+              const endMarker = new mapboxgl.Marker({ color: 'red' })
+                      .setLngLat(endPoint)
+                      .setPopup(new mapboxgl.Popup({ offset: 25 }).setText("End of Trip"))
+                      .addTo(window.map);
+
+              window.mapMarkers.push(startMarker, endMarker);
+
+              // Creating or updating the route layer
+              const lineFeature = {
+                  type: 'Feature',
+                  geometry: {
+                      type: 'LineString',
+                      coordinates: lineCoordinates
+                  },
+                  properties: {}
+              };
+
+
+              if (toggleGradient) {
+                  // If gradient is to be shown, remove the white line layer if it exists
+                  if (window.map.getLayer(routeLayerId)) {
+                      window.map.removeLayer(routeLayerId);
+                      window.map.removeSource(routeLayerId);
+                  }
+
+                  // Show the route with speed gradient
+                  updateRouteLayerForSpeedGradient(lineFeature, data.speedGradient, gradientLayerId);
+              } else {
+                  // If gradient is to be removed, remove the gradient layer if it exists
+                  if (window.map.getLayer(gradientLayerId)) {
+                      window.map.removeLayer(gradientLayerId);
+                      window.map.removeSource(gradientLayerId);
+                  }
+
+                  // Show the route as a simple white line
+                  displaySimpleRoute(lineFeature, routeLayerId);
+              }
+
+
+              if (!window.map.getLayer(routeLayerId)) {
+                      window.map.addLayer({
+                          id: routeLayerId,
+                          type: 'line',
+                          source: routeLayerId,
+                          layout: {
+                              'line-join': 'round',
+                              'line-cap': 'round'
+                          },
+                          paint: {
+                              'line-color': 'white',
+                              'line-width': 6
+                          }
+                      });
+                  }
+
+              const bounds = new mapboxgl.LngLatBounds();
+              lineCoordinates.forEach(coord => {
+                  bounds.extend(coord);
+              });
+              if (!bounds.isEmpty()) {
+                  window.map.fitBounds(bounds, { padding: 20 });
+              } else {
+                  console.error('Cannot calculate bounds from GeoJSON data');
+              }
+
+              if (showCoords) {
+                  const existingTable = document.getElementById(`coords-table-${tripIdForTable}`);
+                  const graphContainer = document.getElementById(`speedGraphContainer-${tripIdForTable}`);
+
+                  if (existingTable) {
+                      const isHidden = existingTable.style.display === 'none';
+                      existingTable.style.display = isHidden ? '' : 'none';
+                      graphContainer.style.display = isHidden ? '' : 'none';
+
+                      if (isHidden) {
+                          const locationData = data.geojson.features.map(feature => ({
+                              timestamp: feature.properties.timestamp,
+                              speed: feature.properties.speed
+                          }));
+
+                          renderSpeedGraph(locationData, tripIdForTable);
+                      }
+                  } else {
+                      displayCoordinatesTable(geoJSON, tripIdForTable);
+                      document.getElementById(`speedGraphContainer-${tripIdForTable}`).style.display = '';
+
+                      const locationData = data.geojson.features.map(feature => ({
+                          timestamp: feature.properties.timestamp,
+                          speed: feature.properties.speed
+                      }));
+
+                      renderSpeedGraph(locationData, tripIdForTable);
+                  }
+              }
+          } catch (error) {
+              console.error('Error fetching trip data:', error);
+          }
+      }
+
+      function updateRouteLayerForSpeedGradient(geoJSON, speedGradient, gradientLayerId) {
+          console.log('Speed Gradient Array:', speedGradient);
+
+          let gradientStops = mapSpeedColorsToMapboxStyle(speedGradient);
+
+          if (!window.map.getSource(gradientLayerId)) {
+              window.map.addSource(gradientLayerId, {
+                  type: 'geojson',
+                  data: geoJSON,
+                  lineMetrics: true
+              });
+          } else {
+              window.map.getSource(gradientLayerId).setData(geoJSON);
+          }
+
+          if (window.map.getLayer(gradientLayerId)) {
+              window.map.removeLayer(gradientLayerId);
+          }
+
+          window.map.addLayer({
+              id: gradientLayerId,
               type: 'line',
-              source: 'route',
+              source: gradientLayerId,
               layout: {
-                'line-join': 'round',
-                'line-cap': 'round'
+                  'line-join': 'round',
+                  'line-cap': 'round'
               },
               paint: {
-                'line-color': '#FFFF00',
-                'line-width': 6
+                  'line-color': 'red',
+                  'line-width': 6,
+                  'line-gradient': gradientStops
               }
-            });
-          }
-
-          const bounds = new mapboxgl.LngLatBounds();
-          geoJSON.features[0].geometry.coordinates.forEach(coord => {
-            if (coord.length >= 2) {
-              bounds.extend(coord);
-            }
           });
 
-          if (!bounds.isEmpty()) {
-            window.map.fitBounds(bounds, { padding: 20 });
-          } else {
-            console.error('Cannot calculate bounds from GeoJSON data');
-          }
-        };
-
-        if (window.map.isStyleLoaded()) {
-          addDataToMap();
-        } else {
-          window.map.once('load', addDataToMap);
-        }
-      } catch (error) {
-        console.error('Error fetching trip data:', error);
+          console.log('Added new route layer with gradient');
       }
-    }
+
+
+      function mapSpeedColorsToMapboxStyle(speedColors) {
+          let expression = ['interpolate', ['linear'], ['line-progress']];
+          let totalColors = speedColors.length;
+
+          for (let i = 0; i < totalColors; i++) {
+              let stop = i / (totalColors - 1);
+              let color = speedColors[i];
+              expression.push(stop, color);
+          }
+          console.log('Gradient Stops:', expression);
+
+          return expression;
+      }
+
+      function displayCoordinatesTable(geojson, tripIdForTable) {
+          let tableHtml = '';
+
+          // speed graph
+          tableHtml += `<div id="speedGraphContainer-${tripIdForTable}" class="speed-graph-container" style="display: none;">
+                      <canvas id="speedGraph-${tripIdForTable}"></canvas>
+                  </div>`;
+
+          // coordinates table
+          tableHtml += `<div id="coords-table-${tripIdForTable}" class="coordinates-table">
+                      <h3>Coordinates for Trip: ${tripIdForTable}</h3>
+                      <table>
+                        <tr>
+                          <th>Latitude</th>
+                          <th>Longitude</th>
+                          <th>Speed</th>
+                          <th>Timestamp</th>
+                        </tr>`;
+
+          geojson.features.forEach(feature => {
+              const coord = feature.geometry.coordinates;
+              const props = feature.properties;
+              tableHtml += `<tr>
+                          <td>${coord[1]}</td>
+                          <td>${coord[0]}</td>
+                          <td>${props.speed}</td>
+                          <td>${props.timestamp}</td>
+                      </tr>`;
+          });
+
+          tableHtml += '</table></div>';
+
+          const mapContainer = document.getElementById('map');
+          mapContainer.insertAdjacentHTML('afterend', tableHtml);
+      }
+
+
+      function convertToCSV(geojson) {
+          if (!geojson || !geojson.features) {
+              console.error('Invalid or undefined GeoJSON data');
+              return 'Invalid data';
+          }
+
+          const headers = 'Latitude, Longitude, Speed, Timestamp\n';
+          const rows = geojson.features.map(feature => {
+              const coord = feature.geometry.coordinates;
+              const props = feature.properties;
+              const speed = props.speed || 'No speed data';
+              const timestamp = props.timestamp || 'No timestamp data';
+              return `${coord[1]}, ${coord[0]}, ${speed}, ${timestamp}`;
+          }).join('\n');
+
+          return headers + rows;
+      }
+
+      async function downloadTripDataAsCSV(tripId, startTime, endTime) {
+          try {
+              const url = `/api/trip/${tripId}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
+              const response = await fetch(url, {
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  credentials: 'include',
+              });
+
+              if (!response.ok) {
+                  throw new Error('Failed to fetch trip data');
+              }
+
+              const data = await response.json();
+              if (!data || !data.geojson) {
+                  console.error('Invalid or missing GeoJSON data', data);
+                  alert("No data available for download.");
+                  return;
+              }
+
+              const csvContent = convertToCSV(data.geojson);
+              downloadCSV(csvContent, `Trip_${tripId}.csv`);
+          } catch (error) {
+              console.error('Error downloading trip data:', error);
+          }
+      }
+
+      function downloadCSV(csvContent, fileName) {
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = fileName;
+          link.style.visibility = 'hidden';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+      }
+
+      function renderSpeedGraph(data, tripIdForTable) {
+          const canvasId = `speedGraph-${tripIdForTable}`;
+          const canvas = document.getElementById(canvasId);
+
+          if (!canvas) {
+              console.error(`Canvas with ID ${canvasId} not found`);
+              return;
+          }
+
+          const ctx = canvas.getContext('2d');
+          const timestamps = data.map(d => new Date(d.timestamp).toLocaleTimeString());
+          const speeds = data.map(d => d.speed);
+
+          new Chart(ctx, {
+              type: 'line',
+              data: {
+                  labels: timestamps,
+                  datasets: [{
+                      label: 'Speed over Time',
+                      data: speeds,
+                      borderColor: 'rgb(75, 192, 192)',
+                      tension: 0.1
+                  }]
+              },
+              options: {
+                  scales: {
+                      y: {
+                          beginAtZero: true
+                      }
+                  }
+              }
+          });
+      }
+
+      async function snapToRoad(tripID, isChecked) {
+          const snappedLayerId = `snapped-path-${tripID}`;
+          const originalLayerId = `route-${tripID}`;
+
+          if (!isChecked) {
+              // If unchecked, remove the snapped path layer and show the original route
+              if (window.map.getLayer(snappedLayerId)) {
+                  window.map.removeLayer(snappedLayerId);
+                  window.map.removeSource(snappedLayerId);
+              }
+              if (window.map.getLayer(originalLayerId)) {
+                  window.map.setLayoutProperty(originalLayerId, 'visibility', 'visible');
+              }
+              return;
+          }
+
+          // Processing the snapped path when checkbox is checked
+          console.log("Current trip coordinates before snap to road:", window.currentTripCoordinates);
+
+          try {
+              let snappedFeatures = [];
+
+              for (let i = 0; i < window.currentTripCoordinates.length; i += 50) {
+                  const coordBatch = window.currentTripCoordinates.slice(i, i + 50);
+                  const coordQuery = coordBatch.map(c => `${c[0]},${c[1]}`).join(';');
+                  const radiuses = new Array(coordBatch.length).fill(25).join(';');
+
+                  const matchUrl = `https://api.mapbox.com/matching/v5/mapbox/driving/${coordQuery}?geometries=geojson&radiuses=${radiuses}&access_token=${mapboxgl.accessToken}`;
+
+                  console.log("Map Matching API URL:", matchUrl);
+
+                  const matchResponse = await fetch(matchUrl);
+                  const matchData = await matchResponse.json();
+
+                  console.log("Map Matching API response:", matchData);
+
+                  if (matchData.code !== "Ok") {
+                      console.error('Error with Map Matching:', matchData.message);
+                      continue;
+                  }
+
+                  const snappedFeature = {
+                      type: "Feature",
+                      geometry: matchData.matchings[0].geometry,
+                  };
+                  console.log("Processed feature for batch:", snappedFeature);
+
+                  snappedFeatures.push(snappedFeature);
+              }
+              console.log("All snapped features:", snappedFeatures);
+
+              updateMapWithSnappedPath(snappedFeatures, tripID);
+          } catch (error) {
+              console.error('Error in snapToRoad:', error);
+          }
+
+          // Hiding the original route when the snapped path is displayed
+          if (window.map.getLayer(originalLayerId)) {
+              window.map.setLayoutProperty(originalLayerId, 'visibility', 'none');
+          }
+      }
+
+
+
+
+      function updateMapWithSnappedPath(features, tripID) {
+          const snappedLayerId = `snapped-path-${tripID}`;
+          const snappedGeoJSON = {
+              type: "FeatureCollection",
+              features: features
+          };
+
+          if (window.map.getSource(snappedLayerId)) {
+              window.map.getSource(snappedLayerId).setData(snappedGeoJSON);
+          } else {
+              window.map.addSource(snappedLayerId, {
+                  type: 'geojson',
+                  data: snappedGeoJSON
+              });
+
+              window.map.addLayer({
+                  id: snappedLayerId,
+                  type: 'line',
+                  source: snappedLayerId,
+                  layout: {
+                      'line-join': 'round',
+                      'line-cap': 'round'
+                  },
+                  paint: {
+                      'line-color': '#00ff00',
+                      'line-width': 5
+                  }
+              });
+          }
+      }
+
+      function toggleTripOptions(viewTripCheckbox, tripID) {
+          const isEnabled = viewTripCheckbox.checked;
+          document.getElementById(`snap-to-road-${tripID}`).disabled = !isEnabled;
+          document.getElementById(`toggle-gradient-${tripID}`).disabled = !isEnabled;
+          document.getElementById(`show-raw-data-${tripID}`).disabled = !isEnabled;
+
+          if (!isEnabled) {
+              document.getElementById(`snap-to-road-${tripID}`).checked = false;
+              snapToRoad(tripID, false);
+              document.getElementById(`toggle-gradient-${tripID}`).checked = false;
+              document.getElementById(`show-raw-data-${tripID}`).checked = false;
+          }
+      }
 
 
   </script>
 </head>
 <body>
 <div class="container">
-  <div class="trip-list">
-    <h1>Trips for {{TokenID}}</h1>
-    <ul>
-      {{#each Trips}}
-        <li>
-          Trip ID: {{this.ID}}
-          <div>Start Time: <span class="formatted-start-time" data-time="{{this.Start.Time}}"></span></div>
-          <div>End Time: <span class="formatted-end-time" data-time="{{this.End.Time}}"></span></div>
-          <div>When: <span class="timeago" datetime="{{this.End.Time}}"></span></div>
-          <div>Duration: <span class="trip-duration" data-start="{{this.Start.Time}}" data-end="{{this.End.Time}}"></span></div>
-            <button class="lighter-teal" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode)">View Map</button>
-        </li>
-      {{/each}}
-    </ul>
-        <button class="back-button" onclick="window.location.href='/vehicles/me'">Back to My Vehicles</button>
-      </div>
-      <div id="map"></div>
+    <div id="map"></div>
+    <div>
+        <h1>Trips for {{TokenID}}</h1>
+        <table class="trip-table">
+            <thead>
+            <tr>
+                <th>When</th>
+                <th>Trip ID</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Duration</th>
+                <th>View Trip</th>
+                <th>Snap to Road</th>
+                <th>Toggle Speed Gradient</th>
+                <th>Show/Hide Raw Data</th>
+                <th>Download as CSV</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{#each Trips}}
+                <tr>
+                    <td><span class="timeago" datetime="{{this.End.Time}}"></span></td>
+                    <td>{{this.ID}}</td>
+                    <td><span class="formatted-start-time" data-time="{{this.Start.Time}}"></span></td>
+                    <td><span class="formatted-end-time" data-time="{{this.End.Time}}"></span></td>
+                    <td><span class="trip-duration" data-start="{{this.Start.Time}}" data-end="{{this.End.Time}}"></span></td>
+                    <td><input type="checkbox" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', false)" onchange="toggleTripOptions(this, '{{this.ID}}')"></td>
+                    <td><input type="checkbox" id="snap-to-road-{{this.ID}}" disabled onclick="snapToRoad('{{this.ID}}', this.checked)"></td>
+                    <td><input type="checkbox" id="toggle-gradient-{{this.ID}}" disabled onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', this.checked)"></td>
+                    <td><input type="checkbox" id="show-raw-data-{{this.ID}}" disabled onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, true, '{{this.ID}}', false)"></td>
+                    <td>
+                        <button class="lighter-teal" onclick="downloadTripDataAsCSV('{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">
+                            &#x21E9;
+                        </button>
+                    </td>
+
+                </tr>
+            {{/each}}
+            </tbody>
+        </table>
+    </div>
+    <button class="back-button" onclick="window.location.href='/vehicles/me'">Back to My Vehicles</button>
 </div>
 </body>
 </html>
