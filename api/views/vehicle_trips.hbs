@@ -90,6 +90,9 @@
       .coordinates-table th {
           background-color: #f2f2f2;
       }
+      .highlighted-trip {
+          background-color: #ddd;
+      }
 
       .loader {
           display: none;
@@ -134,9 +137,13 @@
           displayTripDurations();
           formatDateTime();
 
-          const firstTripButton = document.querySelector('.trip-list li:first-child .lighter-teal');
-          if (firstTripButton) {
-              firstTripButton.click();
+          const firstTripRow = document.querySelector('.trip-table tbody tr:first-child');
+          if (firstTripRow) {
+              const firstTripCheckbox = firstTripRow.querySelector('input[type="checkbox"]');
+              if (firstTripCheckbox) {
+                  firstTripCheckbox.click();
+                  firstTripRow.classList.add('highlighted-trip');
+              }
           }
       });
 
