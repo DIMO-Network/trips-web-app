@@ -71,8 +71,11 @@
             right: 20px; /* Distance from right */
         }
 
-        .feedback-button:hover {
-            background-color: #45a049;
+        .feedback-button {
+            position: fixed; /* Fixed position */
+            top: 20px; /* Distance from top */
+            right: 20px; /* Distance from right */
+            /* ... other styles ... */
         }
         .session-button {
                     padding: 10px 20px;
@@ -92,7 +95,7 @@
     </style>
 </head>
 <body>
-<a href="formcraft_url?field59={{walletAddr}}" class="feedback-button">Give us Feedback!</a>
+<a href="https://formcrafts.com/a/74047?field59={{EthAddress}}" class="feedback-button" target="_blank">Give us Feedback!</a>
 <div class="title-container">
   <h1>{{Title}}</h1>
   <button class="session-button" onclick="window.location.href='/account'">My Current Session</button>

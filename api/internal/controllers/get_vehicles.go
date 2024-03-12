@@ -56,6 +56,7 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 		"Title":          "My Vehicles",
 		"Vehicles":       vehicles,
 		"SharedVehicles": sharedVehicles,
+		"EthAddress":     ethAddress,
 	})
 }
 
