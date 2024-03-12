@@ -37,35 +37,41 @@
           padding: 8px;
       }
       .trip-table th {
-          background-color: #6BC3C6;
+          background-color: #999;
           color: white;
       }
-      .lighter-teal {
-          background-color: #8ED6D9;
+      .trip-table td {
+          text-align: center;
+          vertical-align: middle;
+      }
+      .green {
+          background-color: #28a745;
           color: white;
           border: none;
           border-radius: 5px;
           cursor: pointer;
           font-size: 16px;
           padding: 10px 20px;
+          display: inline-block;
+          margin: auto;
       }
-      .lighter-teal:hover {
-          background-color: #6BC3C6;
+      .green:hover {
+          background-color: #218838;
       }
       .back-button {
           position: fixed;
           top: 20px;
           right: 20px;
           padding: 10px 20px;
-          background-color: #00CED1;
-          color: white;
+          background-color: #d3d3d3;
+          color: #333;
           border: none;
           border-radius: 5px;
           cursor: pointer;
           font-size: 16px;
       }
       .back-button:hover {
-          background-color: #00CED1;
+          background-color: #c0c0c0;
       }
       .coordinates-table {
           margin-top: 20px;
@@ -93,7 +99,46 @@
       .highlighted-trip {
           background-color: #ddd;
       }
+      .highlighted-start-time {
+          border: 2px solid #90EE90;
+      }
 
+      .highlighted-end-time {
+          border: 2px solid #FF6347;
+      }
+      .trip-table input[type="checkbox"] {
+          transform: scale(1.5);
+          margin: 0;
+      }
+      #speed-gradient-legend {
+          width: 80%;
+          max-width: 600px;
+          margin: 20px auto;
+          padding: 10px;
+          background-color: rgba(255, 255, 255, 0.8);
+          border-radius: 5px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          text-align: center;
+      }
+
+      #speed-gradient-bar {
+          width: 100%;
+          height: 20px;
+          background: linear-gradient(to right, blue 0%, green 20%, yellow 40%, orange 60%, red 80%);
+          border-radius: 3px;
+      }
+
+      #speed-gradient-labels {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.8em;
+          margin-top: 5px;
+      }
+
+      #speed-units {
+          font-size: 0.8em;
+          margin-top: 5px;
+      }
       .loader {
           display: none;
           position: fixed;
@@ -117,7 +162,7 @@
         border-radius: 50%;
         border: 6px solid #fff;
         border-color: #fff transparent #fff transparent;
-        animation: lds-dual-ring 1.2s linear infinite;  
+        animation: lds-dual-ring 1.2s linear infinite;
       }
 
       @keyframes lds-dual-ring {
@@ -262,6 +307,19 @@
               window.map.resize();
           }
 
+          document.querySelectorAll('.highlighted-start-time').forEach(el => el.classList.remove('highlighted-start-time'));
+          document.querySelectorAll('.highlighted-end-time').forEach(el => el.classList.remove('highlighted-end-time'));
+
+          // Highlight the start and end time of the selected trip
+          const startTimeCell = tripElement.querySelector('.formatted-start-time');
+          const endTimeCell = tripElement.querySelector('.formatted-end-time');
+          if (startTimeCell) {
+              startTimeCell.classList.add('highlighted-start-time');
+          }
+          if (endTimeCell) {
+              endTimeCell.classList.add('highlighted-end-time');
+          }
+
           const routeLayerId = `route-${tripID}`;
           const gradientLayerId = `route-gradient-${tripID}`;
 
@@ -357,6 +415,8 @@
 
                   // Show the route with speed gradient
                   updateRouteLayerForSpeedGradient(lineFeature, data.speedGradient, gradientLayerId);
+                  const speedGradientLegend = document.getElementById('speed-gradient-legend');
+                  speedGradientLegend.style.display = 'block';
               } else {
                   // If gradient is to be removed, remove the gradient layer if it exists
                   if (window.map.getLayer(gradientLayerId)) {
@@ -366,6 +426,8 @@
 
                   // Show the route as a simple white line
                   displaySimpleRoute(lineFeature, routeLayerId);
+                  const speedGradientLegend = document.getElementById('speed-gradient-legend');
+                  speedGradientLegend.style.display = 'none';
               }
 
 
@@ -712,12 +774,26 @@
           document.getElementById(`show-raw-data-${tripID}`).disabled = !isEnabled;
 
           if (!isEnabled) {
+              // If the trip is being unselected, remove the highlights
+              const tripRow = viewTripCheckbox.closest('tr');
+              if (tripRow) {
+                  const startTimeCell = tripRow.querySelector('.formatted-start-time');
+                  const endTimeCell = tripRow.querySelector('.formatted-end-time');
+                  if (startTimeCell) {
+                      startTimeCell.classList.remove('highlighted-start-time');
+                  }
+                  if (endTimeCell) {
+                      endTimeCell.classList.remove('highlighted-end-time');
+                  }
+              }
+
               document.getElementById(`snap-to-road-${tripID}`).checked = false;
               snapToRoad(tripID, false);
               document.getElementById(`toggle-gradient-${tripID}`).checked = false;
               document.getElementById(`show-raw-data-${tripID}`).checked = false;
           }
       }
+
 
 
   </script>
@@ -728,6 +804,18 @@
     <div style="display: none;" class="loader">
         <div class="white-spinner"></div>
     </div>
+    <div id="speed-gradient-legend" style="display: none;">
+            <h3>Speed</h3>
+            <div id="speed-gradient-bar"></div>
+            <div id="speed-gradient-labels">
+                <span>10</span>
+                <span>30</span>
+                <span>50</span>
+                <span>70</span>
+                <span>90</span>
+            </div>
+            <div id="speed-units">(mph)</div>
+        </div>
     <div>
         <h1>Trips for {{TokenID}}</h1>
         <table class="trip-table">
@@ -758,7 +846,7 @@
                     <td><input type="checkbox" id="toggle-gradient-{{this.ID}}" disabled onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', this.checked)"></td>
                     <td><input type="checkbox" id="show-raw-data-{{this.ID}}" disabled onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, true, '{{this.ID}}', false)"></td>
                     <td>
-                        <button class="lighter-teal" onclick="downloadTripDataAsCSV('{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">
+                        <button class="green" onclick="downloadTripDataAsCSV('{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">
                             &#x21E9;
                         </button>
                     </td>
@@ -770,5 +858,6 @@
     </div>
     <button class="back-button" onclick="window.location.href='/vehicles/me'">Back to My Vehicles</button>
 </div>
+
 </body>
 </html>
