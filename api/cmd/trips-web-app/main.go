@@ -39,7 +39,7 @@ func main() {
 
 	fmt.Print("Server is starting...")
 
-	settings, err := shared.LoadConfig[config.Settings]("settings.yaml")
+	settings, err := shared.LoadConfig[config.Settings]("settings.prod.yaml")
 	if err != nil {
 		log.Fatal().Err(err).Msg("could not load settings")
 	}
@@ -62,7 +62,7 @@ func main() {
 	// Protected route
 	app.Get("/vehicles/me", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
 
-		return controllers.HandleGetVehicles(c, &settings)
+		return controllers.HandleVehiclesAndFeedbackData(c, &settings)
 	})
 
 	app.Get("/account", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {

@@ -3,8 +3,10 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -37,8 +39,9 @@ type Vehicle struct {
 	Trips               []Trip            `json:"trips"`
 }
 
-func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
+func HandleVehiclesAndFeedbackData(c *fiber.Ctx, settings *config.Settings) error {
 	ethAddress := c.Locals("ethereum_address").(string)
+	log.Info().Msgf("EthAddress: %s", ethAddress) //troubleshooting
 
 	vehicles, err := QueryIdentityAPIForVehicles(ethAddress, settings)
 	if err != nil {
@@ -52,11 +55,38 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying shared vehicles: " + err.Error())
 	}
 
+	log.Info().Interface("Vehicles", vehicles).Msg("Fetched Vehicles")
+
+	var deviceType string
+	if len(vehicles) > 0 {
+		aftermarketDevice := vehicles[0].AftermarketDevice
+		if aftermarketDevice.Address != "" && aftermarketDevice.Serial != "" && aftermarketDevice.Manufacturer.Name != "" {
+			deviceType = fmt.Sprintf("%s: %s", aftermarketDevice.Manufacturer.Name, aftermarketDevice.Serial)
+			log.Info().Msgf("DeviceType: %s", deviceType)
+		} else {
+			log.Info().Msg("Vehicle 0 AftermarketDevice or its fields are empty")
+		}
+	} else {
+		log.Info().Msg("No vehicles found")
+	}
+
+	email, err := QueryUsersAPI(c, settings)
+	if err != nil {
+		log.Printf("Error querying User API: %v", err)
+		return c.Status(fiber.StatusInternalServerError).SendString("Error querying user data: " + err.Error())
+	}
+	log.Info().Msgf("Email: %s", email)
+
+	build := "sample-web-app " + time.Now().Format("2006-01-02 15:04:05")
+
 	return c.Render("vehicles", fiber.Map{
 		"Title":          "My Vehicles",
 		"Vehicles":       vehicles,
 		"SharedVehicles": sharedVehicles,
 		"EthAddress":     ethAddress,
+		"Email":          email,
+		"Build":          build,
+		"DeviceType":     deviceType,
 	})
 }
 
