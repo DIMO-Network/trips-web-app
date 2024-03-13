@@ -91,6 +91,41 @@
           background-color: #f2f2f2;
       }
 
+      .loader {
+          display: none;
+          position: fixed;
+          z-index: 999;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(104, 104, 104, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+      }
+
+      .white-spinner {
+        content: " ";
+        display: block;
+        width: 64px;
+        height: 64px;
+        margin: 8px;
+        border-radius: 50%;
+        border: 6px solid #fff;
+        border-color: #fff transparent #fff transparent;
+        animation: lds-dual-ring 1.2s linear infinite;  
+      }
+
+      @keyframes lds-dual-ring {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+        }
+
   </style>
   <script>
       window.addEventListener('load', function() {
@@ -245,6 +280,9 @@
           }
 
           try {
+            const loader = document.querySelector('.loader');
+            loader.style.display = 'flex';
+
               const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
               const response = await fetch(url, {
                   headers: {
@@ -259,7 +297,7 @@
 
               const data = await response.json();
 
-              console.log("Raw GeoJSON data:", data.geojson);
+             loader.style.display = 'none';
 
               window.currentTripCoordinates = data.geojson.features.map(feature => {
                   const coords = feature.geometry.coordinates;
@@ -680,6 +718,9 @@
 <body>
 <div class="container">
     <div id="map"></div>
+    <div style="display: none;" class="loader">
+        <div class="white-spinner"></div>
+    </div>
     <div>
         <h1>Trips for {{TokenID}}</h1>
         <table class="trip-table">

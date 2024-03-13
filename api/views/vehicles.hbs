@@ -56,10 +56,28 @@
         .link-button:hover {
             text-decoration: none;
         }
+
+        .session-button {
+            padding: 10px 20px;
+            background-color: #00CED1;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .title-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
-<h1>{{Title}}</h1>
+<div class="title-container">
+  <h1>{{Title}}</h1>
+  <button class="session-button" onclick="window.location.href='/account'">My Current Session</button>
+</div>
 {{#if Vehicles}}
     <table>
         <thead>

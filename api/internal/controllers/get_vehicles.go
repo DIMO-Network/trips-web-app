@@ -46,7 +46,7 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying my vehicles: " + err.Error())
 	}
 
-	sharedVehicles, err := querySharedVehicles(ethAddress, settings)
+	sharedVehicles, err := QuerySharedVehicles(ethAddress, settings)
 	if err != nil {
 		log.Printf("Error querying Shared Vehicles: %v", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying shared vehicles: " + err.Error())
@@ -87,7 +87,7 @@ func QueryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) (
 	return fetchVehiclesWithQuery(graphqlQuery, settings)
 }
 
-func querySharedVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
+func QuerySharedVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
 	graphqlQuery := `{
         vehicles(first: 50, filterBy: {privileged: "` + ethAddress + `" }) {
             nodes {
