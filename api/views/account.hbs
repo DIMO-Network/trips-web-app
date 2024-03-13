@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Device Status - {{TokenID}}</title>
+  <title>My Session</title>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -50,16 +50,75 @@
     .back-button:hover {
       background-color: #00CED1;
     }
+    .token-container {
+      display: flex;
+      justify-content: space-between;
+      div {
+        width: 50%;
+        margin-right: 40px;   
+      }
+    }
+
+    div {
+      overflow-wrap: break-word;
+      margin-bottom: 20px;
+    }
+    .token-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .copy-button {
+      padding: 10px 20px;
+      background-color: #00CED1;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
   </style>
 </head>
 <body>
-<h1>My Token:</h1>
-<div>
-{{ Token  }}
+  <div class="token-header">
+    <h1>My Current Session:</h1>
+    <button class="back-button" onclick="window.location.href='/vehicles/me'">Back to My Vehicles</button>
+  </div>
+<div class="token-header">
+  <h1>My Token:</h1>
+  <button class="copy-button" onclick="copyToClipboard('token')">Copy to clipboard</button>
 </div>
-<h1>My Privilege Token:</h1>
-<div>
-{{ PrivilegeToken }}
+<div id="token">
+{{ Token }}
 </div>
+<div class="token-header">
+  <h1>My Privilege Token:</h1>
+  <button class="copy-button" onclick="copyToClipboard('privilege-token')">Copy to clipboard</button>
+</div>
+<div class="token-container">
+  <div id="privilege-token">
+  {{ PrivilegeToken }}
+  </div>
+  <div>
+    <div>My Privileges:</div>
+    <ul>
+      {{#each Privileges}}
+      <li>{{this}}</li>
+      {{/each}}
+    </ul>
+    <div>Fore more information checkout the <a href="https://docs.dimo.zone/developer-platform/api-references/dimo-protocol/token-exchange-api/token-exchange-api-endpoints" target="_blank" >docs</a> </div>
+  </div>
+</div>
+<script>
+ function copyToClipboard(id){
+    var text = document.getElementById(id).innerText;
+    navigator.clipboard.writeText(text).then(function() {
+      alert('Copying to clipboard was successful!');
+    }, function(err) {
+      alert('Async: Could not copy text: ', err);
+    });
+ }
+ </script>
 </body>
 </html>

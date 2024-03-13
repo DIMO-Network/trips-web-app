@@ -86,6 +86,13 @@ func main() {
 			return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
 		}
 
+		if len(vehicles) == 0 {
+			vehicles, err = controllers.QuerySharedVehicles(ethAddress, &settings)
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).SendString("Error querying shared vehicles: " + err.Error())
+			}
+		}
+
 		privilegeToken, err := controllers.RequestPriviledgeToken(c, &settings, vehicles[0].TokenID)
 
 		if err != nil {
@@ -95,6 +102,10 @@ func main() {
 		return c.Render("account", fiber.Map{
 			"Token":          jwtToken,
 			"PrivilegeToken": privilegeToken,
+			"Privileges": fiber.Map{
+				"1": "1: All-time, non-location data",
+				"4": "4: All-time location",
+			},
 		})
 	})
 
@@ -120,6 +131,7 @@ func main() {
 		return c.Render("vehicle_status", fiber.Map{
 			"TokenID":             tokenID,
 			"DeviceStatusEntries": deviceStatus,
+			"Privileges":          []any{},
 		})
 	})
 
