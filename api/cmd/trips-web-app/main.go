@@ -62,7 +62,7 @@ func main() {
 	// Protected route
 	app.Get("/vehicles/me", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
 
-		return controllers.HandleVehiclesAndFeedbackData(c, &settings)
+		return controllers.HandleGetVehicles(c, &settings)
 	})
 
 	app.Get("/account", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
@@ -185,6 +185,8 @@ func main() {
 	app.Static("/", "./dist", staticConfig)
 
 	app.Get("/health", healthCheck)
+
+	app.Get("/give-feedback", controllers.AuthMiddleware(), controllers.HandleGiveFeedback(&settings))
 
 	log.Info().Msgf("Starting server on port %s", settings.Port)
 	if err := app.Listen(":" + settings.Port); err != nil {

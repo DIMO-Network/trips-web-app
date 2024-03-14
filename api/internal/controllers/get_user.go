@@ -17,7 +17,7 @@ type UserResponse struct {
 	} `json:"email"`
 }
 
-func QueryUsersAPI(c *fiber.Ctx, settings *config.Settings) (string, error) {
+func GetEmailFromUsersAPI(c *fiber.Ctx, settings *config.Settings) (string, error) {
 	sessionCookie := c.Cookies("session_id")
 	jwtToken, found := CacheInstance.Get(sessionCookie)
 	if !found {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -39,9 +40,43 @@ type Vehicle struct {
 	Trips               []Trip            `json:"trips"`
 }
 
-func HandleVehiclesAndFeedbackData(c *fiber.Ctx, settings *config.Settings) error {
+func HandleGiveFeedback(settings *config.Settings) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		ethAddress, ok := c.Locals("ethereum_address").(string)
+		if !ok {
+			// Handle the case where ethereum_address is not set or not a string
+			// For example, return an error or set a default value
+			return c.Status(fiber.StatusBadRequest).SendString("Ethereum address not provided")
+		}
+		email, err := GetEmailFromUsersAPI(c, settings)
+		if err != nil {
+			log.Error().Err(err).Msg("Error querying User API for email")
+			return c.Status(fiber.StatusInternalServerError).SendString("Error querying user data: " + err.Error())
+		}
+
+		var deviceType string
+		vehicles, err := QueryIdentityAPIForVehicles(ethAddress, settings)
+		if err != nil {
+			log.Error().Err(err).Msg("Error querying My Vehicles")
+			return c.Status(fiber.StatusInternalServerError).SendString("Error querying my vehicles: " + err.Error())
+		}
+
+		if len(vehicles) > 0 {
+			aftermarketDevice := vehicles[0].AftermarketDevice
+			if aftermarketDevice.Address != "" && aftermarketDevice.Serial != "" && aftermarketDevice.Manufacturer.Name != "" {
+				deviceType = fmt.Sprintf("%s: %s", aftermarketDevice.Manufacturer.Name, aftermarketDevice.Serial)
+			}
+		}
+
+		feedbackURL := fmt.Sprintf("https://formcrafts.com/a/74047?field59=%s&field55=%s&field56=%s&field57=%s",
+			url.QueryEscape(ethAddress), url.QueryEscape(email), url.QueryEscape("sample-web-app "+time.Now().Format("2006-01-02 15:04:05")), url.QueryEscape(deviceType))
+
+		return c.Redirect(feedbackURL, http.StatusFound) // 302 status code
+	}
+}
+
+func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 	ethAddress := c.Locals("ethereum_address").(string)
-	log.Info().Msgf("EthAddress: %s", ethAddress) //troubleshooting
 
 	vehicles, err := QueryIdentityAPIForVehicles(ethAddress, settings)
 	if err != nil {
@@ -55,38 +90,11 @@ func HandleVehiclesAndFeedbackData(c *fiber.Ctx, settings *config.Settings) erro
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying shared vehicles: " + err.Error())
 	}
 
-	log.Info().Interface("Vehicles", vehicles).Msg("Fetched Vehicles")
-
-	var deviceType string
-	if len(vehicles) > 0 {
-		aftermarketDevice := vehicles[0].AftermarketDevice
-		if aftermarketDevice.Address != "" && aftermarketDevice.Serial != "" && aftermarketDevice.Manufacturer.Name != "" {
-			deviceType = fmt.Sprintf("%s: %s", aftermarketDevice.Manufacturer.Name, aftermarketDevice.Serial)
-			log.Info().Msgf("DeviceType: %s", deviceType)
-		} else {
-			log.Info().Msg("Vehicle 0 AftermarketDevice or its fields are empty")
-		}
-	} else {
-		log.Info().Msg("No vehicles found")
-	}
-
-	email, err := QueryUsersAPI(c, settings)
-	if err != nil {
-		log.Printf("Error querying User API: %v", err)
-		return c.Status(fiber.StatusInternalServerError).SendString("Error querying user data: " + err.Error())
-	}
-	log.Info().Msgf("Email: %s", email)
-
-	build := "sample-web-app " + time.Now().Format("2006-01-02 15:04:05")
-
 	return c.Render("vehicles", fiber.Map{
 		"Title":          "My Vehicles",
 		"Vehicles":       vehicles,
 		"SharedVehicles": sharedVehicles,
 		"EthAddress":     ethAddress,
-		"Email":          email,
-		"Build":          build,
-		"DeviceType":     deviceType,
 	})
 }
 
