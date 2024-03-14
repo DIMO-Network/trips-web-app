@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -38,6 +39,14 @@ type Vehicle struct {
 	} `json:"aftermarketDevice"`
 	DeviceStatusEntries []DeviceDataEntry `json:"deviceStatusEntries"`
 	Trips               []Trip            `json:"trips"`
+}
+
+type VehiclesController struct {
+	settings config.Settings
+}
+
+func NewVehiclesController(settings config.Settings) VehiclesController {
+	return VehiclesController{settings: settings}
 }
 
 func HandleGiveFeedback(settings *config.Settings) fiber.Handler {
@@ -75,16 +84,16 @@ func HandleGiveFeedback(settings *config.Settings) fiber.Handler {
 	}
 }
 
-func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
+func (v *VehiclesController) HandleGetVehicles(c *fiber.Ctx) error {
 	ethAddress := c.Locals("ethereum_address").(string)
 
-	vehicles, err := QueryIdentityAPIForVehicles(ethAddress, settings)
+	vehicles, err := QueryIdentityAPIForVehicles(ethAddress, &v.settings)
 	if err != nil {
 		log.Printf("Error querying My Vehicles: %v", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying my vehicles: " + err.Error())
 	}
 
-	sharedVehicles, err := QuerySharedVehicles(ethAddress, settings)
+	sharedVehicles, err := QuerySharedVehicles(ethAddress, &v.settings)
 	if err != nil {
 		log.Printf("Error querying Shared Vehicles: %v", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying shared vehicles: " + err.Error())
@@ -95,6 +104,31 @@ func HandleGetVehicles(c *fiber.Ctx, settings *config.Settings) error {
 		"Vehicles":       vehicles,
 		"SharedVehicles": sharedVehicles,
 		"EthAddress":     ethAddress,
+	})
+}
+
+func (v *VehiclesController) HandleVehicleStatus(c *fiber.Ctx) error {
+	tokenID, err := strconv.ParseInt(c.Params("tokenid"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid token ID",
+		})
+	}
+
+	rawDeviceStatus, err := QueryDeviceDataAPI(tokenID, &v.settings, c)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to query device data API")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch device status",
+		})
+	}
+
+	deviceStatus := ProcessRawDeviceStatus(rawDeviceStatus)
+
+	return c.Render("vehicle_status", fiber.Map{
+		"TokenID":             tokenID,
+		"DeviceStatusEntries": deviceStatus,
+		"Privileges":          []any{},
 	})
 }
 
