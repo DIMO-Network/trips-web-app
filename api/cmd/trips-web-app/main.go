@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/DIMO-Network/shared"
 	"github.com/dimo-network/trips-web-app/api/internal/config"
@@ -52,6 +51,10 @@ func main() {
 
 	engine := handlebars.New("./views", ".hbs")
 
+	ac := controllers.NewAccountController(settings)
+	vc := controllers.NewVehiclesController(settings)
+	tc := controllers.NewTripsController(settings)
+
 	app := fiber.New(fiber.Config{
 		ErrorHandler: ErrorHandler,
 		Views:        engine,
@@ -59,119 +62,14 @@ func main() {
 
 	app.Use(cors.New())
 
-	// Protected route
-	app.Get("/vehicles/me", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
+	// View routes (protected)
+	app.Get("/account", controllers.AuthMiddleware(), ac.MyAccount)
+	app.Get("/vehicles/me", controllers.AuthMiddleware(), vc.HandleGetVehicles)
+	app.Get("/vehicles/:tokenid/status", controllers.AuthMiddleware(), vc.HandleVehicleStatus)
+	app.Get("/vehicles/:tokenid/trips", controllers.AuthMiddleware(), tc.HandleTripsList)
+	app.Get("/give-feedback", controllers.AuthMiddleware(), controllers.HandleGiveFeedback(&settings))
 
-		return controllers.HandleGetVehicles(c, &settings)
-	})
-
-	app.Get("/account", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
-		sessionCookie := c.Cookies("session_id")
-		if sessionCookie == "" {
-			fmt.Println("No session_id cookie")
-			return c.Render("session_expired", fiber.Map{})
-		}
-
-		// check if the session_id is in the cache
-		jwtToken, found := controllers.CacheInstance.Get(sessionCookie)
-		if !found {
-			fmt.Println("Session expired")
-			return c.Render("session_expired", fiber.Map{})
-		}
-
-		ethAddress := c.Locals("ethereum_address").(string)
-
-		vehicles, err := controllers.QueryIdentityAPIForVehicles(ethAddress, &settings)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
-		}
-
-		if len(vehicles) == 0 {
-			vehicles, err = controllers.QuerySharedVehicles(ethAddress, &settings)
-			if err != nil {
-				return c.Status(fiber.StatusInternalServerError).SendString("Error querying shared vehicles: " + err.Error())
-			}
-		}
-
-		privilegeToken, err := controllers.RequestPriviledgeToken(c, &settings, vehicles[0].TokenID)
-
-		if err != nil {
-			return c.Render("session_expired", fiber.Map{})
-		}
-
-		return c.Render("account", fiber.Map{
-			"Token":          jwtToken,
-			"PrivilegeToken": privilegeToken,
-			"Privileges": fiber.Map{
-				"1": "1: All-time, non-location data",
-				"4": "4: All-time location",
-			},
-		})
-	})
-
-	// Device status route
-	app.Get("/vehicles/:tokenid/status", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
-		tokenID, err := strconv.ParseInt(c.Params("tokenid"), 10, 64)
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Invalid token ID",
-			})
-		}
-
-		rawDeviceStatus, err := controllers.QueryDeviceDataAPI(tokenID, &settings, c)
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to query device data API")
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Failed to fetch device status",
-			})
-		}
-
-		deviceStatus := controllers.ProcessRawDeviceStatus(rawDeviceStatus)
-
-		return c.Render("vehicle_status", fiber.Map{
-			"TokenID":             tokenID,
-			"DeviceStatusEntries": deviceStatus,
-			"Privileges":          []any{},
-		})
-	})
-
-	app.Get("vehicles/:tokenId/live", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
-		tokenID, err := strconv.ParseInt(c.Params("tokenid"), 10, 64)
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Invalid token ID",
-			})
-		}
-
-		return c.Render("streamr_live", fiber.Map{
-			"TokenID":       tokenID,
-			"WalletAddress": "0xTODO",
-		})
-	})
-
-	// Device trips route
-	app.Get("/vehicles/:tokenid/trips", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
-		tokenID, err := strconv.ParseInt(c.Params("tokenid"), 10, 64)
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Invalid token ID",
-			})
-		}
-
-		trips, err := controllers.QueryTripsAPI(tokenID, &settings, c)
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to query trips API")
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Failed to fetch trips",
-			})
-		}
-
-		return c.Render("vehicle_trips", fiber.Map{
-			"TokenID": tokenID,
-			"Trips":   trips,
-		})
-	})
-
+	// API routes called via Javascript fetch
 	app.Get("/api/trip/:tripID", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
 		tripID := c.Params("tripID")
 		startTime := c.Query("start")
@@ -187,7 +85,7 @@ func main() {
 	app.Post("/auth/web3/submit_challenge", func(c *fiber.Ctx) error {
 		return controllers.HandleSubmitChallenge(c, &settings)
 	})
-
+	// used load react compiled login app
 	app.Get("/", loadStaticIndex)
 
 	// host the compiled frontend for the web3 login, which should be built to the dist folder
@@ -197,10 +95,16 @@ func main() {
 		Index:    "index.html",
 	}
 	app.Static("/", "./dist", staticConfig)
+	// to hold any static css or js
+	app.Static("/static", "./static", fiber.Static{
+		Compress:      true,
+		Download:      true,
+		Index:         "",
+		CacheDuration: 0,
+		MaxAge:        0,
+	})
 
 	app.Get("/health", healthCheck)
-
-	app.Get("/give-feedback", controllers.AuthMiddleware(), controllers.HandleGiveFeedback(&settings))
 
 	log.Info().Msgf("Starting server on port %s", settings.Port)
 	if err := app.Listen(":" + settings.Port); err != nil {
