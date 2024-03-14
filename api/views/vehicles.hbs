@@ -23,7 +23,7 @@
         }
 
         th {
-            background-color: #00CED1;
+            background-color: #999;
             color: white;
             font-weight: bold;
             padding: 10px;
@@ -56,24 +56,46 @@
         .link-button:hover {
             text-decoration: none;
         }
-
-        .session-button {
+        .feedback-button {
+            display: inline-block;
             padding: 10px 20px;
-            background-color: #00CED1;
+            background-color: #4CAF50;
             color: white;
-            border: none;
+            text-decoration: none;
             border-radius: 5px;
-            cursor: pointer;
             font-size: 16px;
+            cursor: pointer;
+            border: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
         }
-        .title-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+
+        .feedback-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+
         }
+        .session-button {
+                    padding: 10px 20px;
+                    background-color: #00CED1;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 16px;
+                }
+                .title-container {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
     </style>
 </head>
 <body>
+<a href="/give-feedback" class="feedback-button" target="_blank">Give us Feedback!</a>
 <div class="title-container">
   <h1>{{Title}}</h1>
   <button class="session-button" onclick="window.location.href='/account'">My Current Session</button>
