@@ -60,3 +60,55 @@ func GetEmailFromUsersAPI(c *fiber.Ctx, settings *config.Settings) (string, erro
 
 	return userResponse.Email.Address, nil
 }
+
+type AccountController struct {
+	settings config.Settings
+}
+
+func NewAccountController(settings config.Settings) AccountController {
+	return AccountController{settings: settings}
+}
+
+func (a *AccountController) MyAccount(c *fiber.Ctx) error {
+	sessionCookie := c.Cookies("session_id")
+	if sessionCookie == "" {
+		fmt.Println("No session_id cookie")
+		return c.Render("session_expired", fiber.Map{})
+	}
+
+	// check if the session_id is in the cache
+	jwtToken, found := CacheInstance.Get(sessionCookie)
+	if !found {
+		fmt.Println("Session expired")
+		return c.Render("session_expired", fiber.Map{})
+	}
+
+	ethAddress := c.Locals("ethereum_address").(string)
+
+	vehicles, err := QueryIdentityAPIForVehicles(ethAddress, &a.settings)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
+	}
+
+	if len(vehicles) == 0 {
+		vehicles, err = QuerySharedVehicles(ethAddress, &a.settings)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Error querying shared vehicles: " + err.Error())
+		}
+	}
+
+	privilegeToken, err := RequestPriviledgeToken(c, &a.settings, vehicles[0].TokenID)
+
+	if err != nil {
+		return c.Render("session_expired", fiber.Map{})
+	}
+
+	return c.Render("account", fiber.Map{
+		"Token":          jwtToken,
+		"PrivilegeToken": privilegeToken,
+		"Privileges": fiber.Map{
+			"1": "1: All-time, non-location data",
+			"4": "4: All-time location",
+		},
+	})
+}

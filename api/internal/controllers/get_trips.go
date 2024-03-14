@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
@@ -47,6 +48,36 @@ var SpeedGradient = []struct {
 	{50, "yellow"},
 	{70, "orange"},
 	{90, "red"},
+}
+
+type TripsController struct {
+	settings config.Settings
+}
+
+func NewTripsController(settings config.Settings) TripsController {
+	return TripsController{settings: settings}
+}
+
+func (t *TripsController) HandleTripsList(c *fiber.Ctx) error {
+	tokenID, err := strconv.ParseInt(c.Params("tokenid"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid token ID",
+		})
+	}
+
+	trips, err := QueryTripsAPI(tokenID, &t.settings, c)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to query trips API")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch trips",
+		})
+	}
+
+	return c.Render("vehicle_trips", fiber.Map{
+		"TokenID": tokenID,
+		"Trips":   trips,
+	})
 }
 
 func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Trip, error) {
