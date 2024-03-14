@@ -39,7 +39,7 @@ func main() {
 
 	fmt.Print("Server is starting...")
 
-	settings, err := shared.LoadConfig[config.Settings]("settings.yaml")
+	settings, err := shared.LoadConfig[config.Settings]("settings.prod.yaml")
 	if err != nil {
 		log.Fatal().Err(err).Msg("could not load settings")
 	}
@@ -199,6 +199,8 @@ func main() {
 	app.Static("/", "./dist", staticConfig)
 
 	app.Get("/health", healthCheck)
+
+	app.Get("/give-feedback", controllers.AuthMiddleware(), controllers.HandleGiveFeedback(&settings))
 
 	log.Info().Msgf("Starting server on port %s", settings.Port)
 	if err := app.Listen(":" + settings.Port); err != nil {

@@ -17,4 +17,5 @@ type Settings struct {
 	LogLevel                  string `yaml:"LOG_LEVEL"`
 	Environment               string `yaml:"ENVIRONMENT"`
 	TripsAPIBaseURL           string `yaml:"TRIPS_API_BASE_URL"`
+	UsersAPIBaseURL           string `yaml:"USERS_API_BASE_URL"`
 }
