@@ -164,6 +164,22 @@
         border-color: #fff transparent #fff transparent;
         animation: lds-dual-ring 1.2s linear infinite;
       }
+      .feedback-button {
+          padding: 10px 20px;
+          background-color: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 16px;
+          text-decoration: none;
+          margin-top: 20px;
+      }
+      .buttons-container {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 20px;
+      }
 
       @keyframes lds-dual-ring {
         0% {
@@ -801,7 +817,10 @@
 <body>
 <div class="container">
     <div id="map"></div>
-    <div style="display: none;" class="loader">
+    <div class="buttons-container">
+        <a href="/give-feedback" class="feedback-button" target="_blank">Give us Feedback!</a>
+        <button class="back-button" onclick="window.location.href='/vehicles/me'">Back to My Vehicles</button>
+    </div>    <div style="display: none;" class="loader">
         <div class="white-spinner"></div>
     </div>
     <div id="speed-gradient-legend" style="display: none;">
