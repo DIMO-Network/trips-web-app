@@ -77,9 +77,6 @@ function App() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      // set global reference to address
-      console.info(signer?.data);
-      window.localStorage.setItem('address', signer?.data || '');
       // redirect to handlebars
       window.location.href = `${import.meta.env.DIMO_API_BASEURL}/vehicles/me`;
     }
