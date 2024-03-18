@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/DIMO-Network/shared"
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/dimo-network/trips-web-app/api/internal/controllers"
@@ -11,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"os"
 )
 
 func ErrorHandler(ctx *fiber.Ctx, err error) error {

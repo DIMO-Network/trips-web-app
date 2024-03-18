@@ -76,11 +76,13 @@ func HandleGiveFeedback(settings *config.Settings) fiber.Handler {
 				deviceType = fmt.Sprintf("%s: %s", aftermarketDevice.Manufacturer.Name, aftermarketDevice.Serial)
 			}
 		}
+		tripID := c.Query("tripId", "")
 
-		feedbackURL := fmt.Sprintf("https://formcrafts.com/a/74047?field59=%s&field55=%s&field56=%s&field57=%s",
-			url.QueryEscape(ethAddress), url.QueryEscape(email), url.QueryEscape("sample-web-app "+time.Now().Format("2006-01-02 15:04:05")), url.QueryEscape(deviceType))
+		feedbackURL := fmt.Sprintf("https://formcrafts.com/a/74047?field59=%s&field55=%s&field56=%s&field57=%s&field73=%s",
+			url.QueryEscape(ethAddress), url.QueryEscape(email), url.QueryEscape("sample-web-app "+time.Now().Format("2006-01-02 15:04:05")), url.QueryEscape(deviceType), url.QueryEscape(tripID))
 
-		return c.Redirect(feedbackURL, http.StatusFound) // 302 status code
+		return c.Redirect(feedbackURL, http.StatusFound)
+
 	}
 }
 
