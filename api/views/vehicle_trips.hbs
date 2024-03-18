@@ -303,6 +303,17 @@
               });
           }
       }
+      function updateFeedbackButton(tripId) {
+          const feedbackButton = document.querySelector('.feedback-button');
+          if (feedbackButton && tripId) {
+              const baseUrl = '/give-feedback';
+              feedbackButton.href = `${baseUrl}?tripId=${tripId}`;
+          }
+          console.log('Updating feedback button with tripId:', tripId);
+          console.log('New href:', feedbackButton.href);
+      }
+
+
 
       async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime, tripElement, showCoords = false, tripIdForTable = '', toggleGradient) {
           document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
@@ -502,6 +513,10 @@
                       renderSpeedGraph(locationData, tripIdForTable);
                   }
               }
+              console.log('Called fetchAndDisplayMap with tripID:', tripID);
+
+              updateFeedbackButton(tripID);
+
           } catch (error) {
               console.error('Error fetching trip data:', error);
           }
