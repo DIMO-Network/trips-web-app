@@ -56,27 +56,49 @@
         .link-button:hover {
             text-decoration: none;
         }
+
+        .selector {
+            margin-bottom: 20px;
+            label {
+                margin-right: 10px;
+            }   
+
+            select {
+                padding: 5px;                
+            }
+        }
     </style>
     <script src="https://unpkg.com/@streamr/sdk@latest/streamr-sdk.web.min.js"></script>
     <script>
 
-        const main = async () => {
+        const changeStream = async (event) => {
+            event.preventDefault();
 
-            // todo: use stream with nft address
-            const streamId = "streams.dimo.eth/firehose/weather"
+            const streamId = event.target.value;
 
-            // todo: we need the decrypt key - ask user to sign message to get the decrypt key
+            document.getElementById('messages').innerHTML = '';
+
+            if (!streamId) {
+                return;
+            }            
+
             const client = new StreamrClient({
                 auth: {
-                    privateKey: "0xdfc8bc5958f7635a7573da5baef69eeec48609247340a187646bf33ab8280548"
+                    ethereum: window.ethereum
                 },
             });
 
             const stream = await client.getStream(streamId);
 
             const onMessage = (content) => {
-                //TODO: output to screen via DOM
-                console.log(JSON.stringify(content, undefined, 2));
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${content.time}</td>
+                    <td>${content.type}</td>
+                    <td>${content.source}</td>
+                    <td>${JSON.stringify(content.data)}</td>
+                `;
+                document.getElementById('messages').appendChild(row);                
             };
 
             const subscriptions = await Promise.all(
@@ -89,11 +111,39 @@
             );
         }
 
-        main();
+        window.addEventListener('load', () => {
+            const selectElement = document.querySelector('select');
+
+            selectElement.addEventListener('change', changeStream);
+        });
     </script>
 </head>
 <body>
 <h1>{{Title}}</h1>
-
-
+<div class="selector">
+    <label for="stream">Select a stream:</label>
+    <select id="stream">
+        <option value="">None</option>
+        <option value="streams.dimo.eth/firehose/weather">DIMO Firehose Weather</option>
+        {{#each Vehicles}}
+        <option value="streams.dimo.eth/vehicles/{{this.id}}">Connected Vehicle: {{this.name}}</option>
+        {{/each}}
+        {{#each SharedVehicles}}
+        <option value="streams.dimo.eth/vehicles/{{this.id}}">Shared Vehicle: {{this.name}} (shared)</option>
+        {{/each}}
+    </select>
+</div>
+<div>
+    <table>
+        <thead>
+        <tr>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Source</th>
+            <th>Data</th>
+        </tr>
+        </thead>
+        <tbody id="messages">
+        </tbody>
+</div>
 </body>

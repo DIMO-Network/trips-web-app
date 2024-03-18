@@ -95,10 +95,14 @@
     </style>
 </head>
 <body>
-<a href="/give-feedback" class="feedback-button" target="_blank">Give us Feedback!</a>
+
 <div class="title-container">
   <h1>{{Title}}</h1>
-  <button class="session-button" onclick="window.location.href='/account'">My Current Session</button>
+  <div>
+    <button class="session-button" onclick="window.location.href='/account'">My Current Session</button>
+    <button class="session-button" onclick="window.location.href='/streamr'">Live Data</button>
+    <a href="/give-feedback" class="session-button" target="_blank">Give us Feedback!</a>
+  </div>
 </div>
 {{#if Vehicles}}
     <table>
