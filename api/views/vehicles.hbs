@@ -97,7 +97,11 @@
 <body>
 <div class="title-container">
   <h1>{{Title}}</h1>
-  <button class="session-button" onclick="window.location.href='/account'">My Current Session</button>
+  <div>
+    <button class="session-button" onclick="window.location.href='/account'">My Current Session</button>
+    <button class="session-button" onclick="window.location.href='/streamr'">Live Data</button>
+    <a href="/give-feedback" class="session-button" target="_blank">Give us Feedback!</a>
+  </div>
 </div>
 {{#if Vehicles}}
     <table>
@@ -123,6 +127,9 @@
                 </td>
                 <td>
                     <button class="link-button" onclick="window.location.href='/vehicles/{{this.TokenID}}/trips'">View Trips</button>
+                </td>
+                <td>
+                     <button class="link-button" onclick="window.location.href='/vehicles/{{this.TokenID}}/live'">Live Streamr</button>
                 </td>
             </tr>
         {{/each}}
@@ -156,6 +163,9 @@
                 </td>
                 <td>
                     <button class="link-button" onclick="window.location.href='/vehicles/{{this.TokenID}}/trips'">View Trips</button>
+                </td>
+                <td>
+                    <button class="link-button" onclick="window.location.href='/vehicles/{{this.TokenID}}/live'">Live Streamr</button>
                 </td>
             </tr>
         {{/each}}

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{Title}}</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #444444;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            background-color: #00CED1;
+            color: white;
+            font-weight: bold;
+            padding: 10px;
+            text-align: left;
+        }
+
+        td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #ddd;
+        }
+
+        .link-button {
+            background: none;
+            border: none;
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: inherit;
+        }
+
+        .link-button:hover {
+            text-decoration: none;
+        }
+
+        .selector {
+            margin-bottom: 20px;
+            label {
+                margin-right: 10px;
+            }   
+
+            select {
+                padding: 5px;                
+            }
+        }
+    </style>
+    <script src="https://unpkg.com/@streamr/sdk@latest/streamr-sdk.web.min.js"></script>
+    <script>
+
+        const changeStream = async (event) => {
+            event.preventDefault();
+
+            const streamId = event.target.value;
+
+            document.getElementById('messages').innerHTML = '';
+
+            if (!streamId) {
+                return;
+            }            
+
+            const client = new StreamrClient({
+                auth: {
+                    ethereum: window.ethereum
+                },
+            });
+
+            const stream = await client.getStream(streamId);
+
+            const onMessage = (content) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${content.time}</td>
+                    <td>${content.type}</td>
+                    <td>${content.source}</td>
+                    <td>${JSON.stringify(content.data)}</td>
+                `;
+                document.getElementById('messages').appendChild(row);                
+            };
+
+            const subscriptions = await Promise.all(
+                    stream.getStreamParts().map(async (partition) => {
+                        await client.subscribe(
+                                partition,
+                                onMessage
+                        );
+                    })
+            );
+        }
+
+        window.addEventListener('load', () => {
+            const selectElement = document.querySelector('select');
+
+            selectElement.addEventListener('change', changeStream);
+        });
+    </script>
+</head>
+<body>
+<h1>{{Title}}</h1>
+<div class="selector">
+    <label for="stream">Select a stream:</label>
+    <select id="stream">
+        <option value="">None</option>
+        <option value="streams.dimo.eth/firehose/weather">DIMO Firehose Weather</option>
+        {{#each Vehicles}}
+        <option value="streams.dimo.eth/vehicles/{{this.id}}">Connected Vehicle: {{this.name}}</option>
+        {{/each}}
+        {{#each SharedVehicles}}
+        <option value="streams.dimo.eth/vehicles/{{this.id}}">Shared Vehicle: {{this.name}} (shared)</option>
+        {{/each}}
+    </select>
+</div>
+<div>
+    <table>
+        <thead>
+        <tr>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Source</th>
+            <th>Data</th>
+        </tr>
+        </thead>
+        <tbody id="messages">
+        </tbody>
+</div>
+</body>
