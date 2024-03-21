@@ -1,6 +1,6 @@
 import { AuthenticationStatus, ConnectButton } from '@rainbow-me/rainbowkit';
 import './App.css'
-import { useAccount, useSignMessage } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { useEffect, useState } from 'react';
 import { RainbowKitProvider, createAuthenticationAdapter,
   RainbowKitAuthenticationProvider } from '@rainbow-me/rainbowkit';
@@ -17,7 +17,6 @@ class DIMODexMessage {
 function App() {
   const [status, setStatus] = useState<AuthenticationStatus>("unauthenticated");
   const account = useAccount();
-  const signer = useSignMessage();
 
   const authenticationAdapter = createAuthenticationAdapter({
     getNonce: async () => {
