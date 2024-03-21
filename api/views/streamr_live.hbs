@@ -126,10 +126,10 @@
         <option value="">None</option>
         <option value="streams.dimo.eth/firehose/weather">DIMO Firehose Weather</option>
         {{#each Vehicles}}
-        <option value="streams.dimo.eth/vehicles/{{this.id}}">Connected Vehicle: {{this.name}}</option>
+        <option value="streams.dimo.eth/vehicles/{{this.tokenId}}">Connected Vehicle: {{this.definition.make}} {{this.definition.model}} {{this.definition.year}}</option>
         {{/each}}
         {{#each SharedVehicles}}
-        <option value="streams.dimo.eth/vehicles/{{this.id}}">Shared Vehicle: {{this.name}} (shared)</option>
+        <option value="streams.dimo.eth/vehicles/{{this.tokenId}}">Shared Vehicle: {{this.definition.make}} {{this.definition.model}} {{this.definition.year}} (shared)</option>
         {{/each}}
     </select>
 </div>
