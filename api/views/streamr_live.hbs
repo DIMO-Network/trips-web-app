@@ -71,6 +71,14 @@
     <script src="https://unpkg.com/@streamr/sdk@latest/streamr-sdk.web.min.js"></script>
     <script>
 
+        const client = new StreamrClient({
+                auth: {
+                    ethereum: window.ethereum
+                },
+            });
+
+            let current = null;
+
         const changeStream = async (event) => {
             event.preventDefault();
 
@@ -79,17 +87,13 @@
             document.getElementById('messages').innerHTML = '';
 
             if (!streamId) {
+                client.unsubscribe(current);
                 return;
             }            
 
-            const client = new StreamrClient({
-                auth: {
-                    ethereum: window.ethereum
-                },
-            });
-
             const stream = await client.getStream(streamId);
 
+            current = streamId;
             const onMessage = (content) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
