@@ -6,91 +6,133 @@
     <style>
         body {
             font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
+            background-color: #000000; /* Changed to black */
+            color: #ffffff; /* Text color set to white */
             margin: 0;
             padding: 20px;
         }
 
         h1 {
-            color: #444444;
+            color: #30D5C8; /* Changed to teal */
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            color: #ffffff; /* Ensuring text is readable on dark backgrounds */
         }
 
         th {
-            background-color: #999;
-            color: white;
+            background-color: #333333; /* Darker background for headers */
+            color: #30D5C8; /* Teal text */
             font-weight: bold;
             padding: 10px;
             text-align: left;
+            border-bottom: 1px solid #30D5C8; /* Teal border */
         }
 
         td {
             padding: 10px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #222222; /* Slightly lighter than the background for visibility */
         }
 
+
         tr:nth-child(even) {
-            background-color: #f2f2f2;
+            background-color: #121212; /* Even darker for zebra-striping */
         }
 
         tr:hover {
-            background-color: #ddd;
+            background-color: #1a1a1a; /* Hover effect for rows */
         }
+
 
         .link-button {
             background: none;
             border: none;
-            color: blue;
+            color: #30D5C8; /* Teal text */
             text-decoration: underline;
             cursor: pointer;
             font-size: inherit;
         }
 
         .link-button:hover {
+            color: #35deda; /* Slightly lighter teal for hover effect */
             text-decoration: none;
         }
-        .feedback-button {
-            display: inline-block;
+        .feedback-button, .session-button {
             padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
+            background-color: #30D5C8; /* Teal background */
+            color: #000000; /* Black text */
             border: none;
-            position: fixed;
-            top: 20px;
-            right: 20px;
+            border-radius: 20px; /* Rounded corners */
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 10px; /* Added spacing between buttons */
+            transition: background-color 0.3s ease; /* Smooth transition for hover effects */
         }
 
-        .feedback-button {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-
+        .feedback-button:hover, .session-button:hover {
+            background-color: #35deda; /* Slightly lighter teal for hover effect */
         }
-        .session-button {
-                    padding: 10px 20px;
-                    background-color: #00CED1;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    font-size: 16px;
-                }
-                .title-container {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
+
+        .title-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sidebar {
+            background-color: #000;
+            color: #fff;
+            /* Other styles */
+        }
+
+        .sidebar a {
+            /* Styles for links */
+        }
+
+        .sidebar a.active, .sidebar a:hover {
+            background-color: #30D5C8;
+            color: #000;
+            /* Other styles */
+        }
+
+        /* Main Content Area */
+        .main-content {
+            background-color: #000;
+            color: #fff;
+            /* Other styles */
+        }
+
+        .vehicle-box {
+            background-color: #222; /* Or slightly lighter than the background for visibility */
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            /* Other styles */
+        }
+
+        /* Typography */
+        body, button, a {
+            font-family: 'Open Sans', Arial, sans-serif;
+            /* Other styles */
+        }
+
+        h1, h2, h3 {
+            color: #30D5C8;
+            /* Other styles */
+        }
+
+        /* Interactivity */
+        button:hover, a.button:hover {
+            background-color: #30D5C8;
+            color: #000;
+            /* Other styles */
+        }
+
 
     </style>
 </head>
