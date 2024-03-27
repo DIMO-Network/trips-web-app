@@ -4,121 +4,133 @@
   <meta charset="UTF-8">
   <title>My Session</title>
   <style>
-    body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f4f4f4;
-      color: #333;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      color: #444444;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th {
-      background-color: #00CED1;
-      color: white;
-      padding: 10px;
-      text-align: left;
-    }
-    td {
-      padding: 10px;
-      border-bottom: 1px solid #ddd;
-    }
-    tr:nth-child(even) {
-      background-color: #f2f2f2;
-    }
-    tr:hover {
-      background-color: #ddd;
-    }
-    .back-button {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 10px 20px;
-      background-color: #00CED1;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    .back-button:hover {
-      background-color: #00CED1;
-    }
-    .token-container {
-      display: flex;
-      justify-content: space-between;
-      div {
-        width: 50%;
-        margin-right: 40px;   
+      body {
+          font-family: 'Arial', sans-serif;
+          background-color: #000000;
+          color: #ffffff;
+          margin: 0;
+          padding: 20px;
       }
-    }
 
-    div {
-      overflow-wrap: break-word;
-      margin-bottom: 20px;
-    }
-    .token-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .copy-button {
-      padding: 10px 20px;
-      background-color: #00CED1;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-    }
+      h1 {
+          text-align: center;
+          color: #30D5C8;
+      }
+
+      .token-container, .footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-direction: column;
+      }
+
+      .token-card {
+          background-color: #222222;
+          padding: 20px;
+          border-radius: 10px;
+          margin-bottom: 20px;
+          margin-left: 200px;
+          margin-right: 200px;
+          word-wrap: break-word;
+          max-width: calc(100% - 400px);
+      }
+
+      .token-header {
+          margin-bottom: 15px;
+      }
+
+      .copy-button {
+          padding: 10px 20px;
+          background-color: #30D5C8;
+          color: white;
+          border: none;
+          border-radius: 20px;
+          cursor: pointer;
+          font-size: 16px;
+      }
+
+      .copy-button:hover {
+          background-color: #35deda;
+      }
+
+      .footer {
+          text-align: center;
+          margin-top: 40px;
+      }
+
+      a {
+          color: #30D5C8;
+          text-decoration: none;
+      }
+
+      a:hover {
+          text-decoration: underline;
+      }
+
+      ul {
+          list-style-type: none;
+          padding: 0;
+      }
+
+      li {
+          margin-bottom: 5px;
+      }
+      .back-button {
+          position: absolute;
+          top: 20px;
+          left: 200px;
+          font-size: 24px;
+          color: #ffffff;
+          cursor: pointer;
+          border: none;
+          background: none;
+      }
 
   </style>
 </head>
 <body>
-  <div class="token-header">
-    <h1>My Current Session:</h1>
-    <button class="back-button" onclick="window.location.href='/vehicles/me'">Back to My Vehicles</button>
-  </div>
-<div class="token-header">
-  <h1>My Token:</h1>
-  <button class="copy-button" onclick="copyToClipboard('token')">Copy to clipboard</button>
+<button class="back-button" onclick="window.location.href='/vehicles/me'">&#9664;</button>
+
+<h1>My Current Session</h1>
+
+<div class="token-card">
+    <div class="token-header">
+        <h2>My Token:</h2>
+        <button class="copy-button" onclick="copyToClipboard('token')">Copy to clipboard</button>
+    </div>
+    <div id="token">
+        {{ Token }}
+    </div>
 </div>
-<div id="token">
-{{ Token }}
-</div>
-<div class="token-header">
-  <h1>My Privilege Token:</h1>
-  <button class="copy-button" onclick="copyToClipboard('privilege-token')">Copy to clipboard</button>
-</div>
-<div class="token-container">
-  <div id="privilege-token">
-  {{ PrivilegeToken }}
-  </div>
-  <div>
-    <div>My Privileges:</div>
+
+<div class="token-card">
+    <div class="token-header">
+        <h2>My Privilege Token:</h2>
+        <button class="copy-button" onclick="copyToClipboard('privilege-token')">Copy to clipboard</button>
+    </div>
+    <div id="privilege-token">
+        {{ PrivilegeToken }}
+    </div>
+    <p>My Privileges:</p>
     <ul>
-      {{#each Privileges}}
-      <li>{{this}}</li>
-      {{/each}}
+        {{#each Privileges}}
+            <li>{{this}}</li>
+        {{/each}}
     </ul>
-    <div>Fore more information checkout the <a href="https://docs.dimo.zone/developer-platform/api-references/dimo-protocol/token-exchange-api/token-exchange-api-endpoints" target="_blank" >docs</a> </div>
-  </div>
+</div>
+
+<div class="footer">
+    <p>For more information, check out the <a href="https://docs.dimo.zone/developer-platform/api-references/dimo-protocol/token-exchange-api/token-exchange-api-endpoints" target="_blank">docs</a>.</p>
 </div>
 <script>
- function copyToClipboard(id){
-    var text = document.getElementById(id).innerText;
-    navigator.clipboard.writeText(text).then(function() {
-      alert('Copying to clipboard was successful!');
-    }, function(err) {
-      alert('Async: Could not copy text: ', err);
-    });
- }
- </script>
+    function copyToClipboard(id){
+        var text = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(text).then(function() {
+            alert('Copying to clipboard was successful!');
+        }, function(err) {
+            alert('Async: Could not copy text: ', err);
+        });
+    }
+</script>
 </body>
 </html>
