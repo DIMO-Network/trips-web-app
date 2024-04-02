@@ -5,69 +5,114 @@
     <title>{{Title}}</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
+            font-family: 'Open Sans', Arial, sans-serif;
+            background-color: #000000;
+            color: #ffffff;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+        }
+
+        .container {
+            padding: 50px;
+            text-align: center;
+            width: 100%;
         }
 
         h1 {
-            color: #444444;
+            color: #30D5C8;
+            margin-bottom: 20px;
+        }
+
+        .selector {
+            margin-bottom: 20px;
+        }
+
+        label {
+            margin-right: 10px;
+        }
+
+        select {
+            padding: 5px;
+            background-color: #222;
+            color: #ffffff;
+            border: 1px solid #30D5C8;
+        }
+
+        .stream-header,
+        .stream-card table tr {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .stream-card {
+            padding: 20px;
+            border-radius: 10px;
+            margin: auto;
+            max-width: 80%;
+            background-color: #222222;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            word-wrap: break-word;
+            text-align: center;
+        }
+
+        .stream-header > span,
+        .stream-card table tr > td {
+            margin: 0;
+            padding: 0;
+        }
+
+        td {
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+            word-wrap: break-word;
+        }
+
+        .stream-card tbody tr {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        th {
-            background-color: #00CED1;
-            color: white;
-            font-weight: bold;
-            padding: 10px;
-            text-align: left;
         }
 
         td {
             padding: 10px;
-            text-align: left;
             border-bottom: 1px solid #ddd;
+            word-wrap: break-word;
         }
 
         tr:nth-child(even) {
-            background-color: #f2f2f2;
+            background-color: #333333;
         }
 
         tr:hover {
-            background-color: #ddd;
+            background-color: #444444;
         }
 
-        .link-button {
-            background: none;
-            border: none;
-            color: blue;
-            text-decoration: underline;
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            color: #ffffff;
             cursor: pointer;
-            font-size: inherit;
+            border: none;
+            background: none;
         }
 
-        .link-button:hover {
-            text-decoration: none;
-        }
-
-        .selector {
-            margin-bottom: 20px;
-            label {
-                margin-right: 10px;
-            }   
-
-            select {
-                padding: 5px;                
-            }
+        .column-title {
+            color: #ffffff;
+            padding: 10px 0;
         }
     </style>
+
+
     <script src="https://unpkg.com/@streamr/sdk@latest/streamr-sdk.web.min.js"></script>
     <script>
 
@@ -123,31 +168,38 @@
     </script>
 </head>
 <body>
-<h1>{{Title}}</h1>
-<div class="selector">
-    <label for="stream">Select a stream:</label>
-    <select id="stream">
-        <option value="">None</option>
-        <option value="streams.dimo.eth/firehose/weather">DIMO Firehose Weather</option>
-        {{#each Vehicles}}
-        <option value="streams.dimo.eth/vehicles/{{this.TokenID}}">Connected Vehicle: {{this.Definition.make}} {{this.Definition.model}} {{this.Definition.year}}</option>
-        {{/each}}
-        {{#each SharedVehicles}}
-        <option value="streams.dimo.eth/vehicles/{{this.TokenID}}">Shared Vehicle: {{this.Definition.make}} {{this.Definition.model}} {{this.Definition.year}} (shared)</option>
-        {{/each}}
-    </select>
-</div>
-<div>
-    <table>
-        <thead>
-        <tr>
-            <th>Time</th>
-            <th>Type</th>
-            <th>Source</th>
-            <th>Data</th>
-        </tr>
-        </thead>
-        <tbody id="messages">
-        </tbody>
+<div class="container">
+    <button class="back-button" onclick="window.location.href='/vehicles/me'">&#9664;</button>
+    <h1>{{Title}}</h1>
+
+    <div class="selector">
+        <label for="stream">Select a stream:</label>
+        <select id="stream">
+            <option value="">None</option>
+            <option value="streams.dimo.eth/firehose/weather">DIMO Firehose Weather</option>
+            {{#each Vehicles}}
+                <option value="streams.dimo.eth/vehicles/{{this.TokenID}}">Connected Vehicle: {{this.Definition.make}} {{this.Definition.model}} {{this.Definition.year}}</option>
+            {{/each}}
+            {{#each SharedVehicles}}
+                <option value="streams.dimo.eth/vehicles/{{this.TokenID}}">Shared Vehicle: {{this.Definition.make}} {{this.Definition.model}} {{this.Definition.year}} (shared)</option>
+            {{/each}}
+        </select>
+    </div>
+
+    <div class="stream-card">
+        <div class="stream-header">
+            <span class="column-title">Time</span>
+            <span class="column-title">Type</span>
+            <span class="column-title">Source</span>
+            <span class="column-title">Data</span>
+        </div>
+        <table>
+            <tbody id="messages">
+            </tbody>
+        </table>
+    </div>
 </div>
 </body>
+
+
+</html>
