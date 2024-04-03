@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Oooh+Baby&display=swap');
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -39,4 +41,42 @@
 
 .read-the-docs {
   color: #888;
+}
+.header-container {
+  text-align: center;
+  margin-bottom: 20px; /* Adds space below the header */
+}
+
+.dimo-logo {
+  height: 45px;
+  margin-right: 0px;
+}
+
+.text-container {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.trips-text {
+  font-family: 'Oooh Baby';
+  font-size: 60px;
+  font-weight: normal;
+  color: rgb(70, 241, 239);
+  line-height: 1.4;
+}
+
+.beta-text {
+  position: absolute;
+  right: -40px;
+  top: 8px;
+  font-size: 16px;
+  color: rgb(255, 255, 255);
+  font-family: Euclid;
+}
+
+.connect-button-container {
+  text-align: center;
+  color: #30D5C8;
+
 }

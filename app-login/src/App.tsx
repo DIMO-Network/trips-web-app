@@ -4,7 +4,7 @@ import { useAccount } from 'wagmi';
 import { useEffect, useState } from 'react';
 import { RainbowKitProvider, createAuthenticationAdapter,
   RainbowKitAuthenticationProvider } from '@rainbow-me/rainbowkit';
-import logo from '../assets/DIMO_Logo_White.svg';
+import logo from './assets/DIMO_Logo_White.svg';
 
 
 class DIMODexMessage {
@@ -95,13 +95,11 @@ function App() {
                     <div className="beta-text">BETA</div>
                   </div>
                 </div>
-                  <div>
-                    <ConnectButton />
-                  </div>
-                  <div>
-                    Connect your wallet to see your DIMO vehicles!
-                  </div>
-                </>
+                <div className="connect-button-container">
+                  <ConnectButton />
+                  <p>Connect your wallet to see your DIMO vehicles!</p>
+                </div>
+              </>
             </RainbowKitProvider>
           </RainbowKitAuthenticationProvider>
   )
