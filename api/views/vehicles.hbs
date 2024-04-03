@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>{{Title}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oooh+Baby&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 
     <style>
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Raleway', sans-serif;
             background-color: #000000;
             color: #ffffff;
             margin: 0;
@@ -190,10 +193,10 @@
             var title = document.getElementById('page-title');
             if (viewId === 'my-vehicles') {
                 document.getElementById('my-vehicles-link').classList.add('active');
-                title.textContent = 'My Vehicles'; // Set the title for My Vehicles
+                title.textContent = 'My Vehicles';
             } else if (viewId === 'shared-vehicles') {
                 document.getElementById('shared-vehicles-link').classList.add('active');
-                title.textContent = 'Vehicles Shared With Me'; // Set the title for Shared Vehicles
+                title.textContent = 'Vehicles Shared With Me';
             }
         }
 
@@ -223,7 +226,7 @@
 <div class="title-container">
     <h1 id="page-title">{{Title}}</h1>
     <div>
-        <button class="session-button" onclick="window.location.href='/account'">My Current Tokens</button>
+        <a href="/account" class="session-button">Session Credentials</a>
         <a href="/streamr" class="session-button">Live Streamr</a>
         <a href="/give-feedback" class="session-button" target="_blank">Give us Feedback!</a>
     </div>
