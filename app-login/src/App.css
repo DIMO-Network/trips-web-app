@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Oooh+Baby&display=swap');
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -10,12 +12,6 @@
   padding: 1.5em;
   will-change: filter;
   transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
 @keyframes logo-spin {
@@ -39,4 +35,27 @@
 
 .read-the-docs {
   color: #888;
+}
+
+.connect-button-container {
+  display: flex;
+  justify-content: center;
+  position:relative;
+
+}
+.logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.logo-container img {
+  width: 400px;
+  height: auto;
+}
+
+@media (max-width: 600px) {
+  .logo-container img {
+    width: 100px;
+  }
 }
