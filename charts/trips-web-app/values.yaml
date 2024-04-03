@@ -50,9 +50,9 @@ ingress:
     nginx.ingress.kubernetes.io/auth-tls-verify-client: 'on'
     nginx.ingress.kubernetes.io/enable-cors: 'true'
     nginx.ingress.kubernetes.io/cors-allow-origin: '*'
-    external-dns.alpha.kubernetes.io/hostname: trips-sandbox.dev.drivedimo.zone
+    external-dns.alpha.kubernetes.io/hostname: sample-web-app.dev.dimo.zone
   hosts:
-    - host: trips-sandbox.dev.drivedimo.zone
+    - host: sample-web-app.dev.dimo.zone
       paths:
         - path: /
           pathType: ImplementationSpecific
