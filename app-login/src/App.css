@@ -13,12 +13,6 @@
   will-change: filter;
   transition: filter 300ms;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
 
 @keyframes logo-spin {
   from {
@@ -42,43 +36,26 @@
 .read-the-docs {
   color: #888;
 }
-.header-container {
-  text-align: center;
-  margin-bottom: 20px; /* Adds space below the header */
-}
-
-.dimo-logo {
-  height: 45px;
-  margin-right: 0px;
-}
-
-.text-container {
-  position: relative;
-  display: inline-block;
-  vertical-align: middle;
-}
-
-.trips-text {
-  font-family: 'Oooh Baby';
-  font-size: 60px;
-  font-weight: normal;
-  color: rgb(70, 241, 239);
-  line-height: 1.4;
-  margin-top: -30px;
-}
-
-.beta-text {
-  position: absolute;
-  right: -40px;
-  top: -18px;
-  font-size: 16px;
-  color: rgb(255, 255, 255);
-  font-family: Euclid;
-}
 
 .connect-button-container {
   display: flex;
   justify-content: center;
   position:relative;
 
+}
+.logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.logo-container img {
+  width: 400px;
+  height: auto;
+}
+
+@media (max-width: 600px) {
+  .logo-container img {
+    width: 100px;
+  }
 }
