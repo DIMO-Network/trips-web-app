@@ -64,19 +64,21 @@
   font-weight: normal;
   color: rgb(70, 241, 239);
   line-height: 1.4;
+  margin-top: -30px;
 }
 
 .beta-text {
   position: absolute;
   right: -40px;
-  top: 8px;
+  top: -18px;
   font-size: 16px;
   color: rgb(255, 255, 255);
   font-family: Euclid;
 }
 
 .connect-button-container {
-  text-align: center;
-  color: #30D5C8;
+  display: flex;
+  justify-content: center;
+  position:relative;
 
 }

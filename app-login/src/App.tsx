@@ -97,7 +97,6 @@ function App() {
                 </div>
                 <div className="connect-button-container">
                   <ConnectButton />
-                  <p>Connect your wallet to see your DIMO vehicles!</p>
                 </div>
               </>
             </RainbowKitProvider>
