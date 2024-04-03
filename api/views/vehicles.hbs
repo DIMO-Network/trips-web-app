@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>{{Title}}</title>
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oooh+Baby&display=swap" rel="stylesheet">
 
     <style>
         body {
@@ -23,8 +23,8 @@
 
         .sidebar {
             position: fixed;
-            top: 115px;
-            left: 200px;
+            top: 215px;
+            left: 190px;
             width: 250px;
             height: 100vh;
             background-color: #000;
@@ -63,8 +63,13 @@
             border-radius: 10px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
+            text-align: center;
             z-index: 1;
+        }
+
+        .vehicle-card > * {
+            flex: 1;
         }
 
         .vehicle-card h2 {
@@ -103,7 +108,7 @@
             background-color: #000;
             color: #fff;
             padding: 20px;
-            margin-left: 200px;
+            margin-left: 500px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -132,6 +137,40 @@
         .sidebar-link.active {
             color: #30D5C8;
         }
+        .header-container {
+            display: flex;
+            align-items: center;
+            padding-left: 20px;
+            padding-top: 20px;
+        }
+
+        .dimo-logo {
+            height: 45px;
+            margin-right: 0px;
+        }
+
+        .text-container {
+            position: relative;
+        }
+
+        .trips-text {
+            font-family: 'Oooh Baby';
+            font-size: 60px;
+            font-weight: normal;
+            color: rgb(70, 241, 239);
+            line-height: 1.4;
+        }
+
+        .beta-text {
+            position: absolute;
+            right: -40px;
+            top: 8px;
+            font-size: 16px;
+            color: rgb(255, 255, 255);
+            font-family: Euclid;
+
+        }
+
 
 
 
@@ -168,6 +207,14 @@
     </script>
 </head>
 <body>
+<div class="header-container">
+    <img src="/static/DIMO_Logo_White.svg" alt="DIMO Logo" class="dimo-logo">
+    <div class="text-container">
+        <div class="bubble-element trips-text">Trips</div>
+        <div class="bubble-element beta-text">BETA</div>
+    </div>
+</div>
+
 <div class="sidebar">
     <a href="#" id="my-vehicles-link" onclick="toggleView('my-vehicles'); return false;" class="sidebar-link">My Vehicles</a>
     <a href="#" id="shared-vehicles-link" onclick="toggleView('shared-vehicles'); return false;" class="sidebar-link">Vehicles Shared With Me</a>
@@ -176,7 +223,7 @@
 <div class="title-container">
     <h1 id="page-title">{{Title}}</h1>
     <div>
-        <button class="session-button" onclick="window.location.href='/account'">My Current Session</button>
+        <button class="session-button" onclick="window.location.href='/account'">My Current Tokens</button>
         <a href="/streamr" class="session-button">Live Streamr</a>
         <a href="/give-feedback" class="session-button" target="_blank">Give us Feedback!</a>
     </div>
@@ -212,9 +259,6 @@
                     </p>
                     <p>
                         <a href="/vehicles/{{this.TokenID}}/trips" class="link-text">Trips</a>
-                    </p>
-                    <p>
-                        <a href="/streamr" class="link-text">Live Streamr</a>
                     </p>
                 </div>
             {{/each}}

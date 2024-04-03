@@ -61,7 +61,7 @@
         .green:hover {
             background-color: #35deda;
         }
-        .back-button, .feedback-button {
+        .feedback-button {
             padding: 10px 20px;
             background-color: #30D5C8;
             color: #000000;
@@ -74,7 +74,7 @@
             margin-right: 10px;
             transition: background-color 0.3s ease;
         }
-        .back-button:hover, .feedback-button:hover {
+        .feedback-button:hover {
             background-color: #35deda;
         }
       .coordinates-table {
@@ -171,6 +171,17 @@
           justify-content: flex-end;
           margin-top: 20px;
       }
+        .back-button {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            font-size: 24px;
+            color: #ffffff;
+            cursor: pointer;
+            border: none;
+            background: none;
+            z-index: 10;
+        }
 
       @keyframes lds-dual-ring {
         0% {
@@ -822,6 +833,7 @@
 </head>
 <body>
 <div class="container">
+    <button class="back-button" onclick="window.location.href='/vehicles/me'">&#9664;</button>
     <div id="map"></div>
     <div class="buttons-container">
         <a href="/give-feedback" class="feedback-button" target="_blank">Give us Feedback!</a>
@@ -880,7 +892,6 @@
             </tbody>
         </table>
     </div>
-    <button class="back-button" onclick="window.location.href='/vehicles/me'">Back to My Vehicles</button>
 </div>
 
 </body>
