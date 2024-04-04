@@ -56,7 +56,6 @@ func main() {
 	tc := controllers.NewTripsController(settings)
 	st := controllers.NewStreamrController(settings)
 
-
 	app := fiber.New(fiber.Config{
 		ErrorHandler: ErrorHandler,
 		Views:        engine,
@@ -71,7 +70,6 @@ func main() {
 	app.Get("/vehicles/:tokenid/trips", controllers.AuthMiddleware(), tc.HandleTripsList)
 	app.Get("/give-feedback", controllers.AuthMiddleware(), controllers.HandleGiveFeedback(&settings))
 	app.Get("/streamr", controllers.AuthMiddleware(), st.GetStreamr)
-
 
 	// API routes called via Javascript fetch
 	app.Get("/api/trip/:tripID", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
@@ -102,7 +100,7 @@ func main() {
 	// to hold any static css or js
 	app.Static("/static", "./static", fiber.Static{
 		Compress:      true,
-		Download:      true,
+		Download:      false,
 		Index:         "",
 		CacheDuration: 0,
 		MaxAge:        0,
