@@ -87,6 +87,15 @@ func main() {
 	app.Post("/auth/web3/submit_challenge", func(c *fiber.Ctx) error {
 		return controllers.HandleSubmitChallenge(c, &settings)
 	})
+	// to hold any static css or js
+	app.Static("/static", "./static", fiber.Static{
+		Compress:      true,
+		Download:      false,
+		Index:         "",
+		CacheDuration: 0,
+		MaxAge:        0,
+	})
+
 	// used load react compiled login app
 	app.Get("/", loadStaticIndex)
 
@@ -97,14 +106,6 @@ func main() {
 		Index:    "index.html",
 	}
 	app.Static("/", "./dist", staticConfig)
-	// to hold any static css or js
-	app.Static("/static", "./static", fiber.Static{
-		Compress:      true,
-		Download:      false,
-		Index:         "",
-		CacheDuration: 0,
-		MaxAge:        0,
-	})
 
 	app.Get("/health", healthCheck)
 

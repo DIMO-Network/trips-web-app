@@ -33,6 +33,7 @@ COPY --from=build /etc/passwd /etc/passwd
 COPY --from=build /go/src/github.com/dimo-network/trips-web-app/target/bin/trips-web-app .
 COPY --from=build /go/src/github.com/dimo-network/trips-web-app/dist /dist
 COPY --from=build /go/src/github.com/dimo-network/trips-web-app/views /views
+COPY --from=build /go/src/github.com/dimo-network/trips-web-app/static /static
 
 USER dimo
 
