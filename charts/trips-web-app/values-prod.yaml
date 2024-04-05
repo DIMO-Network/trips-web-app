@@ -19,7 +19,7 @@ env:
   LOG_LEVEL: info
   SERVICE_NAME: trips-web-app
   CLIENT_ID: trips-signals-webapp
-  DOMAIN: https://sample-web-app.dimo.zone/oauth/callback
+  DOMAIN: https://trips-sandbox.drivedimo.com/oauth/callback
   SCOPE: openid email
   RESPONSE_TYPE: code
   GRANT_TYPE: authorization_code
