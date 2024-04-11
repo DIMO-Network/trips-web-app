@@ -145,12 +145,15 @@
 
         const changeStream = async (event) => {
             event.preventDefault();
+            const loader = document.getElementById('loader');
+            loader.style.display = 'flex';
 
             const streamId = event.target.value;
 
             document.getElementById('messages').innerHTML = '';
 
             if (!streamId) {
+                loader.style.display = 'none';
                 client.unsubscribe(current);
                 return;
             }
@@ -159,6 +162,8 @@
 
             current = streamId;
             const onMessage = (content) => {
+                loader.style.display = 'none';
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${content.time}</td>
@@ -222,6 +227,10 @@
         </table>
     </div>
 </div>
+<div class="loader" id="loader">
+    <div class="white-spinner"></div>
+</div>
+
 </body>
 
 
