@@ -32,14 +32,20 @@
 
         .sidebar {
             position: fixed;
-            top: 215px;
             left: 190px;
             width: 250px;
-            height: 100vh;
+            height: calc(100vh - 90px); /* Adjust the height to account for the header */
             background-color: #000;
             padding: 20px;
             z-index: 2;
         }
+
+        .main-content {
+            margin-top: 20px; /* Adjust this value to match the sidebar's top value */
+            margin-left: 250px;
+            position: relative;
+        }
+
 
         .sidebar a, .sidebar button {
             color: #ffffff;
@@ -55,12 +61,6 @@
 
         .sidebar button:hover, .sidebar a:hover {
             color: #30D5C8;
-        }
-
-        .main-content {
-            margin-left: 250px;
-            padding: 20px;
-            position: relative;
         }
 
         .vehicle-card {
@@ -96,7 +96,7 @@
 
 
         .session-button {
-            background-color: #30D5C8;
+            background-color: white;
             color: #000000;
             border: none;
             border-radius: 20px;
@@ -113,11 +113,21 @@
             background-color: #35deda;
         }
 
+        .title-and-wallet {
+            display: block;
+        }
+
+        .session-buttons {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
         .title-container {
             background-color: #000;
             color: #fff;
             padding: 20px;
-            margin-left: 500px;
+            margin-left: 475px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -146,42 +156,19 @@
         .sidebar-link.active {
             color: #30D5C8;
         }
-        .header-container {
-            display: flex;
-            align-items: center;
-            padding-left: 20px;
-            padding-top: 20px;
-        }
 
-        .dimo-logo {
-            height: 45px;
-            margin-right: 0px;
-        }
-
-        .text-container {
-            position: relative;
-        }
-
-        .trips-text {
-            font-family: 'Oooh Baby';
-            font-size: 60px;
-            font-weight: normal;
-            color: rgb(70, 241, 239);
-            line-height: 1.4;
-        }
-
-        .beta-text {
-            position: absolute;
-            right: -40px;
-            top: 8px;
-            font-size: 16px;
-            color: rgb(255, 255, 255);
-            font-family: Euclid;
-
-        }
         .eth-address {
             color: #fff;
             font-size: 16px;
+        }
+        .header {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+
+        .dimo-logo {
+            height: 90px;
         }
 
 
@@ -214,18 +201,24 @@
             toggleView('my-vehicles');
         });
 
+        function adjustSidebarTop() {
+            var titleContainerHeight = document.querySelector('.title-container').offsetHeight;
+            var sidebar = document.querySelector('.sidebar');
+            sidebar.style.top = titleContainerHeight + 'px';
+        }
+
+        document.addEventListener('DOMContentLoaded', adjustSidebarTop);
+
+        window.onresize = adjustSidebarTop;
+
 
 
 
     </script>
 </head>
 <body>
-<div class="header-container">
-    <img src="/static/DIMO_Logo_White.svg" alt="DIMO Logo" class="dimo-logo">
-    <div class="text-container">
-        <div class="bubble-element trips-text">Trips</div>
-        <div class="bubble-element beta-text">BETA</div>
-    </div>
+<div class="header">
+    <img src="/static/whole_logo.png" alt="DIMO Logo" class="dimo-logo">
 </div>
 
 <div class="sidebar">
@@ -234,15 +227,20 @@
 </div>
 
 <div class="title-container">
-    <h1 id="page-title">{{Title}}</h1>
-    <span class="eth-address">Connected wallet: {{EthAddress}}</span>
+    <div class="title-and-wallet">
+        <h1 id="page-title">{{Title}}</h1>
+        <div class="wallet-address-container">
+            <span class="eth-address">Connected wallet: {{EthAddress}}</span>
+        </div>
+    </div>
 
-    <div>
+    <div class="session-buttons">
         <a href="/account" class="session-button">Session Credentials</a>
         <a href="/streamr" class="session-button">Live Streamr</a>
         <a href="/give-feedback" class="session-button" target="_blank">Give us Feedback!</a>
     </div>
 </div>
+
 <div class="main-content">
     <div id="my-vehicles" class="vehicle-list">
         {{#if Vehicles}}
