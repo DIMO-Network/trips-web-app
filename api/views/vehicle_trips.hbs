@@ -411,6 +411,8 @@
 
           const routeLayerId = `route-${tripID}`;
           const gradientLayerId = `route-gradient-${tripID}`;
+          const isGradientActive = document.getElementById(`toggle-gradient-${tripID}`).checked;
+          const isSnapToRoadActive = document.getElementById(`snap-to-road-${tripID}`).checked;
 
           const tripCheckbox = document.querySelector(`input[type=checkbox][onclick*="'${tripID}'"]`);
           if (!tripCheckbox || !tripCheckbox.checked) {
@@ -544,6 +546,14 @@
                   window.map.fitBounds(bounds, { padding: 20 });
               } else {
                   console.error('Cannot calculate bounds from GeoJSON data');
+              }
+
+              if (!showCoords) {
+                  if (isGradientActive) {
+                      updateRouteLayerForSpeedGradient(lineFeature, data.speedGradient, gradientLayerId);
+                  } else if (!isSnapToRoadActive) {
+                      displaySimpleRoute(lineFeature, routeLayerId);
+                  }
               }
 
               if (showCoords) {
@@ -896,7 +906,22 @@
               }
               if (showRawDataCheckbox.checked) {
                   showRawDataCheckbox.checked = false;
+                  hideCoordinatesAndSpeedGraph(tripID);
               }
+          }
+      }
+      function hideCoordinatesAndSpeedGraph(tripID) {
+          const coordsTableId = `coords-table-${tripID}`;
+          const graphContainerId = `speedGraphContainer-${tripID}`;
+
+          const coordsTable = document.getElementById(coordsTableId);
+          const graphContainer = document.getElementById(graphContainerId);
+
+          if (coordsTable) {
+              coordsTable.style.display = 'none';
+          }
+          if (graphContainer) {
+              graphContainer.style.display = 'none';
           }
       }
       function hideGradientLegend() {
