@@ -79,10 +79,13 @@
             width: 100%;
             border-collapse: collapse;
             color: #ffffff;
+            table-layout: fixed;
+            word-wrap:break-word;
         }
         .trip-table th, .trip-table td {
             border: 1px solid #333;
             padding: 8px;
+            box-sizing: border-box;
         }
         .trip-table th {
             background-color: #333333;
@@ -877,10 +880,37 @@
                   }
               }
 
-              document.getElementById(`snap-to-road-${tripID}`).checked = false;
-              snapToRoad(tripID, false);
-              document.getElementById(`toggle-gradient-${tripID}`).checked = false;
-              document.getElementById(`show-raw-data-${tripID}`).checked = false;
+              // Uncheck the checkboxes and trigger their associated actions
+              const snapToRoadCheckbox = document.getElementById(`snap-to-road-${tripID}`);
+              const toggleGradientCheckbox = document.getElementById(`toggle-gradient-${tripID}`);
+              const showRawDataCheckbox = document.getElementById(`show-raw-data-${tripID}`);
+
+              if (snapToRoadCheckbox.checked) {
+                  snapToRoadCheckbox.checked = false;
+                  snapToRoad(tripID, false);
+              }
+              if (toggleGradientCheckbox.checked) {
+                  toggleGradientCheckbox.checked = false;
+                  clearGradient(tripID);
+                  hideGradientLegend();
+              }
+              if (showRawDataCheckbox.checked) {
+                  showRawDataCheckbox.checked = false;
+              }
+          }
+      }
+      function hideGradientLegend() {
+          const speedGradientLegend = document.getElementById('speed-gradient-legend');
+          if (speedGradientLegend) {
+              speedGradientLegend.style.display = 'none';
+          }
+      }
+
+      function clearGradient(tripID) {
+          const gradientLayerId = `route-gradient-${tripID}`;
+          if (window.map.getLayer(gradientLayerId)) {
+              window.map.removeLayer(gradientLayerId);
+              window.map.removeSource(gradientLayerId);
           }
       }
 
