@@ -13,21 +13,64 @@
     <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 
     <style>
+        @font-face {
+            font-family: 'Euclid';
+            src: url('/static/EuclidCircularA-Regular.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
         body {
-            font-family: 'Raleway', sans-serif;
+            font-family: 'Euclid', sans-serif;
             background-color: #000000;
             color: #ffffff;
             margin: 0;
             padding: 20px;
         }
-        h1 {
-            color: #30D5C8;
+
+        .header {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
         }
-      .container {
-          display: flex;
-          flex-direction: column;
-      }
-      #map {
+
+        .dimo-logo {
+            height: 90px;
+        }
+
+        .container {
+            text-align: center;
+            padding-top: 60px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #30D5C8;
+
+        }
+
+        .content {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+        }
+
+        .map-container, .trips-container {
+            flex: 1;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .map-container {
+            min-height: 600px;
+        }
+
+        .trips-container {
+            overflow-y: auto;
+        }
+
+        #map {
           height: 60vh;
           margin-bottom: 20px;
           box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
@@ -36,10 +79,13 @@
             width: 100%;
             border-collapse: collapse;
             color: #ffffff;
+            table-layout: fixed;
+            word-wrap:break-word;
         }
         .trip-table th, .trip-table td {
             border: 1px solid #333;
             padding: 8px;
+            box-sizing: border-box;
         }
         .trip-table th {
             background-color: #333333;
@@ -51,7 +97,7 @@
             background-color: #121212;
         }
         .green {
-            background-color: #30D5C8;
+            background-color: white;
             color: #000000;
             border: none;
             border-radius: 5px;
@@ -67,7 +113,7 @@
         }
         .feedback-button {
             padding: 10px 20px;
-            background-color: #30D5C8;
+            background-color: white;
             color: #000000;
             border: none;
             border-radius: 20px;
@@ -77,6 +123,9 @@
             display: inline-block;
             margin-right: 10px;
             transition: background-color 0.3s ease;
+            position: absolute;
+            top: 30px;
+            right: 10px;
         }
         .feedback-button:hover {
             background-color: #35deda;
@@ -170,21 +219,28 @@
         border-color: #fff transparent #fff transparent;
         animation: lds-dual-ring 1.2s linear infinite;
       }
-      .buttons-container {
-          display: flex;
-          justify-content: flex-end;
-          margin-top: 20px;
-      }
+        #speed-gradient-legend {
+            background-color: black;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        #speed-gradient-legend h3,
+        #speed-gradient-legend div,
+        #speed-gradient-legend span {
+            color: white;
+        }
         .back-button {
             position: absolute;
-            top: 30px;
+            top: 100px;
             left: 30px;
             font-size: 24px;
             color: #ffffff;
             cursor: pointer;
             border: none;
             background: none;
-            z-index: 10;
+            z-index: 1001;
         }
 
       @keyframes lds-dual-ring {
@@ -355,6 +411,8 @@
 
           const routeLayerId = `route-${tripID}`;
           const gradientLayerId = `route-gradient-${tripID}`;
+          const isGradientActive = document.getElementById(`toggle-gradient-${tripID}`).checked;
+          const isSnapToRoadActive = document.getElementById(`snap-to-road-${tripID}`).checked;
 
           const tripCheckbox = document.querySelector(`input[type=checkbox][onclick*="'${tripID}'"]`);
           if (!tripCheckbox || !tripCheckbox.checked) {
@@ -488,6 +546,14 @@
                   window.map.fitBounds(bounds, { padding: 20 });
               } else {
                   console.error('Cannot calculate bounds from GeoJSON data');
+              }
+
+              if (!showCoords) {
+                  if (isGradientActive) {
+                      updateRouteLayerForSpeedGradient(lineFeature, data.speedGradient, gradientLayerId);
+                  } else if (!isSnapToRoadActive) {
+                      displaySimpleRoute(lineFeature, routeLayerId);
+                  }
               }
 
               if (showCoords) {
@@ -824,10 +890,52 @@
                   }
               }
 
-              document.getElementById(`snap-to-road-${tripID}`).checked = false;
-              snapToRoad(tripID, false);
-              document.getElementById(`toggle-gradient-${tripID}`).checked = false;
-              document.getElementById(`show-raw-data-${tripID}`).checked = false;
+              // Uncheck the checkboxes and trigger their associated actions
+              const snapToRoadCheckbox = document.getElementById(`snap-to-road-${tripID}`);
+              const toggleGradientCheckbox = document.getElementById(`toggle-gradient-${tripID}`);
+              const showRawDataCheckbox = document.getElementById(`show-raw-data-${tripID}`);
+
+              if (snapToRoadCheckbox.checked) {
+                  snapToRoadCheckbox.checked = false;
+                  snapToRoad(tripID, false);
+              }
+              if (toggleGradientCheckbox.checked) {
+                  toggleGradientCheckbox.checked = false;
+                  clearGradient(tripID);
+                  hideGradientLegend();
+              }
+              if (showRawDataCheckbox.checked) {
+                  showRawDataCheckbox.checked = false;
+                  hideCoordinatesAndSpeedGraph(tripID);
+              }
+          }
+      }
+      function hideCoordinatesAndSpeedGraph(tripID) {
+          const coordsTableId = `coords-table-${tripID}`;
+          const graphContainerId = `speedGraphContainer-${tripID}`;
+
+          const coordsTable = document.getElementById(coordsTableId);
+          const graphContainer = document.getElementById(graphContainerId);
+
+          if (coordsTable) {
+              coordsTable.style.display = 'none';
+          }
+          if (graphContainer) {
+              graphContainer.style.display = 'none';
+          }
+      }
+      function hideGradientLegend() {
+          const speedGradientLegend = document.getElementById('speed-gradient-legend');
+          if (speedGradientLegend) {
+              speedGradientLegend.style.display = 'none';
+          }
+      }
+
+      function clearGradient(tripID) {
+          const gradientLayerId = `route-gradient-${tripID}`;
+          if (window.map.getLayer(gradientLayerId)) {
+              window.map.removeLayer(gradientLayerId);
+              window.map.removeSource(gradientLayerId);
           }
       }
 
@@ -836,67 +944,77 @@
   </script>
 </head>
 <body>
+<div class="header">
+    <img src="/static/whole_logo.png" alt="DIMO Logo" class="dimo-logo">
+</div>
 <div class="container">
     <button class="back-button" onclick="window.location.href='/vehicles/me'">&#9664;</button>
-    <div id="map"></div>
-    <div class="buttons-container">
-        <a href="/give-feedback" class="feedback-button" target="_blank">Give us Feedback!</a>
-    </div>    <div style="display: none;" class="loader">
-        <div class="white-spinner"></div>
-    </div>
-    <div id="speed-gradient-legend" style="display: none;">
-            <h3>Speed</h3>
-            <div id="speed-gradient-bar"></div>
-            <div id="speed-gradient-labels">
-                <span>10</span>
-                <span>30</span>
-                <span>50</span>
-                <span>70</span>
-                <span>90</span>
+    <h1>Trips for {{TokenID}}</h1>
+    <div class="content">
+        <div class="map-container">
+            <div id="map"></div>
+            <div id="speed-gradient-legend" style="display: none;">
+                <h3>Speed</h3>
+                <div id="speed-gradient-bar"></div>
+                <div id="speed-gradient-labels">
+                    <span>10</span>
+                    <span>30</span>
+                    <span>50</span>
+                    <span>70</span>
+                    <span>90</span>
+                </div>
+                <div id="speed-units">(kmh)</div>
             </div>
-            <div id="speed-units">(kmh)</div>
         </div>
-    <div>
-        <h1>Trips for {{TokenID}}</h1>
-        <table class="trip-table">
-            <thead>
-            <tr>
-                <th>When</th>
-                <th>Trip ID</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-                <th>Duration</th>
-                <th>View Trip</th>
-                <th>Snap to Road</th>
-                <th>Toggle Speed Gradient</th>
-                <th>Show/Hide Raw Data</th>
-                <th>Download as CSV</th>
-            </tr>
-            </thead>
-            <tbody>
-            {{#each Trips}}
-                <tr>
-                    <td><span class="timeago" datetime="{{this.End.Time}}"></span></td>
-                    <td>{{this.ID}}</td>
-                    <td><span class="formatted-start-time" data-time="{{this.Start.Time}}"></span></td>
-                    <td><span class="formatted-end-time" data-time="{{this.End.Time}}"></span></td>
-                    <td><span class="trip-duration" data-start="{{this.Start.Time}}" data-end="{{this.End.Time}}"></span></td>
-                    <td><input type="checkbox" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', false)" onchange="toggleTripOptions(this, '{{this.ID}}')"></td>
-                    <td><input type="checkbox" id="snap-to-road-{{this.ID}}" disabled onclick="snapToRoad('{{this.ID}}', this.checked)"></td>
-                    <td><input type="checkbox" id="toggle-gradient-{{this.ID}}" disabled onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', this.checked)"></td>
-                    <td><input type="checkbox" id="show-raw-data-{{this.ID}}" disabled onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, true, '{{this.ID}}', false)"></td>
-                    <td>
-                        <button class="green" onclick="downloadTripDataAsCSV('{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">
-                            &#x21E9;
-                        </button>
-                    </td>
 
+        <div class="trips-container">
+            <a href="/give-feedback" class="feedback-button" target="_blank">Give us Feedback!</a>
+            <div style="display: none;" class="loader">
+                <div class="white-spinner"></div>
+            </div>
+            <table class="trip-table">
+                <thead>
+                <tr>
+                    <th>When</th>
+                    <th>Trip ID</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Duration</th>
+                    <th>View Trip</th>
+                    <th>Snap to Road</th>
+                    <th>Toggle Speed Gradient</th>
+                    <th>Show/Hide Raw Data</th>
+                    <th>Download as CSV</th>
                 </tr>
-            {{/each}}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                {{#each Trips}}
+                    <tr>
+                        <td><span class="timeago" datetime="{{this.End.Time}}"></span></td>
+                        <td>{{this.ID}}</td>
+                        <td><span class="formatted-start-time" data-time="{{this.Start.Time}}"></span></td>
+                        <td><span class="formatted-end-time" data-time="{{this.End.Time}}"></span></td>
+                        <td><span class="trip-duration" data-start="{{this.Start.Time}}" data-end="{{this.End.Time}}"></span></td>
+                        <td><input type="checkbox" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', false)" onchange="toggleTripOptions(this, '{{this.ID}}')"></td>
+                        <td><input type="checkbox" id="snap-to-road-{{this.ID}}" disabled onclick="snapToRoad('{{this.ID}}', this.checked)"></td>
+                        <td><input type="checkbox" id="toggle-gradient-{{this.ID}}" disabled onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', this.checked)"></td>
+                        <td><input type="checkbox" id="show-raw-data-{{this.ID}}" disabled onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, true, '{{this.ID}}', false)"></td>
+                        <td>
+                            <button class="green" onclick="downloadTripDataAsCSV('{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">
+                                &#x21E9;
+                            </button>
+                        </td>
+
+                    </tr>
+                {{/each}}
+                </tbody>
+
+
+            </table>
+        </div>
     </div>
 </div>
-
 </body>
+
+
 </html>

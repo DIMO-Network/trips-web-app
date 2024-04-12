@@ -8,8 +8,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Oooh+Baby&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
   <style>
+      @font-face {
+          font-family: 'Euclid';
+          src: url('/static/EuclidCircularA-Regular.otf') format('opentype');
+          font-weight: normal;
+          font-style: normal;
+      }
       body {
-          font-family: 'Raleway', sans-serif;
+          font-family: 'Euclid', sans-serif;
           background-color: #000000;
           color: #ffffff;
           margin: 0;
@@ -81,18 +87,30 @@
       }
       .back-button {
           position: absolute;
-          top: 20px;
-          left: 200px;
+          top: 95px;
+          left: 165px;
           font-size: 24px;
           color: #ffffff;
           cursor: pointer;
           border: none;
           background: none;
       }
+      .header {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+      }
+
+      .dimo-logo {
+          height: 90px;
+      }
 
   </style>
 </head>
 <body>
+<div class="header">
+    <img src="/static/whole_logo.png" alt="DIMO Logo" class="dimo-logo">
+</div>
 <button class="back-button" onclick="window.location.href='/vehicles/me'">&#9664;</button>
 
 <h1>My Current Session</h1>
