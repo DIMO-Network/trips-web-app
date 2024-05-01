@@ -34,14 +34,14 @@
             position: fixed;
             left: 190px;
             width: 250px;
-            height: calc(100vh - 90px); /* Adjust the height to account for the header */
+            height: calc(100vh - 90px);
             background-color: #000;
             padding: 20px;
             z-index: 2;
         }
 
         .main-content {
-            margin-top: 20px; /* Adjust this value to match the sidebar's top value */
+            margin-top: 20px;
             margin-left: 250px;
             position: relative;
         }
@@ -200,6 +200,18 @@
             height: 40px;
             z-index: 999;
         }
+        .generate-token-section {
+            text-align: center;
+            margin-top: 20px; /* Space between vehicle list and this section */
+            padding: 20px;
+            background-color: #333; /* Dark background for visibility */
+        }
+
+        .generate-token-section select, .generate-token-section button {
+            margin: 10px;
+            padding: 10px;
+            width: 200px; /* Fixed width for select and button */
+        }
 
 
 
@@ -242,8 +254,31 @@
 
         window.onresize = adjustSidebarTop;
 
-
-
+        document.addEventListener('DOMContentLoaded', function() {
+            const generateButton = document.getElementById('generate-token-button');
+            if (generateButton) {
+                generateButton.addEventListener('click', async function() {
+                    const tokenID = document.getElementById('vehicle-dropdown').value;
+                    try {
+                        const response = await fetch(`/api/generate-token/${tokenID}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            document.getElementById('token-display').textContent = `Generated Token: ${data.token}`;
+                        } else {
+                            throw new Error(data.error || 'Failed to generate token');
+                        }
+                    } catch (error) {
+                        console.error('Error generating token:', error);
+                        document.getElementById('token-display').textContent = 'Error: ' + error.message;
+                    }
+                });
+            }
+        });
 
     </script>
 </head>
@@ -292,6 +327,16 @@
             <p>No vehicles to display.</p>
         {{/if}}
     </div>
+    <div class="generate-token-section">
+        <h3>Generate Privilege Token</h3>
+        <select id="vehicle-dropdown">
+            {{#each Vehicles}}
+                <option value="{{this.TokenID}}">{{this.Definition.make}} {{this.Definition.model}} ({{this.Definition.year}})</option>
+            {{/each}}
+        </select>
+        <button id="generate-token-button">Generate Token</button>
+        <p id="token-display"></p>
+    </div>
 
     <div id="shared-vehicles" class="vehicle-list" style="display: none;">
         {{#if SharedVehicles}}
@@ -313,6 +358,9 @@
     </div>
 </div>
 </div>
+
+
+
 <footer style="text-align: center; padding: 20px 0; background-color: #222; color: #fff;">
     <a href="https://dimo.zone/legal/privacy-policy" class="footer-link" target="_blank">Privacy Policy</a> |
     <a href="https://dimo.zone/legal/terms-of-use" class="footer-link" target="_blank">Terms of Use</a>
