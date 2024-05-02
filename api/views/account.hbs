@@ -105,6 +105,59 @@
           height: 90px;
       }
 
+      .generate-token-section {
+          background-color: #222;
+          border-radius: 10px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          margin-right: 200px;
+          margin-left: 240px;
+          padding: 15px;
+          z-index: 1;
+      }
+
+      .generate-token-section select {
+          width: 50%;
+          padding: 10px;
+          margin-top: 5px;
+          background-color: white;
+          color: black;
+          border: 1px solid #ccc;
+          border-radius: 0;
+          cursor: pointer;
+      }
+
+      .generate-token-section button {
+          padding: 10px 20px;
+          margin-top: 10px;
+          background-color: white;
+          color: black;
+          border: none;
+          border-radius: 20px;
+          cursor: pointer;
+          font-size: 16px;
+      }
+
+      .generate-token-section button:hover {
+          background-color: #35deda;
+      }
+
+      #token-display {
+          word-wrap: break-word;
+          background-color: #222;
+          color: #ffffff;
+          padding: 10px;
+          border-radius: 5px;
+          width: 80%;
+          margin-top: 10px;
+          text-align: center;
+          max-height: 150px;
+          overflow-y: auto;
+      }
+
   </style>
 </head>
 <body>
@@ -130,9 +183,16 @@
         <h2>My Privilege Token:</h2>
         <button class="copy-button" onclick="copyToClipboard('privilege-token')">Copy to clipboard</button>
     </div>
-    <div id="privilege-token">
-        {{ PrivilegeToken }}
+    <div class="generate-token-section">
+        <select id="vehicle-dropdown">
+            {{#each Vehicles}}
+                <option value="{{this.TokenID}}">{{this.Definition.make}} {{this.Definition.model}} ({{this.Definition.year}})</option>
+            {{/each}}
+        </select>
+        <button id="generate-token-button">Generate Token</button>
+        <div id="token-display"></div>
     </div>
+
     <p>My Privileges:</p>
     <ul>
         {{#each Privileges}}
@@ -141,10 +201,38 @@
     </ul>
 </div>
 
+
+
 <div class="footer">
     <p>For more information, check out the <a href="https://docs.dimo.zone/developer-platform/api-references/dimo-protocol/token-exchange-api/token-exchange-api-endpoints" target="_blank">docs</a>.</p>
 </div>
 <script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const generateButton = document.getElementById('generate-token-button');
+        if (generateButton) {
+            generateButton.addEventListener('click', async function() {
+                const tokenID = document.getElementById('vehicle-dropdown').value;
+                try {
+                    const response = await fetch(`/api/generate-token/${tokenID}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        document.getElementById('token-display').textContent = `Generated Token: ${data.token}`;
+                    } else {
+                        throw new Error(data.error || 'Failed to generate token');
+                    }
+                } catch (error) {
+                    console.error('Error generating token:', error);
+                    document.getElementById('token-display').textContent = 'Error: ' + error.message;
+                }
+            });
+        }
+    });
     function copyToClipboard(id){
         var text = document.getElementById(id).innerText;
         navigator.clipboard.writeText(text).then(function() {
