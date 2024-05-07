@@ -97,18 +97,16 @@ func (a *AccountController) MyAccount(c *fiber.Ctx) error {
 		}
 	}
 
-	privilegeToken, err := RequestPriviledgeToken(c, &a.settings, vehicles[0].TokenID)
-
 	if err != nil {
 		return c.Render("session_expired", fiber.Map{})
 	}
 
 	return c.Render("account", fiber.Map{
-		"Token":          jwtToken,
-		"PrivilegeToken": privilegeToken,
+		"Token": jwtToken,
 		"Privileges": fiber.Map{
 			"1": "1: All-time, non-location data",
 			"4": "4: All-time location",
 		},
+		"Vehicles": vehicles,
 	})
 }

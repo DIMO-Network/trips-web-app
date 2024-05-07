@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/DIMO-Network/shared"
 	"github.com/dimo-network/trips-web-app/api/internal/config"
@@ -87,6 +88,21 @@ func main() {
 	app.Post("/auth/web3/submit_challenge", func(c *fiber.Ctx) error {
 		return controllers.HandleSubmitChallenge(c, &settings)
 	})
+
+	app.Post("/api/generate-token/:tokenID", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
+		tokenID, err := strconv.ParseInt(c.Params("tokenID"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid token ID"})
+		}
+
+		token, err := controllers.RequestPriviledgeToken(c, &settings, tokenID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to generate privilege token", "details": err.Error()})
+		}
+
+		return c.JSON(fiber.Map{"token": *token})
+	})
+
 	// to hold any static css or js
 	app.Static("/static", "./static", fiber.Static{
 		Compress:      true,
