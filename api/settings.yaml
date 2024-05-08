@@ -13,7 +13,7 @@ SUBMIT_CHALLENGE_URL: https://auth.dev.dimo.zone/auth/web3/submit_challenge
 IDENTITY_API_URL: https://identity-api.dev.dimo.zone/query
 TOKEN_EXCHANGE_API_URL: https://token-exchange-api.dev.dimo.zone/v1/tokens/exchange
 DEVICE_DATA_API_URL: https://device-data-api.dev.dimo.zone/v1
-PRIVILEGE_NFT_CONTRACT_ADDR: '0x90C4D6113Ec88dd4BDf12f26DB2b3998fd13A144'
+PRIVILEGE_NFT_CONTRACT_ADDR: '0x45fbCD3ef7361d156e8b16F5538AE36DEdf61Da8'
 TRIPS_API_BASE_URL: https://trips-api.dev.dimo.zone/v1
 USERS_API_BASE_URL: https://users-api.dev.dimo.zone/v1
 
