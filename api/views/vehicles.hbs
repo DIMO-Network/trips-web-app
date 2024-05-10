@@ -200,74 +200,6 @@
             z-index: 999;
             position: fixed;
         }
-        .generate-token-section {
-            background-color: #222;
-            border-radius: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            margin-right: 200px;
-            margin-left: 240px;
-            padding: 15px;
-            z-index: 1;
-        }
-
-        .generate-token-section select {
-            width: 50%;
-            padding: 10px;
-            margin-top: 5px;
-            background-color: white;
-            color: black;
-            border: 1px solid #ccc;
-            border-radius: 0;
-            cursor: pointer;
-        }
-
-        .generate-token-section button {
-            padding: 10px 20px;
-            margin-top: 10px;
-            background-color: white;
-            color: black;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .generate-token-section button:hover {
-            background-color: #35deda;
-        }
-
-        #token-display {
-            word-wrap: break-word;
-            background-color: #222;
-            color: #ffffff;
-            padding: 10px;
-            border-radius: 5px;
-            width: 80%;
-            margin-top: 10px;
-            text-align: center;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .copy-button {
-            padding: 10px 20px;
-            margin-top: 10px;
-            background-color: white;
-            color: black;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .copy-button:hover {
-            background-color: #35deda;
-        }
-
 
     </style>
     <script>
@@ -305,40 +237,6 @@
         document.addEventListener('DOMContentLoaded', adjustSidebarTop);
 
         window.onresize = adjustSidebarTop;
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const generateButton = document.getElementById('generate-token-button');
-            if (generateButton) {
-                generateButton.addEventListener('click', async function() {
-                    const tokenID = document.getElementById('vehicle-dropdown').value;
-                    try {
-                        const response = await fetch(`/api/generate-token/${tokenID}`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            }
-                        });
-                        const data = await response.json();
-                        if (response.ok) {
-                            document.getElementById('token-display').textContent = `Generated Token: ${data.token}`;
-                        } else {
-                            throw new Error(data.error || 'Failed to generate token');
-                        }
-                    } catch (error) {
-                        console.error('Error generating token:', error);
-                        document.getElementById('token-display').textContent = 'Error: ' + error.message;
-                    }
-                });
-            }
-        });
-        function copyToClipboard() {
-            var text = document.getElementById('token-display').innerText;
-            navigator.clipboard.writeText(text).then(function() {
-                alert('Copying to clipboard was successful!');
-            }, function(err) {
-                alert('Could not copy text: ', err);
-            });
-        }
 
     </script>
 </head>
@@ -387,18 +285,6 @@
             <p>No vehicles to display.</p>
         {{/if}}
     </div>
-    <div class="generate-token-section">
-        <h3>Generate Privilege Token</h3>
-        <select id="vehicle-dropdown">
-            {{#each Vehicles}}
-                <option value="{{this.TokenID}}">{{this.Definition.make}} {{this.Definition.model}} ({{this.Definition.year}})</option>
-            {{/each}}
-        </select>
-        <button id="generate-token-button">Generate Token</button>
-        <div id="token-display"></div>
-        <button class="copy-button" onclick="copyToClipboard()">Copy to clipboard</button>
-    </div>
-
 
     <div id="shared-vehicles" class="vehicle-list" style="display: none;">
         {{#if SharedVehicles}}
