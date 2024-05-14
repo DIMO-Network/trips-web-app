@@ -785,7 +785,7 @@
                   window.map.removeSource(snappedLayerId);
               }
               if (window.map.getLayer(originalLayerId)) {
-                  window.map.setLayoutProperty(or iginalLayerId, 'visibility', 'visible');
+                  window.map.setLayoutProperty(originalLayerId, 'visibility', 'visible');
               }
               return;
           }
@@ -794,10 +794,10 @@
           console.log("Current trip coordinates before snap to road:", window.currentTripCoordinates);
 
           try {
-              let snappedFeatures = [];
+              let allSnappedCoordinates = [];
 
-              for (let i = 0; i < window.currentTripCoordinates.length; i += 50) {
-                  const coordBatch = window.currentTripCoordinates.slice(i, i + 50);
+              for (let i = 0; i < window.currentTripCoordinates.length; i += 100) {
+                  const coordBatch = window.currentTripCoordinates.slice(i, i + 100);
                   const coordQuery = coordBatch.map(c => `${c[0]},${c[1]}`).join(';');
                   const radiuses = new Array(coordBatch.length).fill(25).join(';');
 
@@ -815,17 +815,22 @@
                       continue;
                   }
 
-                  const snappedFeature = {
-                      type: "Feature",
-                      geometry: matchData.matchings[0].geometry,
-                  };
-                  console.log("Processed feature for batch:", snappedFeature);
+                  const snappedCoordinates = matchData.matchings[0].geometry.coordinates;
+                  console.log("Processed coordinates for batch:", snappedCoordinates);
 
-                  snappedFeatures.push(snappedFeature);
+                  allSnappedCoordinates = allSnappedCoordinates.concat(snappedCoordinates);
               }
-              console.log("All snapped features:", snappedFeatures);
+              console.log("All snapped coordinates:", allSnappedCoordinates);
 
-              updateMapWithSnappedPath(snappedFeatures, tripID);
+              const snappedFeature = {
+                  type: "Feature",
+                  geometry: {
+                      type: "LineString",
+                      coordinates: allSnappedCoordinates
+                  }
+              };
+
+              updateMapWithSnappedPath([snappedFeature], tripID);
           } catch (error) {
               console.error('Error in snapToRoad:', error);
           }
@@ -836,39 +841,37 @@
           }
       }
 
-
-
-
-      function updateMapWithSnappedPath(features, tripID) {
+      function updateMapWithSnappedPath(snappedFeatures, tripID) {
           const snappedLayerId = `snapped-path-${tripID}`;
-          const snappedGeoJSON = {
-              type: "FeatureCollection",
-              features: features
-          };
 
-          if (window.map.getSource(snappedLayerId)) {
-              window.map.getSource(snappedLayerId).setData(snappedGeoJSON);
-          } else {
-              window.map.addSource(snappedLayerId, {
-                  type: 'geojson',
-                  data: snappedGeoJSON
-              });
-
-              window.map.addLayer({
-                  id: snappedLayerId,
-                  type: 'line',
-                  source: snappedLayerId,
-                  layout: {
-                      'line-join': 'round',
-                      'line-cap': 'round'
-                  },
-                  paint: {
-                      'line-color': '#00ff00',
-                      'line-width': 5
-                  }
-              });
+          if (window.map.getLayer(snappedLayerId)) {
+              window.map.removeLayer(snappedLayerId);
+              window.map.removeSource(snappedLayerId);
           }
+
+          window.map.addSource(snappedLayerId, {
+              type: "geojson",
+              data: {
+                  type: "FeatureCollection",
+                  features: snappedFeatures
+              }
+          });
+
+          window.map.addLayer({
+              id: snappedLayerId,
+              type: "line",
+              source: snappedLayerId,
+              layout: {
+                  "line-join": "round",
+                  "line-cap": "round"
+              },
+              paint: {
+                  "line-color": "yellow",
+                  "line-width": 8
+              }
+          });
       }
+
 
       function toggleTripOptions(viewTripCheckbox, tripID) {
           const isEnabled = viewTripCheckbox.checked;
