@@ -795,27 +795,29 @@
 
           try {
               let allSnappedCoordinates = [];
+              const apiKey = 'GOOGLE_MAPS_API_KEY';
 
               for (let i = 0; i < window.currentTripCoordinates.length; i += 100) {
                   const coordBatch = window.currentTripCoordinates.slice(i, i + 100);
-                  const coordQuery = coordBatch.map(c => `${c[0]},${c[1]}`).join(';');
-                  const radiuses = new Array(coordBatch.length).fill(25).join(';');
+                  const path = coordBatch.map(c => `${c[1]},${c[0]}`).join('|');
 
-                  const matchUrl = `https://api.mapbox.com/matching/v5/mapbox/driving/${coordQuery}?geometries=geojson&radiuses=${radiuses}&access_token=${mapboxgl.accessToken}`;
+                  const snapUrl = `https://roads.googleapis.com/v1/snapToRoads?path=${path}&interpolate=true&key=${apiKey}`;
 
-                  console.log("Map Matching API URL:", matchUrl);
+                  console.log("Google Roads API URL:", snapUrl);
 
-                  const matchResponse = await fetch(matchUrl);
-                  const matchData = await matchResponse.json();
+                  const snapResponse = await fetch(snapUrl);
+                  const snapData = await snapResponse.json();
 
-                  console.log("Map Matching API response:", matchData);
+                  console.log("Google Roads API response:", snapData);
 
-                  if (matchData.code !== "Ok") {
-                      console.error('Error with Map Matching:', matchData.message);
+                  if (snapData.error) {
+                      console.error('Error with Google Roads API:', snapData.error.message);
                       continue;
                   }
 
-                  const snappedCoordinates = matchData.matchings[0].geometry.coordinates;
+                  const snappedCoordinates = snapData.snappedPoints.map(point => {
+                      return [point.location.longitude, point.location.latitude];
+                  });
                   console.log("Processed coordinates for batch:", snappedCoordinates);
 
                   allSnappedCoordinates = allSnappedCoordinates.concat(snappedCoordinates);
@@ -871,6 +873,7 @@
               }
           });
       }
+
 
 
       function toggleTripOptions(viewTripCheckbox, tripID) {
