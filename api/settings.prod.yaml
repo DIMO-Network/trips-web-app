@@ -15,6 +15,6 @@ DEVICE_DATA_API_URL: https://device-data-api.dimo.zone/v1
 TRIPS_API_BASE_URL: https://trips-api.dimo.zone/v1
 PRIVILEGE_NFT_CONTRACT_ADDR: 0xbA5738a18d83D41847dfFbDC6101d37C69c9B0cF
 USERS_API_BASE_URL: https://users-api.dimo.zone/v1
-
+TELEMETRY_API_URL: https://telemetry-api.dimo.zone/query
 
 
