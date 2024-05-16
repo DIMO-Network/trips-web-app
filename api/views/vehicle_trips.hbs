@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Device Trips - {{TokenID}}</title>
-  <link href="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css" rel="stylesheet">
-  <script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/timeago.js@4.0.2/dist/timeago.min.js"></script>
+    <meta charset="UTF-8">
+    <title>Device Trips - {{TokenID}}</title>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/timeago.js@4.0.2/dist/timeago.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -71,10 +71,10 @@
         }
 
         #map {
-          height: 60vh;
-          margin-bottom: 20px;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-      }
+            height: 60vh;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
         .trip-table {
             width: 100%;
             border-collapse: collapse;
@@ -130,95 +130,95 @@
         .feedback-button:hover {
             background-color: #35deda;
         }
-      .coordinates-table {
-          margin-top: 20px;
-          border-collapse: collapse;
-          width: 100%;
-          max-width: 600px;
-          margin: auto;
-      }
-      .coordinates-table h3 {
-          text-align: center;
-          margin-bottom: 10px;
-      }
-      .coordinates-table table {
-          width: 100%;
-          border-collapse: collapse;
-      }
-      .coordinates-table th, .coordinates-table td {
-          border: 1px solid #ddd;
-          padding: 8px;
-          text-align: left;
-      }
+        .coordinates-table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 600px;
+            margin: auto;
+        }
+        .coordinates-table h3 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .coordinates-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .coordinates-table th, .coordinates-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
 
-      .highlighted-trip {
-          background-color: #ddd;
-      }
-      .highlighted-start-time {
-          border: 2px solid #90EE90;
-      }
+        .highlighted-trip {
+            background-color: #ddd;
+        }
+        .highlighted-start-time {
+            border: 2px solid #90EE90;
+        }
 
-      .highlighted-end-time {
-          border: 2px solid #FF6347;
-      }
-      .trip-table input[type="checkbox"] {
-          transform: scale(1.5);
-          margin: 0;
-      }
-      #speed-gradient-legend {
-          width: 80%;
-          max-width: 600px;
-          margin: 20px auto;
-          padding: 10px;
-          background-color: rgba(255, 255, 255, 0.8);
-          border-radius: 5px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-          text-align: center;
-      }
+        .highlighted-end-time {
+            border: 2px solid #FF6347;
+        }
+        .trip-table input[type="checkbox"] {
+            transform: scale(1.5);
+            margin: 0;
+        }
+        #speed-gradient-legend {
+            width: 80%;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            text-align: center;
+        }
 
-      #speed-gradient-bar {
-          width: 100%;
-          height: 20px;
-          background: linear-gradient(to right, blue 0%, green 20%, yellow 40%, orange 60%, red 80%);
-          border-radius: 3px;
-      }
+        #speed-gradient-bar {
+            width: 100%;
+            height: 20px;
+            background: linear-gradient(to right, blue 0%, green 20%, yellow 40%, orange 60%, red 80%);
+            border-radius: 3px;
+        }
 
-      #speed-gradient-labels {
-          display: flex;
-          justify-content: space-between;
-          font-size: 0.8em;
-          margin-top: 5px;
-      }
+        #speed-gradient-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
 
-      #speed-units {
-          font-size: 0.8em;
-          margin-top: 5px;
-      }
-      .loader {
-          display: none;
-          position: fixed;
-          z-index: 999;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-color: rgba(104, 104, 104, 0.5);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-      }
+        #speed-units {
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+        .loader {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(104, 104, 104, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-      .white-spinner {
-        content: " ";
-        display: block;
-        width: 64px;
-        height: 64px;
-        margin: 8px;
-        border-radius: 50%;
-        border: 6px solid #fff;
-        border-color: #fff transparent #fff transparent;
-        animation: lds-dual-ring 1.2s linear infinite;
-      }
+        .white-spinner {
+            content: " ";
+            display: block;
+            width: 64px;
+            height: 64px;
+            margin: 8px;
+            border-radius: 50%;
+            border: 6px solid #fff;
+            border-color: #fff transparent #fff transparent;
+            animation: lds-dual-ring 1.2s linear infinite;
+        }
         #speed-gradient-legend {
             background-color: black;
             color: white;
@@ -243,419 +243,419 @@
             z-index: 1001;
         }
 
-      @keyframes lds-dual-ring {
-        0% {
-            transform: rotate(0deg);
+        @keyframes lds-dual-ring {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
         }
-        100% {
-            transform: rotate(360deg);
+
+    </style>
+    <script>
+        window.addEventListener('load', function() {
+            initializeMap();
+            updateTimeago();
+            displayTripDurations();
+            formatDateTime();
+
+            const firstTripRow = document.querySelector('.trip-table tbody tr:first-child');
+            if (firstTripRow) {
+                const firstTripCheckbox = firstTripRow.querySelector('input[type="checkbox"]');
+                if (firstTripCheckbox) {
+                    firstTripCheckbox.click();
+                    firstTripRow.classList.add('highlighted-trip');
+                }
+            }
+        });
+
+        function initializeMap() {
+            mapboxgl.accessToken = "pk.eyJ1IjoiYmVua29jaGFub3dza2kiLCJhIjoiY2t6eDdlZzRnOGUyeTJvbXphdXdvZnJjZSJ9.S1WS1tkPKQnGt3A5Y72ZUA";
+            window.map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/dark-v10',
+                center: [0, 0],
+                zoom: 9
+            });
         }
+        window.onload = initializeMap;
+        let isSpeedGradientShown = false;
+        window.mapMarkers = [];
+        window.routeLayerId = null;
+        window.currentTripCoordinates = [];
+
+
+        function displayTripDurations() {
+            document.querySelectorAll('.trip-duration').forEach(function(element) {
+                const start = new Date(element.getAttribute('data-start'));
+                const end = new Date(element.getAttribute('data-end'));
+
+                console.log('Parsed Start:', start.toISOString());
+                console.log('Parsed End:', end.toISOString());
+
+                const durationMs = end - start;
+                const minutes = Math.floor(durationMs / 60000);
+                element.textContent = `${minutes} minutes`;
+            });
         }
 
-  </style>
-  <script>
-      window.addEventListener('load', function() {
-          initializeMap();
-          updateTimeago();
-          displayTripDurations();
-          formatDateTime();
-
-          const firstTripRow = document.querySelector('.trip-table tbody tr:first-child');
-          if (firstTripRow) {
-              const firstTripCheckbox = firstTripRow.querySelector('input[type="checkbox"]');
-              if (firstTripCheckbox) {
-                  firstTripCheckbox.click();
-                  firstTripRow.classList.add('highlighted-trip');
-              }
-          }
-      });
-
-      function initializeMap() {
-          mapboxgl.accessToken = "pk.eyJ1IjoiYmVua29jaGFub3dza2kiLCJhIjoiY2t6eDdlZzRnOGUyeTJvbXphdXdvZnJjZSJ9.S1WS1tkPKQnGt3A5Y72ZUA";
-          window.map = new mapboxgl.Map({
-              container: 'map',
-              style: 'mapbox://styles/mapbox/dark-v10',
-              center: [0, 0],
-              zoom: 9
-          });
-      }
-      window.onload = initializeMap;
-      let isSpeedGradientShown = false;
-      window.mapMarkers = [];
-      window.routeLayerId = null;
-      window.currentTripCoordinates = [];
-
-
-      function displayTripDurations() {
-          document.querySelectorAll('.trip-duration').forEach(function(element) {
-              const start = new Date(element.getAttribute('data-start'));
-              const end = new Date(element.getAttribute('data-end'));
-
-              console.log('Parsed Start:', start.toISOString());
-              console.log('Parsed End:', end.toISOString());
-
-              const durationMs = end - start;
-              const minutes = Math.floor(durationMs / 60000);
-              element.textContent = `${minutes} minutes`;
-          });
-      }
-
-      function updateTimeago() {
-          document.querySelectorAll('.timeago').forEach(function(element) {
-              const dateTime = element.getAttribute('datetime');
-              element.textContent = timeago.format(dateTime);
-          });
-      }
-
-      function formatDateTime() {
-          document.querySelectorAll('.formatted-start-time, .formatted-end-time').forEach(function(element) {
-              const dateTimeStr = element.getAttribute('data-time');
-              const dateTime = new Date(dateTimeStr);
-
-              const formattedTime = dateTime.toLocaleString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-              });
-
-              element.textContent = formattedTime;
-          });
-      }
-
-      function clearTripDisplay(tripID) {
-          // Clear markers
-          if (window.mapMarkers.length > 0) {
-              window.mapMarkers.forEach(marker => marker.remove());
-              window.mapMarkers = [];
-          }
-
-          // Clear route layer
-          const routeLayerId = `route-${tripID}`;
-          if (window.map.getLayer(routeLayerId)) {
-              window.map.removeLayer(routeLayerId);
-              window.map.removeSource(routeLayerId);
-          }
-      }
-
-      function displaySimpleRoute(lineFeature, routeLayerId) {
-          if (!window.map.getSource(routeLayerId)) {
-              window.map.addSource(routeLayerId, {
-                  type: 'geojson',
-                  data: lineFeature
-              });
-          } else {
-              window.map.getSource(routeLayerId).setData(lineFeature);
-          }
-
-          if (!window.map.getLayer(routeLayerId)) {
-              window.map.addLayer({
-                  id: routeLayerId,
-                  type: 'line',
-                  source: routeLayerId,
-                  layout: {
-                      'line-join': 'round',
-                      'line-cap': 'round'
-                  },
-                  paint: {
-                      'line-color': 'white',
-                      'line-width': 6
-                  }
-              });
-          }
-      }
-      function updateFeedbackButton(tripId) {
-          const feedbackButton = document.querySelector('.feedback-button');
-          if (feedbackButton && tripId) {
-              const baseUrl = '/give-feedback';
-              feedbackButton.href = `${baseUrl}?tripId=${tripId}`;
-          }
-          console.log('Updating feedback button with tripId:', tripId);
-          console.log('New href:', feedbackButton.href);
-      }
-
-
-
-      async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime, tripElement, showCoords = false, tripIdForTable = '', toggleGradient) {
-          document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
-          tripElement.classList.add('active-trip');
-
-          const mapContainer = document.getElementById('map');
-          mapContainer.style.display = 'block';
-
-          if (!window.map) {
-              console.log('Initializing map');
-              window.map = new mapboxgl.Map({
-                  container: 'map',
-                  style: 'mapbox://styles/mapbox/dark-v10',
-                  center: [0, 0],
-                  zoom: 9
-              });
-          } else {
-              window.map.resize();
-          }
-
-          document.querySelectorAll('.highlighted-start-time').forEach(el => el.classList.remove('highlighted-start-time'));
-          document.querySelectorAll('.highlighted-end-time').forEach(el => el.classList.remove('highlighted-end-time'));
-
-          // Highlight the start and end time of the selected trip
-          const startTimeCell = tripElement.querySelector('.formatted-start-time');
-          const endTimeCell = tripElement.querySelector('.formatted-end-time');
-          if (startTimeCell) {
-              startTimeCell.classList.add('highlighted-start-time');
-          }
-          if (endTimeCell) {
-              endTimeCell.classList.add('highlighted-end-time');
-          }
-
-          const routeLayerId = `route-${tripID}`;
-          const gradientLayerId = `route-gradient-${tripID}`;
-          const isGradientActive = document.getElementById(`toggle-gradient-${tripID}`).checked;
-          const isSnapToRoadActive = document.getElementById(`snap-to-road-${tripID}`).checked;
-
-          const tripCheckbox = document.querySelector(`input[type=checkbox][onclick*="'${tripID}'"]`);
-          if (!tripCheckbox || !tripCheckbox.checked) {
-              clearTripDisplay(tripID); // Removes both markers and line
-              return; // Exit if trip checkbox is not checked
-          }
-
-          // Clear existing markers and route layer if they exist
-          if (window.mapMarkers.length > 0) {
-              window.mapMarkers.forEach(marker => marker.remove());
-              window.mapMarkers = [];
-          }
-          if (window.routeLayerId && window.map.getLayer(window.routeLayerId)) {
-              window.map.removeLayer(window.routeLayerId);
-              window.map.removeSource(window.routeLayerId);
-              window.routeLayerId = null;
-          }
-          const checkbox = document.querySelector(`input[type=checkbox][onclick*="'${tripID}'"]`);
-          if (!checkbox) {
-              return;
-          }
-
-          try {
-            const loader = document.querySelector('.loader');
-            loader.style.display = 'flex';
-
-              const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
-              const response = await fetch(url, {
-                  headers: {
-                      'Content-Type': 'application/json',
-                  },
-                  credentials: 'include',
-              });
-
-              if (!response.ok) {
-                  throw new Error('Failed to fetch trip data');
-              }
-
-              const data = await response.json();
-
-             loader.style.display = 'none';
-
-              window.currentTripCoordinates = data.geojson.features.map(feature => {
-                  const coords = feature.geometry.coordinates;
-                  return coords && coords.length === 2 ? coords : null;
-              }).filter(coord => coord !== null);
-
-              console.log("Processed trip coordinates:", window.currentTripCoordinates);
-
-
-              if (!data || !data.geojson || !data.geojson.features || data.geojson.features.length === 0) {
-                  console.error('Invalid or missing GeoJSON data', data);
-                  alert("This trip doesn't have any location data to display.");
-                  return;
-              }
-
-              const geoJSON = data.geojson;
-              const lineCoordinates = geoJSON.features.map(feature => feature.geometry.coordinates);
-
-              const startPoint = lineCoordinates[0];
-              const endPoint = lineCoordinates[lineCoordinates.length - 1];
-
-              const startMarker = new mapboxgl.Marker({ color: 'green' })
-                      .setLngLat(startPoint)
-                      .setPopup(new mapboxgl.Popup({ offset: 25 }).setText("Start of Trip"))
-                      .addTo(window.map);
-              const endMarker = new mapboxgl.Marker({ color: 'red' })
-                      .setLngLat(endPoint)
-                      .setPopup(new mapboxgl.Popup({ offset: 25 }).setText("End of Trip"))
-                      .addTo(window.map);
-
-              window.mapMarkers.push(startMarker, endMarker);
-
-              // Creating or updating the route layer
-              const lineFeature = {
-                  type: 'Feature',
-                  geometry: {
-                      type: 'LineString',
-                      coordinates: lineCoordinates
-                  },
-                  properties: {}
-              };
-
-
-              if (toggleGradient) {
-                  // If gradient is to be shown, remove the white line layer if it exists
-                  if (window.map.getLayer(routeLayerId)) {
-                      window.map.removeLayer(routeLayerId);
-                      window.map.removeSource(routeLayerId);
-                  }
-
-                  // Show the route with speed gradient
-                  updateRouteLayerForSpeedGradient(lineFeature, data.speedGradient, gradientLayerId);
-                  const speedGradientLegend = document.getElementById('speed-gradient-legend');
-                  speedGradientLegend.style.display = 'block';
-              } else {
-                  // If gradient is to be removed, remove the gradient layer if it exists
-                  if (window.map.getLayer(gradientLayerId)) {
-                      window.map.removeLayer(gradientLayerId);
-                      window.map.removeSource(gradientLayerId);
-                  }
-
-                  // Show the route as a simple white line
-                  displaySimpleRoute(lineFeature, routeLayerId);
-                  const speedGradientLegend = document.getElementById('speed-gradient-legend');
-                  speedGradientLegend.style.display = 'none';
-              }
-
-
-              if (!window.map.getLayer(routeLayerId)) {
-                      window.map.addLayer({
-                          id: routeLayerId,
-                          type: 'line',
-                          source: routeLayerId,
-                          layout: {
-                              'line-join': 'round',
-                              'line-cap': 'round'
-                          },
-                          paint: {
-                              'line-color': 'white',
-                              'line-width': 6
-                          }
-                      });
-                  }
-
-              const bounds = new mapboxgl.LngLatBounds();
-              lineCoordinates.forEach(coord => {
-                  bounds.extend(coord);
-              });
-              if (!bounds.isEmpty()) {
-                  window.map.fitBounds(bounds, { padding: 20 });
-              } else {
-                  console.error('Cannot calculate bounds from GeoJSON data');
-              }
-
-              if (!showCoords) {
-                  if (isGradientActive) {
-                      updateRouteLayerForSpeedGradient(lineFeature, data.speedGradient, gradientLayerId);
-                  } else if (!isSnapToRoadActive) {
-                      displaySimpleRoute(lineFeature, routeLayerId);
-                  }
-              }
-
-              if (showCoords) {
-                  const existingTable = document.getElementById(`coords-table-${tripIdForTable}`);
-                  const graphContainer = document.getElementById(`speedGraphContainer-${tripIdForTable}`);
-
-                  if (existingTable) {
-                      const isHidden = existingTable.style.display === 'none';
-                      existingTable.style.display = isHidden ? '' : 'none';
-                      graphContainer.style.display = isHidden ? '' : 'none';
-
-                      if (isHidden) {
-                          const locationData = data.geojson.features.map(feature => ({
-                              timestamp: feature.properties.timestamp,
-                              speed: feature.properties.speed
-                          }));
-
-                          renderSpeedGraph(locationData, tripIdForTable);
-                      }
-                  } else {
-                      displayCoordinatesTable(geoJSON, tripIdForTable);
-                      document.getElementById(`speedGraphContainer-${tripIdForTable}`).style.display = '';
-
-                      const locationData = data.geojson.features.map(feature => ({
-                          timestamp: feature.properties.timestamp,
-                          speed: feature.properties.speed
-                      }));
-
-                      renderSpeedGraph(locationData, tripIdForTable);
-                  }
-              }
-              console.log('Called fetchAndDisplayMap with tripID:', tripID);
-
-              updateFeedbackButton(tripID);
-
-          } catch (error) {
-              console.error('Error fetching trip data:', error);
-          }
-      }
-
-      function updateRouteLayerForSpeedGradient(geoJSON, speedGradient, gradientLayerId) {
-          console.log('Speed Gradient Array:', speedGradient);
-
-          let gradientStops = mapSpeedColorsToMapboxStyle(speedGradient);
-
-          if (!window.map.getSource(gradientLayerId)) {
-              window.map.addSource(gradientLayerId, {
-                  type: 'geojson',
-                  data: geoJSON,
-                  lineMetrics: true
-              });
-          } else {
-              window.map.getSource(gradientLayerId).setData(geoJSON);
-          }
-
-          if (window.map.getLayer(gradientLayerId)) {
-              window.map.removeLayer(gradientLayerId);
-          }
-
-          window.map.addLayer({
-              id: gradientLayerId,
-              type: 'line',
-              source: gradientLayerId,
-              layout: {
-                  'line-join': 'round',
-                  'line-cap': 'round'
-              },
-              paint: {
-                  'line-color': 'red',
-                  'line-width': 6,
-                  'line-gradient': gradientStops
-              }
-          });
-
-          console.log('Added new route layer with gradient');
-      }
-
-
-      function mapSpeedColorsToMapboxStyle(speedColors) {
-          let expression = ['interpolate', ['linear'], ['line-progress']];
-          let totalColors = speedColors.length;
-
-          for (let i = 0; i < totalColors; i++) {
-              let stop = i / (totalColors - 1);
-              let color = speedColors[i];
-              expression.push(stop, color);
-          }
-          console.log('Gradient Stops:', expression);
-
-          return expression;
-      }
-
-      function displayCoordinatesTable(geojson, tripIdForTable) {
-          let tableHtml = '';
-
-          // speed graph
-          tableHtml += `<div id="speedGraphContainer-${tripIdForTable}" class="speed-graph-container" style="display: none;">
+        function updateTimeago() {
+            document.querySelectorAll('.timeago').forEach(function(element) {
+                const dateTime = element.getAttribute('datetime');
+                element.textContent = timeago.format(dateTime);
+            });
+        }
+
+        function formatDateTime() {
+            document.querySelectorAll('.formatted-start-time, .formatted-end-time').forEach(function(element) {
+                const dateTimeStr = element.getAttribute('data-time');
+                const dateTime = new Date(dateTimeStr);
+
+                const formattedTime = dateTime.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                element.textContent = formattedTime;
+            });
+        }
+
+        function clearTripDisplay(tripID) {
+            // Clear markers
+            if (window.mapMarkers.length > 0) {
+                window.mapMarkers.forEach(marker => marker.remove());
+                window.mapMarkers = [];
+            }
+
+            // Clear route layer
+            const routeLayerId = `route-${tripID}`;
+            if (window.map.getLayer(routeLayerId)) {
+                window.map.removeLayer(routeLayerId);
+                window.map.removeSource(routeLayerId);
+            }
+        }
+
+        function displaySimpleRoute(lineFeature, routeLayerId) {
+            if (!window.map.getSource(routeLayerId)) {
+                window.map.addSource(routeLayerId, {
+                    type: 'geojson',
+                    data: lineFeature
+                });
+            } else {
+                window.map.getSource(routeLayerId).setData(lineFeature);
+            }
+
+            if (!window.map.getLayer(routeLayerId)) {
+                window.map.addLayer({
+                    id: routeLayerId,
+                    type: 'line',
+                    source: routeLayerId,
+                    layout: {
+                        'line-join': 'round',
+                        'line-cap': 'round'
+                    },
+                    paint: {
+                        'line-color': 'white',
+                        'line-width': 6
+                    }
+                });
+            }
+        }
+        function updateFeedbackButton(tripId) {
+            const feedbackButton = document.querySelector('.feedback-button');
+            if (feedbackButton && tripId) {
+                const baseUrl = '/give-feedback';
+                feedbackButton.href = `${baseUrl}?tripId=${tripId}`;
+            }
+            console.log('Updating feedback button with tripId:', tripId);
+            console.log('New href:', feedbackButton.href);
+        }
+
+
+
+        async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime, tripElement, showCoords = false, tripIdForTable = '', toggleGradient) {
+            document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
+            tripElement.classList.add('active-trip');
+
+            const mapContainer = document.getElementById('map');
+            mapContainer.style.display = 'block';
+
+            if (!window.map) {
+                console.log('Initializing map');
+                window.map = new mapboxgl.Map({
+                    container: 'map',
+                    style: 'mapbox://styles/mapbox/dark-v10',
+                    center: [0, 0],
+                    zoom: 9
+                });
+            } else {
+                window.map.resize();
+            }
+
+            document.querySelectorAll('.highlighted-start-time').forEach(el => el.classList.remove('highlighted-start-time'));
+            document.querySelectorAll('.highlighted-end-time').forEach(el => el.classList.remove('highlighted-end-time'));
+
+            // Highlight the start and end time of the selected trip
+            const startTimeCell = tripElement.querySelector('.formatted-start-time');
+            const endTimeCell = tripElement.querySelector('.formatted-end-time');
+            if (startTimeCell) {
+                startTimeCell.classList.add('highlighted-start-time');
+            }
+            if (endTimeCell) {
+                endTimeCell.classList.add('highlighted-end-time');
+            }
+
+            const routeLayerId = `route-${tripID}`;
+            const gradientLayerId = `route-gradient-${tripID}`;
+            const isGradientActive = document.getElementById(`toggle-gradient-${tripID}`).checked;
+            const isSnapToRoadActive = document.getElementById(`snap-to-road-${tripID}`).checked;
+
+            const tripCheckbox = document.querySelector(`input[type=checkbox][onclick*="'${tripID}'"]`);
+            if (!tripCheckbox || !tripCheckbox.checked) {
+                clearTripDisplay(tripID); // Removes both markers and line
+                return; // Exit if trip checkbox is not checked
+            }
+
+            // Clear existing markers and route layer if they exist
+            if (window.mapMarkers.length > 0) {
+                window.mapMarkers.forEach(marker => marker.remove());
+                window.mapMarkers = [];
+            }
+            if (window.routeLayerId && window.map.getLayer(window.routeLayerId)) {
+                window.map.removeLayer(window.routeLayerId);
+                window.map.removeSource(window.routeLayerId);
+                window.routeLayerId = null;
+            }
+            const checkbox = document.querySelector(`input[type=checkbox][onclick*="'${tripID}'"]`);
+            if (!checkbox) {
+                return;
+            }
+
+            try {
+                const loader = document.querySelector('.loader');
+                loader.style.display = 'flex';
+
+                const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch trip data');
+                }
+
+                const data = await response.json();
+
+                loader.style.display = 'none';
+
+                window.currentTripCoordinates = data.geojson.features.map(feature => {
+                    const coords = feature.geometry.coordinates;
+                    return coords && coords.length === 2 ? coords : null;
+                }).filter(coord => coord !== null);
+
+                console.log("Processed trip coordinates:", window.currentTripCoordinates);
+
+
+                if (!data || !data.geojson || !data.geojson.features || data.geojson.features.length === 0) {
+                    console.error('Invalid or missing GeoJSON data', data);
+                    alert("This trip doesn't have any location data to display.");
+                    return;
+                }
+
+                const geoJSON = data.geojson;
+                const lineCoordinates = geoJSON.features.map(feature => feature.geometry.coordinates);
+
+                const startPoint = lineCoordinates[0];
+                const endPoint = lineCoordinates[lineCoordinates.length - 1];
+
+                const startMarker = new mapboxgl.Marker({ color: 'green' })
+                        .setLngLat(startPoint)
+                        .setPopup(new mapboxgl.Popup({ offset: 25 }).setText("Start of Trip"))
+                        .addTo(window.map);
+                const endMarker = new mapboxgl.Marker({ color: 'red' })
+                        .setLngLat(endPoint)
+                        .setPopup(new mapboxgl.Popup({ offset: 25 }).setText("End of Trip"))
+                        .addTo(window.map);
+
+                window.mapMarkers.push(startMarker, endMarker);
+
+                // Creating or updating the route layer
+                const lineFeature = {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: lineCoordinates
+                    },
+                    properties: {}
+                };
+
+
+                if (toggleGradient) {
+                    // If gradient is to be shown, remove the white line layer if it exists
+                    if (window.map.getLayer(routeLayerId)) {
+                        window.map.removeLayer(routeLayerId);
+                        window.map.removeSource(routeLayerId);
+                    }
+
+                    // Show the route with speed gradient
+                    updateRouteLayerForSpeedGradient(lineFeature, data.speedGradient, gradientLayerId);
+                    const speedGradientLegend = document.getElementById('speed-gradient-legend');
+                    speedGradientLegend.style.display = 'block';
+                } else {
+                    // If gradient is to be removed, remove the gradient layer if it exists
+                    if (window.map.getLayer(gradientLayerId)) {
+                        window.map.removeLayer(gradientLayerId);
+                        window.map.removeSource(gradientLayerId);
+                    }
+
+                    // Show the route as a simple white line
+                    displaySimpleRoute(lineFeature, routeLayerId);
+                    const speedGradientLegend = document.getElementById('speed-gradient-legend');
+                    speedGradientLegend.style.display = 'none';
+                }
+
+
+                if (!window.map.getLayer(routeLayerId)) {
+                    window.map.addLayer({
+                        id: routeLayerId,
+                        type: 'line',
+                        source: routeLayerId,
+                        layout: {
+                            'line-join': 'round',
+                            'line-cap': 'round'
+                        },
+                        paint: {
+                            'line-color': 'white',
+                            'line-width': 6
+                        }
+                    });
+                }
+
+                const bounds = new mapboxgl.LngLatBounds();
+                lineCoordinates.forEach(coord => {
+                    bounds.extend(coord);
+                });
+                if (!bounds.isEmpty()) {
+                    window.map.fitBounds(bounds, { padding: 20 });
+                } else {
+                    console.error('Cannot calculate bounds from GeoJSON data');
+                }
+
+                if (!showCoords) {
+                    if (isGradientActive) {
+                        updateRouteLayerForSpeedGradient(lineFeature, data.speedGradient, gradientLayerId);
+                    } else if (!isSnapToRoadActive) {
+                        displaySimpleRoute(lineFeature, routeLayerId);
+                    }
+                }
+
+                if (showCoords) {
+                    const existingTable = document.getElementById(`coords-table-${tripIdForTable}`);
+                    const graphContainer = document.getElementById(`speedGraphContainer-${tripIdForTable}`);
+
+                    if (existingTable) {
+                        const isHidden = existingTable.style.display === 'none';
+                        existingTable.style.display = isHidden ? '' : 'none';
+                        graphContainer.style.display = isHidden ? '' : 'none';
+
+                        if (isHidden) {
+                            const locationData = data.geojson.features.map(feature => ({
+                                timestamp: feature.properties.timestamp,
+                                speed: feature.properties.speed
+                            }));
+
+                            renderSpeedGraph(locationData, tripIdForTable);
+                        }
+                    } else {
+                        displayCoordinatesTable(geoJSON, tripIdForTable);
+                        document.getElementById(`speedGraphContainer-${tripIdForTable}`).style.display = '';
+
+                        const locationData = data.geojson.features.map(feature => ({
+                            timestamp: feature.properties.timestamp,
+                            speed: feature.properties.speed
+                        }));
+
+                        renderSpeedGraph(locationData, tripIdForTable);
+                    }
+                }
+                console.log('Called fetchAndDisplayMap with tripID:', tripID);
+
+                updateFeedbackButton(tripID);
+
+            } catch (error) {
+                console.error('Error fetching trip data:', error);
+            }
+        }
+
+        function updateRouteLayerForSpeedGradient(geoJSON, speedGradient, gradientLayerId) {
+            console.log('Speed Gradient Array:', speedGradient);
+
+            let gradientStops = mapSpeedColorsToMapboxStyle(speedGradient);
+
+            if (!window.map.getSource(gradientLayerId)) {
+                window.map.addSource(gradientLayerId, {
+                    type: 'geojson',
+                    data: geoJSON,
+                    lineMetrics: true
+                });
+            } else {
+                window.map.getSource(gradientLayerId).setData(geoJSON);
+            }
+
+            if (window.map.getLayer(gradientLayerId)) {
+                window.map.removeLayer(gradientLayerId);
+            }
+
+            window.map.addLayer({
+                id: gradientLayerId,
+                type: 'line',
+                source: gradientLayerId,
+                layout: {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                paint: {
+                    'line-color': 'red',
+                    'line-width': 6,
+                    'line-gradient': gradientStops
+                }
+            });
+
+            console.log('Added new route layer with gradient');
+        }
+
+
+        function mapSpeedColorsToMapboxStyle(speedColors) {
+            let expression = ['interpolate', ['linear'], ['line-progress']];
+            let totalColors = speedColors.length;
+
+            for (let i = 0; i < totalColors; i++) {
+                let stop = i / (totalColors - 1);
+                let color = speedColors[i];
+                expression.push(stop, color);
+            }
+            console.log('Gradient Stops:', expression);
+
+            return expression;
+        }
+
+        function displayCoordinatesTable(geojson, tripIdForTable) {
+            let tableHtml = '';
+
+            // speed graph
+            tableHtml += `<div id="speedGraphContainer-${tripIdForTable}" class="speed-graph-container" style="display: none;">
                       <canvas id="speedGraph-${tripIdForTable}"></canvas>
                   </div>`;
 
-          // coordinates table
-          tableHtml += `<div id="coords-table-${tripIdForTable}" class="coordinates-table">
+            // coordinates table
+            tableHtml += `<div id="coords-table-${tripIdForTable}" class="coordinates-table">
                       <h3>Coordinates for Trip: ${tripIdForTable}</h3>
                       <table>
                         <tr>
@@ -665,283 +665,289 @@
                           <th>Timestamp</th>
                         </tr>`;
 
-          geojson.features.forEach(feature => {
-              const coord = feature.geometry.coordinates;
-              const props = feature.properties;
-              tableHtml += `<tr>
+            geojson.features.forEach(feature => {
+                const coord = feature.geometry.coordinates;
+                const props = feature.properties;
+                tableHtml += `<tr>
                           <td>${coord[1]}</td>
                           <td>${coord[0]}</td>
                           <td>${props.speed}</td>
                           <td>${props.timestamp}</td>
                       </tr>`;
-          });
+            });
 
-          tableHtml += '</table></div>';
+            tableHtml += '</table></div>';
 
-          const mapContainer = document.getElementById('map');
-          mapContainer.insertAdjacentHTML('afterend', tableHtml);
-      }
-
-
-      function convertToCSV(geojson) {
-          if (!geojson || !geojson.features) {
-              console.error('Invalid or undefined GeoJSON data');
-              return 'Invalid data';
-          }
-
-          const headers = 'Latitude, Longitude, Speed, Timestamp\n';
-          const rows = geojson.features.map(feature => {
-              const coord = feature.geometry.coordinates;
-              const props = feature.properties;
-              const speed = props.speed || 'No speed data';
-              const timestamp = props.timestamp || 'No timestamp data';
-              return `${coord[1]}, ${coord[0]}, ${speed}, ${timestamp}`;
-          }).join('\n');
-
-          return headers + rows;
-      }
-
-      async function downloadTripDataAsCSV(tripId, startTime, endTime) {
-          try {
-              const url = `/api/trip/${tripId}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
-              const response = await fetch(url, {
-                  headers: {
-                      'Content-Type': 'application/json',
-                  },
-                  credentials: 'include',
-              });
-
-              if (!response.ok) {
-                  throw new Error('Failed to fetch trip data');
-              }
-
-              const data = await response.json();
-              if (!data || !data.geojson) {
-                  console.error('Invalid or missing GeoJSON data', data);
-                  alert("No data available for download.");
-                  return;
-              }
-
-              const csvContent = convertToCSV(data.geojson);
-              downloadCSV(csvContent, `Trip_${tripId}.csv`);
-          } catch (error) {
-              console.error('Error downloading trip data:', error);
-          }
-      }
-
-      function downloadCSV(csvContent, fileName) {
-          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-          const link = document.createElement('a');
-          link.href = URL.createObjectURL(blob);
-          link.download = fileName;
-          link.style.visibility = 'hidden';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-      }
-
-      function renderSpeedGraph(data, tripIdForTable) {
-          const canvasId = `speedGraph-${tripIdForTable}`;
-          const canvas = document.getElementById(canvasId);
-
-          if (!canvas) {
-              console.error(`Canvas with ID ${canvasId} not found`);
-              return;
-          }
-
-          const ctx = canvas.getContext('2d');
-          const timestamps = data.map(d => new Date(d.timestamp).toLocaleTimeString());
-          const speeds = data.map(d => d.speed);
-
-          new Chart(ctx, {
-              type: 'line',
-              data: {
-                  labels: timestamps,
-                  datasets: [{
-                      label: 'Speed over Time',
-                      data: speeds,
-                      borderColor: 'rgb(75, 192, 192)',
-                      tension: 0.1
-                  }]
-              },
-              options: {
-                  scales: {
-                      y: {
-                          beginAtZero: true
-                      }
-                  }
-              }
-          });
-      }
-
-      async function snapToRoad(tripID, isChecked) {
-          const snappedLayerId = `snapped-path-${tripID}`;
-          const originalLayerId = `route-${tripID}`;
-
-          if (!isChecked) {
-              // If unchecked, remove the snapped path layer and show the original route
-              if (window.map.getLayer(snappedLayerId)) {
-                  window.map.removeLayer(snappedLayerId);
-                  window.map.removeSource(snappedLayerId);
-              }
-              if (window.map.getLayer(originalLayerId)) {
-                  window.map.setLayoutProperty(or iginalLayerId, 'visibility', 'visible');
-              }
-              return;
-          }
-
-          // Processing the snapped path when checkbox is checked
-          console.log("Current trip coordinates before snap to road:", window.currentTripCoordinates);
-
-          try {
-              let snappedFeatures = [];
-
-              for (let i = 0; i < window.currentTripCoordinates.length; i += 50) {
-                  const coordBatch = window.currentTripCoordinates.slice(i, i + 50);
-                  const coordQuery = coordBatch.map(c => `${c[0]},${c[1]}`).join(';');
-                  const radiuses = new Array(coordBatch.length).fill(25).join(';');
-
-                  const matchUrl = `https://api.mapbox.com/matching/v5/mapbox/driving/${coordQuery}?geometries=geojson&radiuses=${radiuses}&access_token=${mapboxgl.accessToken}`;
-
-                  console.log("Map Matching API URL:", matchUrl);
-
-                  const matchResponse = await fetch(matchUrl);
-                  const matchData = await matchResponse.json();
-
-                  console.log("Map Matching API response:", matchData);
-
-                  if (matchData.code !== "Ok") {
-                      console.error('Error with Map Matching:', matchData.message);
-                      continue;
-                  }
-
-                  const snappedFeature = {
-                      type: "Feature",
-                      geometry: matchData.matchings[0].geometry,
-                  };
-                  console.log("Processed feature for batch:", snappedFeature);
-
-                  snappedFeatures.push(snappedFeature);
-              }
-              console.log("All snapped features:", snappedFeatures);
-
-              updateMapWithSnappedPath(snappedFeatures, tripID);
-          } catch (error) {
-              console.error('Error in snapToRoad:', error);
-          }
-
-          // Hiding the original route when the snapped path is displayed
-          if (window.map.getLayer(originalLayerId)) {
-              window.map.setLayoutProperty(originalLayerId, 'visibility', 'none');
-          }
-      }
+            const mapContainer = document.getElementById('map');
+            mapContainer.insertAdjacentHTML('afterend', tableHtml);
+        }
 
 
+        function convertToCSV(geojson) {
+            if (!geojson || !geojson.features) {
+                console.error('Invalid or undefined GeoJSON data');
+                return 'Invalid data';
+            }
 
+            const headers = 'Latitude, Longitude, Speed, Timestamp\n';
+            const rows = geojson.features.map(feature => {
+                const coord = feature.geometry.coordinates;
+                const props = feature.properties;
+                const speed = props.speed || 'No speed data';
+                const timestamp = props.timestamp || 'No timestamp data';
+                return `${coord[1]}, ${coord[0]}, ${speed}, ${timestamp}`;
+            }).join('\n');
 
-      function updateMapWithSnappedPath(features, tripID) {
-          const snappedLayerId = `snapped-path-${tripID}`;
-          const snappedGeoJSON = {
-              type: "FeatureCollection",
-              features: features
-          };
+            return headers + rows;
+        }
 
-          if (window.map.getSource(snappedLayerId)) {
-              window.map.getSource(snappedLayerId).setData(snappedGeoJSON);
-          } else {
-              window.map.addSource(snappedLayerId, {
-                  type: 'geojson',
-                  data: snappedGeoJSON
-              });
+        async function downloadTripDataAsCSV(tripId, startTime, endTime) {
+            try {
+                const url = `/api/trip/${tripId}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                });
 
-              window.map.addLayer({
-                  id: snappedLayerId,
-                  type: 'line',
-                  source: snappedLayerId,
-                  layout: {
-                      'line-join': 'round',
-                      'line-cap': 'round'
-                  },
-                  paint: {
-                      'line-color': '#00ff00',
-                      'line-width': 5
-                  }
-              });
-          }
-      }
+                if (!response.ok) {
+                    throw new Error('Failed to fetch trip data');
+                }
 
-      function toggleTripOptions(viewTripCheckbox, tripID) {
-          const isEnabled = viewTripCheckbox.checked;
-          document.getElementById(`snap-to-road-${tripID}`).disabled = !isEnabled;
-          document.getElementById(`toggle-gradient-${tripID}`).disabled = !isEnabled;
-          document.getElementById(`show-raw-data-${tripID}`).disabled = !isEnabled;
+                const data = await response.json();
+                if (!data || !data.geojson) {
+                    console.error('Invalid or missing GeoJSON data', data);
+                    alert("No data available for download.");
+                    return;
+                }
 
-          if (!isEnabled) {
-              // If the trip is being unselected, remove the highlights
-              const tripRow = viewTripCheckbox.closest('tr');
-              if (tripRow) {
-                  const startTimeCell = tripRow.querySelector('.formatted-start-time');
-                  const endTimeCell = tripRow.querySelector('.formatted-end-time');
-                  if (startTimeCell) {
-                      startTimeCell.classList.remove('highlighted-start-time');
-                  }
-                  if (endTimeCell) {
-                      endTimeCell.classList.remove('highlighted-end-time');
-                  }
-              }
+                const csvContent = convertToCSV(data.geojson);
+                downloadCSV(csvContent, `Trip_${tripId}.csv`);
+            } catch (error) {
+                console.error('Error downloading trip data:', error);
+            }
+        }
 
-              // Uncheck the checkboxes and trigger their associated actions
-              const snapToRoadCheckbox = document.getElementById(`snap-to-road-${tripID}`);
-              const toggleGradientCheckbox = document.getElementById(`toggle-gradient-${tripID}`);
-              const showRawDataCheckbox = document.getElementById(`show-raw-data-${tripID}`);
+        function downloadCSV(csvContent, fileName) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
-              if (snapToRoadCheckbox.checked) {
-                  snapToRoadCheckbox.checked = false;
-                  snapToRoad(tripID, false);
-              }
-              if (toggleGradientCheckbox.checked) {
-                  toggleGradientCheckbox.checked = false;
-                  clearGradient(tripID);
-                  hideGradientLegend();
-              }
-              if (showRawDataCheckbox.checked) {
-                  showRawDataCheckbox.checked = false;
-                  hideCoordinatesAndSpeedGraph(tripID);
-              }
-          }
-      }
-      function hideCoordinatesAndSpeedGraph(tripID) {
-          const coordsTableId = `coords-table-${tripID}`;
-          const graphContainerId = `speedGraphContainer-${tripID}`;
+        function renderSpeedGraph(data, tripIdForTable) {
+            const canvasId = `speedGraph-${tripIdForTable}`;
+            const canvas = document.getElementById(canvasId);
 
-          const coordsTable = document.getElementById(coordsTableId);
-          const graphContainer = document.getElementById(graphContainerId);
+            if (!canvas) {
+                console.error(`Canvas with ID ${canvasId} not found`);
+                return;
+            }
 
-          if (coordsTable) {
-              coordsTable.style.display = 'none';
-          }
-          if (graphContainer) {
-              graphContainer.style.display = 'none';
-          }
-      }
-      function hideGradientLegend() {
-          const speedGradientLegend = document.getElementById('speed-gradient-legend');
-          if (speedGradientLegend) {
-              speedGradientLegend.style.display = 'none';
-          }
-      }
+            const ctx = canvas.getContext('2d');
+            const timestamps = data.map(d => new Date(d.timestamp).toLocaleTimeString());
+            const speeds = data.map(d => d.speed);
 
-      function clearGradient(tripID) {
-          const gradientLayerId = `route-gradient-${tripID}`;
-          if (window.map.getLayer(gradientLayerId)) {
-              window.map.removeLayer(gradientLayerId);
-              window.map.removeSource(gradientLayerId);
-          }
-      }
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timestamps,
+                    datasets: [{
+                        label: 'Speed over Time',
+                        data: speeds,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        async function snapToRoad(tripID, isChecked) {
+            const snappedLayerId = `snapped-path-${tripID}`;
+            const originalLayerId = `route-${tripID}`;
+
+            if (!isChecked) {
+                // If unchecked, remove the snapped path layer and show the original route
+                if (window.map.getLayer(snappedLayerId)) {
+                    window.map.removeLayer(snappedLayerId);
+                    window.map.removeSource(snappedLayerId);
+                }
+                if (window.map.getLayer(originalLayerId)) {
+                    window.map.setLayoutProperty(originalLayerId, 'visibility', 'visible');
+                }
+                return;
+            }
+
+            // Processing the snapped path when checkbox is checked
+            console.log("Current trip coordinates before snap to road:", window.currentTripCoordinates);
+
+            try {
+                let allSnappedCoordinates = [];
+                const apiKey = 'AIzaSyAsCdcV1S9CS9sbY_2eU2cOt8PLas3Bqks';
+
+                for (let i = 0; i < window.currentTripCoordinates.length; i += 100) {
+                    const coordBatch = window.currentTripCoordinates.slice(i, i + 100);
+                    const path = coordBatch.map(c => `${c[1]},${c[0]}`).join('|');
+
+                    const snapUrl = `https://roads.googleapis.com/v1/snapToRoads?path=${path}&interpolate=true&key=${apiKey}`;
+
+                    console.log("Google Roads API URL:", snapUrl);
+
+                    const snapResponse = await fetch(snapUrl);
+                    const snapData = await snapResponse.json();
+
+                    console.log("Google Roads API response:", snapData);
+
+                    if (snapData.error) {
+                        console.error('Error with Google Roads API:', snapData.error.message);
+                        continue;
+                    }
+
+                    const snappedCoordinates = snapData.snappedPoints.map(point => {
+                        return [point.location.longitude, point.location.latitude];
+                    });
+                    console.log("Processed coordinates for batch:", snappedCoordinates);
+
+                    allSnappedCoordinates = allSnappedCoordinates.concat(snappedCoordinates);
+                }
+                console.log("All snapped coordinates:", allSnappedCoordinates);
+
+                const snappedFeature = {
+                    type: "Feature",
+                    geometry: {
+                        type: "LineString",
+                        coordinates: allSnappedCoordinates
+                    }
+                };
+
+                updateMapWithSnappedPath([snappedFeature], tripID);
+            } catch (error) {
+                console.error('Error in snapToRoad:', error);
+            }
+
+            // Hiding the original route when the snapped path is displayed
+            if (window.map.getLayer(originalLayerId)) {
+                window.map.setLayoutProperty(originalLayerId, 'visibility', 'none');
+            }
+        }
+
+        function updateMapWithSnappedPath(snappedFeatures, tripID) {
+            const snappedLayerId = `snapped-path-${tripID}`;
+
+            if (window.map.getLayer(snappedLayerId)) {
+                window.map.removeLayer(snappedLayerId);
+                window.map.removeSource(snappedLayerId);
+            }
+
+            window.map.addSource(snappedLayerId, {
+                type: "geojson",
+                data: {
+                    type: "FeatureCollection",
+                    features: snappedFeatures
+                }
+            });
+
+            window.map.addLayer({
+                id: snappedLayerId,
+                type: "line",
+                source: snappedLayerId,
+                layout: {
+                    "line-join": "round",
+                    "line-cap": "round"
+                },
+                paint: {
+                    "line-color": "yellow",
+                    "line-width": 8
+                }
+            });
+        }
 
 
 
-  </script>
+        function toggleTripOptions(viewTripCheckbox, tripID) {
+            const isEnabled = viewTripCheckbox.checked;
+            document.getElementById(`snap-to-road-${tripID}`).disabled = !isEnabled;
+            document.getElementById(`toggle-gradient-${tripID}`).disabled = !isEnabled;
+            document.getElementById(`show-raw-data-${tripID}`).disabled = !isEnabled;
+
+            if (!isEnabled) {
+                // If the trip is being unselected, remove the highlights
+                const tripRow = viewTripCheckbox.closest('tr');
+                if (tripRow) {
+                    const startTimeCell = tripRow.querySelector('.formatted-start-time');
+                    const endTimeCell = tripRow.querySelector('.formatted-end-time');
+                    if (startTimeCell) {
+                        startTimeCell.classList.remove('highlighted-start-time');
+                    }
+                    if (endTimeCell) {
+                        endTimeCell.classList.remove('highlighted-end-time');
+                    }
+                }
+
+                // Uncheck the checkboxes and trigger their associated actions
+                const snapToRoadCheckbox = document.getElementById(`snap-to-road-${tripID}`);
+                const toggleGradientCheckbox = document.getElementById(`toggle-gradient-${tripID}`);
+                const showRawDataCheckbox = document.getElementById(`show-raw-data-${tripID}`);
+
+                if (snapToRoadCheckbox.checked) {
+                    snapToRoadCheckbox.checked = false;
+                    snapToRoad(tripID, false);
+                }
+                if (toggleGradientCheckbox.checked) {
+                    toggleGradientCheckbox.checked = false;
+                    clearGradient(tripID);
+                    hideGradientLegend();
+                }
+                if (showRawDataCheckbox.checked) {
+                    showRawDataCheckbox.checked = false;
+                    hideCoordinatesAndSpeedGraph(tripID);
+                }
+            }
+        }
+        function hideCoordinatesAndSpeedGraph(tripID) {
+            const coordsTableId = `coords-table-${tripID}`;
+            const graphContainerId = `speedGraphContainer-${tripID}`;
+
+            const coordsTable = document.getElementById(coordsTableId);
+            const graphContainer = document.getElementById(graphContainerId);
+
+            if (coordsTable) {
+                coordsTable.style.display = 'none';
+            }
+            if (graphContainer) {
+                graphContainer.style.display = 'none';
+            }
+        }
+        function hideGradientLegend() {
+            const speedGradientLegend = document.getElementById('speed-gradient-legend');
+            if (speedGradientLegend) {
+                speedGradientLegend.style.display = 'none';
+            }
+        }
+
+        function clearGradient(tripID) {
+            const gradientLayerId = `route-gradient-${tripID}`;
+            if (window.map.getLayer(gradientLayerId)) {
+                window.map.removeLayer(gradientLayerId);
+                window.map.removeSource(gradientLayerId);
+            }
+        }
+
+
+
+    </script>
 </head>
 <body>
 <div class="header">
