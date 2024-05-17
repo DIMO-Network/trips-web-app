@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
@@ -42,20 +43,22 @@ type LocationData struct {
 type TelemetryAPIResponse struct {
 	Data struct {
 		Signals struct {
-			CurrentLocationLongitude []struct {
-				Timestamp string  `json:"timestamp"`
-				Value     float64 `json:"value"`
-			} `json:"currentLocationLongitude"`
-			CurrentLocationLatitude []struct {
-				Timestamp string  `json:"timestamp"`
-				Value     float64 `json:"value"`
-			} `json:"currentLocationLatitude"`
-			Speed []struct {
-				Timestamp string  `json:"timestamp"`
-				Value     float64 `json:"value"`
-			} `json:"speed"`
+			CurrentLocationLongitude []signal `json:"currentLocationLongitude"`
+			CurrentLocationLatitude  []signal `json:"currentLocationLatitude"`
+			Speed                    []signal `json:"speed"`
 		} `json:"signals"`
 	} `json:"data"`
+}
+
+type signal struct {
+	Timestamp time.Time `json:"timestamp"`
+	Value     float64   `json:"value"`
+}
+
+type locationInfo struct {
+	speed *signal
+	lat   *signal
+	long  *signal
 }
 
 var SpeedGradient = []struct {
@@ -161,15 +164,15 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 			from: "%s"
 			to: "%s"
 		) {
-			currentLocationLongitude(agg: {type: AVG, interval: "1h"}) {
+			currentLocationLongitude(agg: {type: AVG, interval: "30s"}) {
 				timestamp
 				value
 			}
-			currentLocationLatitude(agg: {type: AVG, interval: "1h"}) {
+			currentLocationLatitude(agg: {type: AVG, interval: "30s"}) {
 				timestamp
 				value
 			}
-			speed(agg: {type: MAX, interval: "1h"}) {
+			speed(agg: {type: MAX, interval: "30s"}) {
 				timestamp
 				value
 			}
@@ -219,15 +222,85 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 
 	log.Info().Msgf("Parsed Response Data: %+v", respData)
 
-	locations := make([]LocationData, 0, len(respData.Data.Signals.CurrentLocationLongitude))
-	for i := range respData.Data.Signals.CurrentLocationLongitude {
-		locations = append(locations, LocationData{
-			Latitude:  respData.Data.Signals.CurrentLocationLatitude[i].Value,
-			Longitude: respData.Data.Signals.CurrentLocationLongitude[i].Value,
-			Speed:     respData.Data.Signals.Speed[i].Value,
-			Timestamp: respData.Data.Signals.Speed[i].Timestamp,
-		})
+	// Create a map to store location information by timestamp
+	tsMap := make(map[time.Time]*locationInfo)
+
+	// Determine the maximum length of the signals arrays
+	maxLen := len(respData.Data.Signals.CurrentLocationLongitude)
+	if len(respData.Data.Signals.CurrentLocationLatitude) > maxLen {
+		maxLen = len(respData.Data.Signals.CurrentLocationLatitude)
 	}
+	if len(respData.Data.Signals.Speed) > maxLen {
+		maxLen = len(respData.Data.Signals.Speed)
+	}
+
+	// Populate the map with data
+	for i := 0; i < maxLen; i++ {
+		if i < len(respData.Data.Signals.CurrentLocationLongitude) {
+			signal := respData.Data.Signals.CurrentLocationLongitude[i]
+			if tsMap[signal.Timestamp] == nil {
+				tsMap[signal.Timestamp] = &locationInfo{}
+			}
+			tsMap[signal.Timestamp].long = &signal
+		}
+
+		if i < len(respData.Data.Signals.CurrentLocationLatitude) {
+			signal := respData.Data.Signals.CurrentLocationLatitude[i]
+			if tsMap[signal.Timestamp] == nil {
+				tsMap[signal.Timestamp] = &locationInfo{}
+			}
+			tsMap[signal.Timestamp].lat = &signal
+		}
+
+		if i < len(respData.Data.Signals.Speed) {
+			signal := respData.Data.Signals.Speed[i]
+			if tsMap[signal.Timestamp] == nil {
+				tsMap[signal.Timestamp] = &locationInfo{}
+			}
+			tsMap[signal.Timestamp].speed = &signal
+		}
+	}
+
+	// Extract sorted timestamps
+	keys := make([]time.Time, 0, len(tsMap))
+	for key := range tsMap {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i].Before(keys[j])
+	})
+
+	log.Info().Msgf("Parsed Response Data: %+v", respData)
+
+	// Extract location data based on the map
+	locations := make([]LocationData, 0, len(keys))
+	for _, tsKey := range keys {
+		locInfo := tsMap[tsKey]
+		if locInfo.lat == nil || locInfo.long == nil || locInfo.speed == nil {
+			continue
+		}
+		loc := LocationData{
+			Timestamp: tsKey.String(),
+			Latitude:  locInfo.lat.Value,
+			Longitude: locInfo.long.Value,
+			Speed:     locInfo.speed.Value,
+		}
+		locations = append(locations, loc)
+	}
+
+	// locations := make([]LocationData, 0, len(respData.Data.Signals.CurrentLocationLongitude))
+	// for _, tsKey := range keys {
+	// 	loc := LocationData{Timestamp: tsKey}
+	// 	locInfo := tsMap[tsKey]
+	// 	if locInfo.lat != nil && locInfo.long != nil {
+	// 		loc.Latitude = locInfo.lat.Value
+	// 		loc.Longitude = locInfo.lat.Value
+	// 	}
+	// 	if locInfo.speed != nil{
+	// 		loc.Speed =  locInfo.speed.Value
+	// 	}
+	// 	locations = append(locations, loc) // len 10 partial data
+	// }
 
 	log.Info().Msgf("Extracted Locations: %+v", locations)
 
