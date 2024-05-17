@@ -1,13 +1,14 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
@@ -37,6 +38,27 @@ type LocationData struct {
 	Longitude float64 `json:"longitude"`
 	Speed     float64 `json:"speed"`
 	Timestamp string  `json:"timestamp"`
+}
+
+type TelemetryAPIResponse struct {
+	Data struct {
+		Signals struct {
+			CurrentLocationLongitude []signal `json:"currentLocationLongitude"`
+			CurrentLocationLatitude  []signal `json:"currentLocationLatitude"`
+			Speed                    []signal `json:"speed"`
+		} `json:"signals"`
+	} `json:"data"`
+}
+
+type signal struct {
+	Timestamp time.Time `json:"timestamp"`
+	Value     float64   `json:"value"`
+}
+
+type locationInfo struct {
+	speed *signal
+	lat   *signal
+	long  *signal
 }
 
 var SpeedGradient = []struct {
@@ -81,9 +103,7 @@ func (t *TripsController) HandleTripsList(c *fiber.Ctx) error {
 }
 
 func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Trip, error) {
-
 	var tripsResponse TripsResponse
-
 	privilegeToken, err := RequestPriviledgeToken(c, settings, tokenID)
 
 	if err != nil {
@@ -136,18 +156,50 @@ func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 	return latestTrips, nil
 }
 
-func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
-	privilegeToken, err := RequestPriviledgeToken(c, settings, tokenID)
-	if err != nil {
-		return []LocationData{}, errors.Wrap(err, "error getting privilege token")
-	}
+func queryTelemetryData(tokenID int64, startTime string, endTime string, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
+	graphqlQuery := fmt.Sprintf(`
+	{
+		signals(
+			tokenID: %d
+			from: "%s"
+			to: "%s"
+		) {
+			currentLocationLongitude(agg: {type: AVG, interval: "30s"}) {
+				timestamp
+				value
+			}
+			currentLocationLatitude(agg: {type: AVG, interval: "30s"}) {
+				timestamp
+				value
+			}
+			speed(agg: {type: MAX, interval: "30s"}) {
+				timestamp
+				value
+			}
+		}
+	}`, tokenID, startTime, endTime)
 
-	ddURL := fmt.Sprintf("%s/vehicle/%d/history?startDate=%s&endDate=%s", settings.DeviceDataAPIURL, tokenID, url.QueryEscape(startTime), url.QueryEscape(endTime))
-	req, err := http.NewRequest("GET", ddURL, nil)
+	log.Info().Msgf("GraphQL Query: %s", graphqlQuery)
+
+	requestPayload := GraphQLRequest{Query: graphqlQuery}
+	payloadBytes, err := json.Marshal(requestPayload)
 	if err != nil {
 		return nil, err
 	}
+
+	privilegeToken, err := RequestPriviledgeToken(c, settings, tokenID)
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting privilege token")
+	}
+
+	req, err := http.NewRequest("POST", settings.TelemetryAPIURL, bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", *privilegeToken))
+
+	log.Info().Msgf("Sending request to Telemetry API with token: %s", *privilegeToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -156,30 +208,101 @@ func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, set
 	}
 	defer resp.Body.Close()
 
-	responseBody, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	var result map[string]interface{}
-	if err := json.Unmarshal(responseBody, &result); err != nil {
+	log.Info().Msgf("Telemetry API Response: %s", string(body))
+
+	var respData TelemetryAPIResponse
+	if err := json.Unmarshal(body, &respData); err != nil {
 		return nil, err
 	}
 
-	hitsInterface, ok := result["hits"].(map[string]interface{})["hits"]
-	if !ok {
-		return nil, errors.New("unexpected data structure for hits")
+	log.Info().Msgf("Parsed Response Data: %+v", respData)
+
+	// Create a map to store location information by timestamp
+	tsMap := make(map[time.Time]*locationInfo)
+
+	// Determine the maximum length of the signals arrays
+	maxLen := len(respData.Data.Signals.CurrentLocationLongitude)
+	if len(respData.Data.Signals.CurrentLocationLatitude) > maxLen {
+		maxLen = len(respData.Data.Signals.CurrentLocationLatitude)
+	}
+	if len(respData.Data.Signals.Speed) > maxLen {
+		maxLen = len(respData.Data.Signals.Speed)
 	}
 
-	hits, ok := hitsInterface.([]interface{})
-	if !ok {
-		return nil, errors.New("unexpected data structure for hits array")
+	// Populate the map with data
+	for i := 0; i < maxLen; i++ {
+		if i < len(respData.Data.Signals.CurrentLocationLongitude) {
+			signal := respData.Data.Signals.CurrentLocationLongitude[i]
+			if tsMap[signal.Timestamp] == nil {
+				tsMap[signal.Timestamp] = &locationInfo{}
+			}
+			tsMap[signal.Timestamp].long = &signal
+		}
+
+		if i < len(respData.Data.Signals.CurrentLocationLatitude) {
+			signal := respData.Data.Signals.CurrentLocationLatitude[i]
+			if tsMap[signal.Timestamp] == nil {
+				tsMap[signal.Timestamp] = &locationInfo{}
+			}
+			tsMap[signal.Timestamp].lat = &signal
+		}
+
+		if i < len(respData.Data.Signals.Speed) {
+			signal := respData.Data.Signals.Speed[i]
+			if tsMap[signal.Timestamp] == nil {
+				tsMap[signal.Timestamp] = &locationInfo{}
+			}
+			tsMap[signal.Timestamp].speed = &signal
+		}
 	}
 
-	locations, err := extractLocationData(hits)
-	if err != nil {
-		return nil, err
+	// Extract sorted timestamps
+	keys := make([]time.Time, 0, len(tsMap))
+	for key := range tsMap {
+		keys = append(keys, key)
 	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i].Before(keys[j])
+	})
+
+	log.Info().Msgf("Parsed Response Data: %+v", respData)
+
+	// Extract location data based on the map
+	locations := make([]LocationData, 0, len(keys))
+	for _, tsKey := range keys {
+		locInfo := tsMap[tsKey]
+		if locInfo.lat == nil || locInfo.long == nil || locInfo.speed == nil {
+			continue
+		}
+		loc := LocationData{
+			Timestamp: tsKey.String(),
+			Latitude:  locInfo.lat.Value,
+			Longitude: locInfo.long.Value,
+			Speed:     locInfo.speed.Value,
+		}
+		locations = append(locations, loc)
+	}
+
+	// locations := make([]LocationData, 0, len(respData.Data.Signals.CurrentLocationLongitude))
+	// for _, tsKey := range keys {
+	// 	loc := LocationData{Timestamp: tsKey}
+	// 	locInfo := tsMap[tsKey]
+	// 	if locInfo.lat != nil && locInfo.long != nil {
+	// 		loc.Latitude = locInfo.lat.Value
+	// 		loc.Longitude = locInfo.lat.Value
+	// 	}
+	// 	if locInfo.speed != nil{
+	// 		loc.Speed =  locInfo.speed.Value
+	// 	}
+	// 	locations = append(locations, loc) // len 10 partial data
+	// }
+
+	log.Info().Msgf("Extracted Locations: %+v", locations)
 
 	return locations, nil
 }
@@ -187,19 +310,22 @@ func queryDeviceDataHistory(tokenID int64, startTime string, endTime string, set
 func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, startTime, endTime string) error {
 	tokenID, exists := TripIDToTokenIDMap[tripID]
 	if !exists {
+		log.Error().Msgf("Trip not found for tripID: %s", tripID) // Log trip not found
 		return c.Status(fiber.StatusNotFound).SendString("Trip not found")
 	}
 
-	log.Info().Msgf("HandleMapDataForTrip: TripID: %s, StartTime: %s, EndTime: %s, TokenID: %d", tripID, startTime, endTime, tokenID)
+	log.Info().Msgf("Fetching map data for TripID: %s, StartTime: %s, EndTime: %s, TokenID: %d", tripID, startTime, endTime, tokenID)
 
-	// Fetch historical data for the specific trip
-	locations, err := queryDeviceDataHistory(tokenID, startTime, endTime, settings, c)
-
+	locations, err := queryTelemetryData(tokenID, startTime, endTime, settings, c)
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to fetch historical data")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch historical data: " + err.Error()})
 	}
 
-	// Convert the historical data to GeoJSON
+	if len(locations) == 0 {
+		log.Warn().Msg("No location data received")
+	}
+
 	geoJSON := convertToGeoJSON(locations, tripID, startTime, endTime)
 	speedGradient := calculateSpeedGradient(locations)
 
@@ -216,39 +342,6 @@ func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 	}
 
 	return c.JSON(response)
-}
-
-func extractLocationData(hits []interface{}) ([]LocationData, error) {
-	// Sort the hits based on the timestamp
-	sort.SliceStable(hits, func(i, j int) bool {
-		iData := hits[i].(map[string]interface{})["_source"].(map[string]interface{})["data"].(map[string]interface{})
-		jData := hits[j].(map[string]interface{})["_source"].(map[string]interface{})["data"].(map[string]interface{})
-		iTimestamp, iOk := iData["timestamp"].(string)
-		jTimestamp, jOk := jData["timestamp"].(string)
-		return iOk && jOk && iTimestamp < jTimestamp
-	})
-
-	locations := make([]LocationData, 0, len(hits))
-	for _, hitInterface := range hits {
-		hitMap, _ := hitInterface.(map[string]interface{})
-		source, _ := hitMap["_source"].(map[string]interface{})
-		data, _ := source["data"].(map[string]interface{})
-
-		latitude, _ := data["latitude"].(float64)
-		longitude, _ := data["longitude"].(float64)
-		speed, _ := data["speed"].(float64)
-		timestamp, _ := data["timestamp"].(string)
-
-		locData := LocationData{
-			Latitude:  latitude,
-			Longitude: longitude,
-			Speed:     speed,
-			Timestamp: timestamp,
-		}
-		locations = append(locations, locData)
-	}
-
-	return locations, nil
 }
 
 func convertToGeoJSON(locations []LocationData, tripID string, tripStart string, tripEnd string) *geojson.FeatureCollection {
