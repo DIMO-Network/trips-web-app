@@ -179,8 +179,6 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 		}
 	}`, tokenID, startTime, endTime)
 
-	log.Info().Msgf("GraphQL Query: %s", graphqlQuery)
-
 	requestPayload := GraphQLRequest{Query: graphqlQuery}
 	payloadBytes, err := json.Marshal(requestPayload)
 	if err != nil {
@@ -211,14 +209,10 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 		return nil, err
 	}
 
-	log.Info().Msgf("Telemetry API Response: %s", string(body))
-
 	var respData TelemetryAPIResponse
 	if err := json.Unmarshal(body, &respData); err != nil {
 		return nil, err
 	}
-
-	log.Info().Msgf("Parsed Response Data: %+v", respData)
 
 	// Create a map to store location information by timestamp
 	tsMap := make(map[time.Time]*locationInfo)
@@ -268,8 +262,6 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 		return keys[i].Before(keys[j])
 	})
 
-	log.Info().Msgf("Parsed Response Data: %+v", respData)
-
 	// Extract location data based on the map
 	locations := make([]LocationData, 0, len(keys))
 	for _, tsKey := range keys {
@@ -299,8 +291,6 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 	// 	}
 	// 	locations = append(locations, loc) // len 10 partial data
 	// }
-
-	log.Info().Msgf("Extracted Locations: %+v", locations)
 
 	return locations, nil
 }
