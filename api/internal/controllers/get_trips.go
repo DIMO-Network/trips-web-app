@@ -199,8 +199,6 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", *privilegeToken))
 
-	log.Info().Msgf("Sending request to Telemetry API with token: %s", *privilegeToken)
-
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
