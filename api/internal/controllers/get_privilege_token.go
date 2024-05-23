@@ -15,7 +15,7 @@ import (
 
 func RequestPriviledgeToken(c *fiber.Ctx, settings *config.Settings, tokenID int64) (*string, error) {
 	sessionCookie := c.Cookies("session_id")
-	privilegeTokenKey := fmt.Sprintf("privilegeToken_%s", sessionCookie)
+	privilegeTokenKey := fmt.Sprintf("privilegeToken_%s_%d", sessionCookie, tokenID)
 
 	privilegeToken, exists := CacheInstance.Get(privilegeTokenKey)
 
