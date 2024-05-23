@@ -2,7 +2,7 @@ replicaCount: 1
 image:
   repository: dimozone/trips-web-app
   pullPolicy: IfNotPresent
-  tag: 2dbcd6b
+  tag: 6111fa9
 imagePullSecrets: []
 nameOverride: ''
 fullnameOverride: ''
@@ -32,7 +32,6 @@ env:
   TRIPS_API_BASE_URL: https://trips-api.dimo.zone/v1
   USERS_API_BASE_URL: https://users-api.dimo.zone/v1
   TELEMETRY_API_URL: https://telemetry-api.dimo.zone/query
-  
 service:
   type: ClusterIP
   ports:
