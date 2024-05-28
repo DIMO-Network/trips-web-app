@@ -48,6 +48,11 @@ type TelemetryAPIResponse struct {
 			Speed                    []signal `json:"speed"`
 		} `json:"signals"`
 	} `json:"data"`
+
+	Errors []struct {
+		Message string   `json:"message"`
+		Path    []string `json:"path"`
+	} `json:"errors"`
 }
 
 type signal struct {
@@ -213,6 +218,10 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 	if err := json.Unmarshal(body, &respData); err != nil {
 		return nil, err
 	}
+	if len(respData.Errors) > 0 {
+		log.Error().Interface("errors", respData.Errors).Msg("Error in telemetry API response")
+	}
+	log.Info().Interface("response", respData).Msg("Telemetry API response")
 
 	// Create a map to store location information by timestamp
 	tsMap := make(map[time.Time]*locationInfo)
@@ -291,7 +300,6 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 	// 	}
 	// 	locations = append(locations, loc) // len 10 partial data
 	// }
-
 	return locations, nil
 }
 
