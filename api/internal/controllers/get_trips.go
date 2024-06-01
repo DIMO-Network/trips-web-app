@@ -162,26 +162,18 @@ func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 }
 
 func queryTelemetryData(tokenID int64, startTime string, endTime string, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
-	graphqlQuery := fmt.Sprintf(`
+	graphqlQuery := fmt.Sprintf(` 
 	{
-		signals(
-			tokenID: %d
-			from: "%s"
-			to: "%s"
-		) {
-			currentLocationLongitude(agg: {type: AVG, interval: "30s"}) {
-				timestamp
-				value
-			}
-			currentLocationLatitude(agg: {type: AVG, interval: "30s"}) {
-				timestamp
-				value
-			}
-			speed(agg: {type: MAX, interval: "30s"}) {
-				timestamp
-				value
-			}
-		}
+	  signals(
+		tokenID: %d
+		interval: "30s"
+		from: "%s"
+		to: "%s"
+	  ) {
+		timestamp
+		speed(agg: {type: MAX})
+		powertrainRange(agg: {type: RAND})
+	  }
 	}`, tokenID, startTime, endTime)
 
 	requestPayload := GraphQLRequest{Query: graphqlQuery}
