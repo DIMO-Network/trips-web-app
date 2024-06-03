@@ -171,8 +171,9 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 		to: "%s"
 	  ) {
 		timestamp
-		speed(agg: {type: MAX})
-		powertrainRange(agg: {type: RAND})
+		speed(agg: MAX)
+		currentLocationLatitude(agg: AVG)
+		currentLocationLongitude(agg: AVG)
 	  }
 	}`, tokenID, startTime, endTime)
 
