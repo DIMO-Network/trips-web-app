@@ -34,19 +34,15 @@ type TripsResponse struct {
 var TripIDToTokenIDMap = make(map[string]int64)
 
 type LocationData struct {
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
-	Speed     float64 `json:"speed"`
-	Timestamp string  `json:"timestamp"`
+	Latitude  *float64 `json:"latitude,omitempty"`
+	Longitude *float64 `json:"longitude,omitempty"`
+	Speed     *float64 `json:"speed,omitempty"`
+	Timestamp string   `json:"timestamp"`
 }
 
 type TelemetryAPIResponse struct {
 	Data struct {
-		Signals struct {
-			CurrentLocationLongitude []signal `json:"currentLocationLongitude"`
-			CurrentLocationLatitude  []signal `json:"currentLocationLatitude"`
-			Speed                    []signal `json:"speed"`
-		} `json:"signals"`
+		Signals []Signal `json:"signals"`
 	} `json:"data"`
 
 	Errors []struct {
@@ -55,15 +51,11 @@ type TelemetryAPIResponse struct {
 	} `json:"errors"`
 }
 
-type signal struct {
-	Timestamp time.Time `json:"timestamp"`
-	Value     float64   `json:"value"`
-}
-
-type locationInfo struct {
-	speed *signal
-	lat   *signal
-	long  *signal
+type Signal struct {
+	Timestamp                time.Time `json:"timestamp"`
+	CurrentLocationLongitude *float64  `json:"currentLocationLongitude"`
+	CurrentLocationLatitude  *float64  `json:"currentLocationLatitude"`
+	Speed                    *float64  `json:"speed"`
 }
 
 var SpeedGradient = []struct {
@@ -162,26 +154,19 @@ func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 }
 
 func queryTelemetryData(tokenID int64, startTime string, endTime string, settings *config.Settings, c *fiber.Ctx) ([]LocationData, error) {
-	graphqlQuery := fmt.Sprintf(`
+	graphqlQuery := fmt.Sprintf(` 
 	{
-		signals(
-			tokenID: %d
-			from: "%s"
-			to: "%s"
-		) {
-			currentLocationLongitude(agg: {type: AVG, interval: "30s"}) {
-				timestamp
-				value
-			}
-			currentLocationLatitude(agg: {type: AVG, interval: "30s"}) {
-				timestamp
-				value
-			}
-			speed(agg: {type: MAX, interval: "30s"}) {
-				timestamp
-				value
-			}
-		}
+	  signals(
+		tokenID: %d
+		interval: "30s"
+		from: "%s"
+		to: "%s"
+	  ) {
+		timestamp
+		speed(agg: MAX)
+		currentLocationLatitude(agg: AVG)
+		currentLocationLongitude(agg: AVG)
+	  }
 	}`, tokenID, startTime, endTime)
 
 	requestPayload := GraphQLRequest{Query: graphqlQuery}
@@ -223,83 +208,17 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 	}
 	log.Info().Interface("response", respData).Msg("Telemetry API response")
 
-	// Create a map to store location information by timestamp
-	tsMap := make(map[time.Time]*locationInfo)
-
-	// Determine the maximum length of the signals arrays
-	maxLen := len(respData.Data.Signals.CurrentLocationLongitude)
-	if len(respData.Data.Signals.CurrentLocationLatitude) > maxLen {
-		maxLen = len(respData.Data.Signals.CurrentLocationLatitude)
-	}
-	if len(respData.Data.Signals.Speed) > maxLen {
-		maxLen = len(respData.Data.Signals.Speed)
-	}
-
-	// Populate the map with data
-	for i := 0; i < maxLen; i++ {
-		if i < len(respData.Data.Signals.CurrentLocationLongitude) {
-			signal := respData.Data.Signals.CurrentLocationLongitude[i]
-			if tsMap[signal.Timestamp] == nil {
-				tsMap[signal.Timestamp] = &locationInfo{}
-			}
-			tsMap[signal.Timestamp].long = &signal
-		}
-
-		if i < len(respData.Data.Signals.CurrentLocationLatitude) {
-			signal := respData.Data.Signals.CurrentLocationLatitude[i]
-			if tsMap[signal.Timestamp] == nil {
-				tsMap[signal.Timestamp] = &locationInfo{}
-			}
-			tsMap[signal.Timestamp].lat = &signal
-		}
-
-		if i < len(respData.Data.Signals.Speed) {
-			signal := respData.Data.Signals.Speed[i]
-			if tsMap[signal.Timestamp] == nil {
-				tsMap[signal.Timestamp] = &locationInfo{}
-			}
-			tsMap[signal.Timestamp].speed = &signal
-		}
-	}
-
-	// Extract sorted timestamps
-	keys := make([]time.Time, 0, len(tsMap))
-	for key := range tsMap {
-		keys = append(keys, key)
-	}
-	sort.Slice(keys, func(i, j int) bool {
-		return keys[i].Before(keys[j])
-	})
-
-	// Extract location data based on the map
-	locations := make([]LocationData, 0, len(keys))
-	for _, tsKey := range keys {
-		locInfo := tsMap[tsKey]
-		if locInfo.lat == nil || locInfo.long == nil || locInfo.speed == nil {
-			continue
-		}
+	locations := make([]LocationData, 0, len(respData.Data.Signals))
+	for _, signal := range respData.Data.Signals {
 		loc := LocationData{
-			Timestamp: tsKey.String(),
-			Latitude:  locInfo.lat.Value,
-			Longitude: locInfo.long.Value,
-			Speed:     locInfo.speed.Value,
+			Timestamp: signal.Timestamp.String(),
+			Latitude:  signal.CurrentLocationLatitude,
+			Longitude: signal.CurrentLocationLongitude,
+			Speed:     signal.Speed,
 		}
 		locations = append(locations, loc)
 	}
 
-	// locations := make([]LocationData, 0, len(respData.Data.Signals.CurrentLocationLongitude))
-	// for _, tsKey := range keys {
-	// 	loc := LocationData{Timestamp: tsKey}
-	// 	locInfo := tsMap[tsKey]
-	// 	if locInfo.lat != nil && locInfo.long != nil {
-	// 		loc.Latitude = locInfo.lat.Value
-	// 		loc.Longitude = locInfo.lat.Value
-	// 	}
-	// 	if locInfo.speed != nil{
-	// 		loc.Speed =  locInfo.speed.Value
-	// 	}
-	// 	locations = append(locations, loc) // len 10 partial data
-	// }
 	return locations, nil
 }
 
@@ -344,23 +263,25 @@ func convertToGeoJSON(locations []LocationData, tripID string, tripStart string,
 	featureCollection := geojson.NewFeatureCollection()
 
 	for _, loc := range locations {
-		// Create a new point feature with the current location's coordinates
-		point := geojson.NewPointFeature([]float64{loc.Longitude, loc.Latitude})
+		// Create a new point feature with the current location's coordinates if they are not nil
+		if loc.Longitude != nil && loc.Latitude != nil {
+			point := geojson.NewPointFeature([]float64{*loc.Longitude, *loc.Latitude})
 
-		// Add properties to the point feature, including speed and timestamp
-		point.Properties["speed"] = loc.Speed
-		point.Properties["timestamp"] = loc.Timestamp
+			// Add properties to the point feature, including speed and timestamp
+			if loc.Speed != nil {
+				point.Properties["speed"] = *loc.Speed
+			}
+			point.Properties["timestamp"] = loc.Timestamp
 
-		// Add additional properties as needed
-		point.Properties["trip_id"] = tripID
-		point.Properties["trip_start"] = tripStart
-		point.Properties["trip_end"] = tripEnd
-		point.Properties["privacy_zone"] = 1
-		point.Properties["color"] = "black"
-		point.Properties["point-color"] = "black"
+			point.Properties["trip_id"] = tripID
+			point.Properties["trip_start"] = tripStart
+			point.Properties["trip_end"] = tripEnd
+			point.Properties["privacy_zone"] = 1
+			point.Properties["color"] = "black"
+			point.Properties["point-color"] = "black"
 
-		// Append the point feature to the feature collection
-		featureCollection.AddFeature(point)
+			featureCollection.AddFeature(point)
+		}
 	}
 
 	return featureCollection
@@ -369,7 +290,11 @@ func convertToGeoJSON(locations []LocationData, tripID string, tripStart string,
 func calculateSpeedGradient(locations []LocationData) []string {
 	colors := make([]string, len(locations))
 	for i, loc := range locations {
-		colors[i] = getSpeedColor(loc.Speed)
+		if loc.Speed != nil {
+			colors[i] = getSpeedColor(*loc.Speed)
+		} else {
+			colors[i] = "black" // Default color if speed data is missing
+		}
 	}
 	return colors
 }
