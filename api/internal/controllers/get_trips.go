@@ -263,23 +263,25 @@ func convertToGeoJSON(locations []LocationData, tripID string, tripStart string,
 	featureCollection := geojson.NewFeatureCollection()
 
 	for _, loc := range locations {
-		// Create a new point feature with the current location's coordinates
-		point := geojson.NewPointFeature([]float64{*loc.Longitude, *loc.Latitude})
+		// Create a new point feature with the current location's coordinates if they are not nil
+		if loc.Longitude != nil && loc.Latitude != nil {
+			point := geojson.NewPointFeature([]float64{*loc.Longitude, *loc.Latitude})
 
-		// Add properties to the point feature, including speed and timestamp
-		point.Properties["speed"] = *loc.Speed
-		point.Properties["timestamp"] = loc.Timestamp
+			// Add properties to the point feature, including speed and timestamp
+			if loc.Speed != nil {
+				point.Properties["speed"] = *loc.Speed
+			}
+			point.Properties["timestamp"] = loc.Timestamp
 
-		// Add additional properties as needed
-		point.Properties["trip_id"] = tripID
-		point.Properties["trip_start"] = tripStart
-		point.Properties["trip_end"] = tripEnd
-		point.Properties["privacy_zone"] = 1
-		point.Properties["color"] = "black"
-		point.Properties["point-color"] = "black"
+			point.Properties["trip_id"] = tripID
+			point.Properties["trip_start"] = tripStart
+			point.Properties["trip_end"] = tripEnd
+			point.Properties["privacy_zone"] = 1
+			point.Properties["color"] = "black"
+			point.Properties["point-color"] = "black"
 
-		// Append the point feature to the feature collection
-		featureCollection.AddFeature(point)
+			featureCollection.AddFeature(point)
+		}
 	}
 
 	return featureCollection
@@ -288,7 +290,11 @@ func convertToGeoJSON(locations []LocationData, tripID string, tripStart string,
 func calculateSpeedGradient(locations []LocationData) []string {
 	colors := make([]string, len(locations))
 	for i, loc := range locations {
-		colors[i] = getSpeedColor(*loc.Speed)
+		if loc.Speed != nil {
+			colors[i] = getSpeedColor(*loc.Speed)
+		} else {
+			colors[i] = "black" // Default color if speed data is missing
+		}
 	}
 	return colors
 }
