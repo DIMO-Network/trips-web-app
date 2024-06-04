@@ -34,10 +34,10 @@ type TripsResponse struct {
 var TripIDToTokenIDMap = make(map[string]int64)
 
 type LocationData struct {
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
-	Speed     float64 `json:"speed"`
-	Timestamp string  `json:"timestamp"`
+	Latitude  *float64 `json:"latitude,omitempty"`
+	Longitude *float64 `json:"longitude,omitempty"`
+	Speed     *float64 `json:"speed,omitempty"`
+	Timestamp string   `json:"timestamp"`
 }
 
 type TelemetryAPIResponse struct {
@@ -53,9 +53,9 @@ type TelemetryAPIResponse struct {
 
 type Signal struct {
 	Timestamp                time.Time `json:"timestamp"`
-	CurrentLocationLongitude float64   `json:"currentLocationLongitude"`
-	CurrentLocationLatitude  float64   `json:"currentLocationLatitude"`
-	Speed                    float64   `json:"speed"`
+	CurrentLocationLongitude *float64  `json:"currentLocationLongitude"`
+	CurrentLocationLatitude  *float64  `json:"currentLocationLatitude"`
+	Speed                    *float64  `json:"speed"`
 }
 
 var SpeedGradient = []struct {
@@ -264,10 +264,10 @@ func convertToGeoJSON(locations []LocationData, tripID string, tripStart string,
 
 	for _, loc := range locations {
 		// Create a new point feature with the current location's coordinates
-		point := geojson.NewPointFeature([]float64{loc.Longitude, loc.Latitude})
+		point := geojson.NewPointFeature([]float64{*loc.Longitude, *loc.Latitude})
 
 		// Add properties to the point feature, including speed and timestamp
-		point.Properties["speed"] = loc.Speed
+		point.Properties["speed"] = *loc.Speed
 		point.Properties["timestamp"] = loc.Timestamp
 
 		// Add additional properties as needed
@@ -288,7 +288,7 @@ func convertToGeoJSON(locations []LocationData, tripID string, tripStart string,
 func calculateSpeedGradient(locations []LocationData) []string {
 	colors := make([]string, len(locations))
 	for i, loc := range locations {
-		colors[i] = getSpeedColor(loc.Speed)
+		colors[i] = getSpeedColor(*loc.Speed)
 	}
 	return colors
 }
