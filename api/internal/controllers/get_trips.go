@@ -18,9 +18,21 @@ import (
 )
 
 type Trip struct {
-	ID    string    `json:"id"`
-	Start TimeEntry `json:"start"`
-	End   TimeEntry `json:"end"`
+	ID    string
+	Start TripPoint
+	End   TripPoint
+}
+
+type TripPoint struct {
+	Time              string
+	Location          LatLon
+	EstimatedLocation *LatLon
+}
+
+// LatLon represents latitude and longitude coordinates.
+type LatLon struct {
+	Latitude  float64
+	Longitude float64
 }
 
 type TimeEntry struct {
@@ -34,10 +46,10 @@ type TripsResponse struct {
 var TripIDToTokenIDMap = make(map[string]int64)
 
 type LocationData struct {
-	Latitude  *float64 `json:"latitude,omitempty"`
-	Longitude *float64 `json:"longitude,omitempty"`
-	Speed     *float64 `json:"speed,omitempty"`
-	Timestamp string   `json:"timestamp"`
+	Longitude *float64
+	Latitude  *float64
+	Speed     *float64
+	Timestamp string
 }
 
 type TelemetryAPIResponse struct {
@@ -146,7 +158,6 @@ func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 	}
 
 	for _, trip := range latestTrips {
-		TripIDToTokenIDMap[trip.ID] = tokenID
 		log.Info().Msgf("Trip ID: %s", trip.ID)
 	}
 
@@ -231,6 +242,28 @@ func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 
 	log.Info().Msgf("Fetching map data for TripID: %s, StartTime: %s, EndTime: %s, TokenID: %d", tripID, startTime, endTime, tokenID)
 
+	// Fetch trip data from Trips API
+	trips, err := QueryTripsAPI(tokenID, settings, c)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to query trips API")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch trips data: " + err.Error()})
+	}
+
+	// Find the specific trip
+	var trip Trip
+	for _, t := range trips {
+		if t.ID == tripID {
+			trip = t
+			break
+		}
+	}
+
+	if trip.ID == "" {
+		log.Error().Msgf("Trip data not found for tripID: %s", tripID)
+		return c.Status(fiber.StatusNotFound).SendString("Trip data not found")
+	}
+
+	// Fetch telemetry data
 	locations, err := queryTelemetryData(tokenID, startTime, endTime, settings, c)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to fetch historical data")
@@ -241,7 +274,7 @@ func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 		log.Warn().Msg("No location data received")
 	}
 
-	geoJSON := convertToGeoJSON(locations, tripID, startTime, endTime)
+	geoJSON := convertToGeoJSON(locations, trip)
 	speedGradient := calculateSpeedGradient(locations)
 
 	geoJSONData, err := json.Marshal(geoJSON)
@@ -259,23 +292,31 @@ func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 	return c.JSON(response)
 }
 
-func convertToGeoJSON(locations []LocationData, tripID string, tripStart string, tripEnd string) *geojson.FeatureCollection {
+func convertToGeoJSON(locations []LocationData, trip Trip) *geojson.FeatureCollection {
 	featureCollection := geojson.NewFeatureCollection()
 
+	// Add the estimated start location if it exists
+	if trip.Start.EstimatedLocation != nil {
+		estimatedStart := geojson.NewPointFeature([]float64{trip.Start.EstimatedLocation.Longitude, trip.Start.EstimatedLocation.Latitude})
+		estimatedStart.Properties["timestamp"] = trip.Start.Time
+		estimatedStart.Properties["trip_id"] = trip.ID
+		estimatedStart.Properties["point_type"] = "estimated_start"
+		estimatedStart.Properties["privacy_zone"] = 1
+		estimatedStart.Properties["color"] = "black"
+		estimatedStart.Properties["point-color"] = "black"
+		featureCollection.AddFeature(estimatedStart)
+	}
+
+	// Iterate through the locations and add each as a point feature
 	for _, loc := range locations {
-		// Create a new point feature with the current location's coordinates if they are not nil
 		if loc.Longitude != nil && loc.Latitude != nil {
 			point := geojson.NewPointFeature([]float64{*loc.Longitude, *loc.Latitude})
 
-			// Add properties to the point feature, including speed and timestamp
 			if loc.Speed != nil {
 				point.Properties["speed"] = *loc.Speed
 			}
 			point.Properties["timestamp"] = loc.Timestamp
-
-			point.Properties["trip_id"] = tripID
-			point.Properties["trip_start"] = tripStart
-			point.Properties["trip_end"] = tripEnd
+			point.Properties["trip_id"] = trip.ID
 			point.Properties["privacy_zone"] = 1
 			point.Properties["color"] = "black"
 			point.Properties["point-color"] = "black"
@@ -283,6 +324,16 @@ func convertToGeoJSON(locations []LocationData, tripID string, tripStart string,
 			featureCollection.AddFeature(point)
 		}
 	}
+
+	// Add the end location
+	endLocation := geojson.NewPointFeature([]float64{trip.End.Location.Longitude, trip.End.Location.Latitude})
+	endLocation.Properties["timestamp"] = trip.End.Time
+	endLocation.Properties["trip_id"] = trip.ID
+	endLocation.Properties["point_type"] = "end"
+	endLocation.Properties["privacy_zone"] = 1
+	endLocation.Properties["color"] = "red"       //diff color for end
+	endLocation.Properties["point-color"] = "red" //diff color for end
+	featureCollection.AddFeature(endLocation)
 
 	return featureCollection
 }
