@@ -233,7 +233,7 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 	return locations, nil
 }
 
-func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, startTime, endTime string) error {
+func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, startTime, endTime string, estimatedStart *LatLon, estimatedEnd *LatLon) error {
 	tokenID, exists := TripIDToTokenIDMap[tripID]
 	if !exists {
 		log.Error().Msgf("Trip not found for tripID: %s", tripID) // Log trip not found
@@ -241,27 +241,6 @@ func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 	}
 
 	log.Info().Msgf("Fetching map data for TripID: %s, StartTime: %s, EndTime: %s, TokenID: %d", tripID, startTime, endTime, tokenID)
-
-	// Fetch trip data from Trips API
-	trips, err := QueryTripsAPI(tokenID, settings, c)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to query trips API")
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch trips data: " + err.Error()})
-	}
-
-	// Find the specific trip
-	var trip Trip
-	for _, t := range trips {
-		if t.ID == tripID {
-			trip = t
-			break
-		}
-	}
-
-	if trip.ID == "" {
-		log.Error().Msgf("Trip data not found for tripID: %s", tripID)
-		return c.Status(fiber.StatusNotFound).SendString("Trip data not found")
-	}
 
 	// Fetch telemetry data
 	locations, err := queryTelemetryData(tokenID, startTime, endTime, settings, c)
@@ -274,7 +253,7 @@ func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 		log.Warn().Msg("No location data received")
 	}
 
-	geoJSON := convertToGeoJSON(locations, trip)
+	geoJSON := convertToGeoJSON(locations, estimatedStart, estimatedEnd)
 	speedGradient := calculateSpeedGradient(locations)
 
 	geoJSONData, err := json.Marshal(geoJSON)
@@ -292,48 +271,37 @@ func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 	return c.JSON(response)
 }
 
-func convertToGeoJSON(locations []LocationData, trip Trip) *geojson.FeatureCollection {
+func convertToGeoJSON(locations []LocationData, estimatedStart *LatLon, estimatedEnd *LatLon) *geojson.FeatureCollection {
 	featureCollection := geojson.NewFeatureCollection()
 
 	// Add the estimated start location if it exists
-	if trip.Start.EstimatedLocation != nil {
-		estimatedStart := geojson.NewPointFeature([]float64{trip.Start.EstimatedLocation.Longitude, trip.Start.EstimatedLocation.Latitude})
-		estimatedStart.Properties["timestamp"] = trip.Start.Time
-		estimatedStart.Properties["trip_id"] = trip.ID
-		estimatedStart.Properties["point_type"] = "estimated_start"
-		estimatedStart.Properties["privacy_zone"] = 1
-		estimatedStart.Properties["color"] = "black"
-		estimatedStart.Properties["point-color"] = "black"
-		featureCollection.AddFeature(estimatedStart)
+	if estimatedStart != nil {
+		estimatedStartFeature := geojson.NewPointFeature([]float64{estimatedStart.Longitude, estimatedStart.Latitude})
+		estimatedStartFeature.Properties["point_type"] = "estimated_start"
+		estimatedStartFeature.Properties["color"] = "black"
+		featureCollection.AddFeature(estimatedStartFeature)
 	}
 
 	// Iterate through the locations and add each as a point feature
 	for _, loc := range locations {
 		if loc.Longitude != nil && loc.Latitude != nil {
 			point := geojson.NewPointFeature([]float64{*loc.Longitude, *loc.Latitude})
-
 			if loc.Speed != nil {
 				point.Properties["speed"] = *loc.Speed
 			}
 			point.Properties["timestamp"] = loc.Timestamp
-			point.Properties["trip_id"] = trip.ID
-			point.Properties["privacy_zone"] = 1
 			point.Properties["color"] = "black"
-			point.Properties["point-color"] = "black"
-
 			featureCollection.AddFeature(point)
 		}
 	}
 
-	// Add the end location
-	endLocation := geojson.NewPointFeature([]float64{trip.End.Location.Longitude, trip.End.Location.Latitude})
-	endLocation.Properties["timestamp"] = trip.End.Time
-	endLocation.Properties["trip_id"] = trip.ID
-	endLocation.Properties["point_type"] = "end"
-	endLocation.Properties["privacy_zone"] = 1
-	endLocation.Properties["color"] = "red"       //diff color for end
-	endLocation.Properties["point-color"] = "red" //diff color for end
-	featureCollection.AddFeature(endLocation)
+	// Add the estimated end location if it exists
+	if estimatedEnd != nil {
+		estimatedEndFeature := geojson.NewPointFeature([]float64{estimatedEnd.Longitude, estimatedEnd.Latitude})
+		estimatedEndFeature.Properties["point_type"] = "estimated_end"
+		estimatedEndFeature.Properties["color"] = "red"
+		featureCollection.AddFeature(estimatedEndFeature)
+	}
 
 	return featureCollection
 }
