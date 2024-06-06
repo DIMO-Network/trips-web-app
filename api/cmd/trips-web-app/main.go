@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -78,7 +79,15 @@ func main() {
 		startTime := c.Query("start")
 		endTime := c.Query("end")
 
-		return controllers.HandleMapDataForTrip(c, &settings, tripID, startTime, endTime)
+		// Retrieve the estimated start location from the query string
+		var estimatedStart *controllers.LatLon
+		if estimatedStartStr := c.Query("estimatedStart"); estimatedStartStr != "" {
+			if err := json.Unmarshal([]byte(estimatedStartStr), &estimatedStart); err != nil {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid estimated start location"})
+			}
+		}
+
+		return controllers.HandleMapDataForTrip(c, &settings, tripID, startTime, endTime, estimatedStart)
 	})
 
 	// Public Routes
