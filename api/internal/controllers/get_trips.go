@@ -18,9 +18,10 @@ import (
 )
 
 type Trip struct {
-	ID    string
-	Start TripPoint
-	End   TripPoint
+	ID                string
+	Start             TripPoint
+	End               TripPoint
+	EstimatedLocation *LatLon
 }
 
 type TripPoint struct {
