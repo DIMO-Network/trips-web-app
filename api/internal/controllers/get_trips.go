@@ -157,7 +157,7 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 	graphqlQuery := fmt.Sprintf(` 
 	{
 	  signals(
-		tokenID: %d
+		tokenId: %d
 		interval: "30s"
 		from: "%s"
 		to: "%s"
