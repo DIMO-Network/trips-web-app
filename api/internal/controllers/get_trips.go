@@ -18,22 +18,21 @@ import (
 )
 
 type Trip struct {
-	ID                string
-	Start             TripPoint
-	End               TripPoint
-	EstimatedLocation *LatLon
+	ID    string    `json:"id"`
+	Start TripPoint `json:"start"`
+	End   TripPoint `json:"end"`
 }
 
 type TripPoint struct {
-	Time              string
-	Location          LatLon
-	EstimatedLocation *LatLon
+	Time              string  `json:"time"`
+	Location          LatLon  `json:"location"`
+	EstimatedLocation *LatLon `json:"estimated_location"`
 }
 
 // LatLon represents latitude and longitude coordinates.
 type LatLon struct {
-	Latitude  float64
-	Longitude float64
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
 
 type TimeEntry struct {
@@ -106,6 +105,11 @@ func (t *TripsController) HandleTripsList(c *fiber.Ctx) error {
 		})
 	}
 
+	// Populate TripIDToTokenIDMap
+	for _, trip := range trips {
+		TripIDToTokenIDMap[trip.ID] = tokenID
+	}
+
 	return c.Render("vehicle_trips", fiber.Map{
 		"TokenID": tokenID,
 		"Trips":   trips,
@@ -142,11 +146,15 @@ func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 		return nil, err
 	}
 
+	log.Info().Msgf("Trips API response body: %s", string(responseBody))
+
 	// Dynamically parse the JSON response
 	if err := json.Unmarshal(responseBody, &tripsResponse); err != nil {
 		log.Error().Str("body", string(responseBody)).Msgf("Error parsing JSON response: %v", err)
 		return nil, err
 	}
+
+	log.Info().Msgf("Fetched trips: %+v", tripsResponse.Trips)
 
 	sort.Slice(tripsResponse.Trips, func(i, j int) bool {
 		return tripsResponse.Trips[i].End.Time > tripsResponse.Trips[j].End.Time
@@ -159,7 +167,8 @@ func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 	}
 
 	for _, trip := range latestTrips {
-		log.Info().Msgf("Trip ID: %s", trip.ID)
+		TripIDToTokenIDMap[trip.ID] = tokenID
+		log.Info().Msgf("Trip ID: %s, EstimatedLocation: %+v", trip.ID, trip.Start.EstimatedLocation)
 	}
 
 	return latestTrips, nil
@@ -218,7 +227,6 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 	if len(respData.Errors) > 0 {
 		log.Error().Interface("errors", respData.Errors).Msg("Error in telemetry API response")
 	}
-	log.Info().Interface("response", respData).Msg("Telemetry API response")
 
 	locations := make([]LocationData, 0, len(respData.Data.Signals))
 	for _, signal := range respData.Data.Signals {
@@ -256,13 +264,6 @@ func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, start
 
 	geoJSON := convertToGeoJSON(locations, estimatedStart)
 	speedGradient := calculateSpeedGradient(locations)
-
-	geoJSONData, err := json.Marshal(geoJSON)
-	if err != nil {
-		log.Error().Msgf("Error with GeoJSON: %v", err)
-	} else {
-		log.Info().Msgf("GeoJSON data: %s", string(geoJSONData))
-	}
 
 	response := map[string]interface{}{
 		"geojson":       geoJSON,

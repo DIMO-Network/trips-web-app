@@ -378,6 +378,8 @@
 
 
         async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime, tripElement, estimatedStart, showCoords = false, tripIdForTable = '', toggleGradient) {
+            console.log("fetchAndDisplayMap called with parameters:", { tokenID, tripID, startTime, endTime, estimatedStart });
+
             document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
             tripElement.classList.add('active-trip');
 
@@ -438,8 +440,14 @@
             try {
                 const loader = document.querySelector('.loader');
                 loader.style.display = 'flex';
-                const estimatedStartParam = estimatedStart ? encodeURIComponent(JSON.stringify(estimatedStart)) : '';
-                const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}&estimatedStart=${estimatedStartParam}`;
+
+                let url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
+                if (estimatedStart) {
+                    url += `&estimatedStart=${encodeURIComponent(JSON.stringify(estimatedStart))}`;
+                }
+
+                console.log("Constructed URL:", url);
+
                 const response = await fetch(url, {
                     headers: {
                         'Content-Type': 'application/json',
