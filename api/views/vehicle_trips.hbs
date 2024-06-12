@@ -377,7 +377,9 @@
 
 
 
-        async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime, tripElement, showCoords = false, tripIdForTable = '', toggleGradient) {
+        async function fetchAndDisplayMap(tokenID, tripID, startTime, endTime, tripElement, estimatedStartLat, estimatedStartLong, showCoords = false, tripIdForTable = '', toggleGradient) {
+            console.log("fetchAndDisplayMap called with parameters:", { tokenID, tripID, startTime, endTime, estimatedStartLat, estimatedStartLong });
+
             document.querySelectorAll('.trip-list li').forEach(li => li.classList.remove('active-trip'));
             tripElement.classList.add('active-trip');
 
@@ -439,7 +441,13 @@
                 const loader = document.querySelector('.loader');
                 loader.style.display = 'flex';
 
-                const url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
+                let url = `/api/trip/${tripID}?start=${encodeURIComponent(startTime)}&end=${encodeURIComponent(endTime)}`;
+                if (estimatedStartLat && estimatedStartLong) {
+                    const estimatedStart = { latitude: estimatedStartLat, longitude: estimatedStartLong };
+                    url += `&estimatedStart=${encodeURIComponent(JSON.stringify(estimatedStart))}`;
+                }
+                console.log('Constructed URL:', url);
+
                 const response = await fetch(url, {
                     headers: {
                         'Content-Type': 'application/json',
@@ -1001,21 +1009,28 @@
                         <td><span class="formatted-start-time" data-time="{{this.Start.Time}}"></span></td>
                         <td><span class="formatted-end-time" data-time="{{this.End.Time}}"></span></td>
                         <td><span class="trip-duration" data-start="{{this.Start.Time}}" data-end="{{this.End.Time}}"></span></td>
-                        <td><input type="checkbox" onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', false)" onchange="toggleTripOptions(this, '{{this.ID}}')"></td>
+                        <td>
+                            <input type="checkbox"
+                                   onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, {{#if this.Start.EstimatedLocation}}{{this.Start.EstimatedLocation.Latitude}}, {{this.Start.EstimatedLocation.Longitude}}{{else}}null, null{{/if}}, false, '', false)"
+                                   onchange="toggleTripOptions(this, '{{this.ID}}')">
+                        </td>
                         <td><input type="checkbox" id="snap-to-road-{{this.ID}}" disabled onclick="snapToRoad('{{this.ID}}', this.checked)"></td>
-                        <td><input type="checkbox" id="toggle-gradient-{{this.ID}}" disabled onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, false, '', this.checked)"></td>
-                        <td><input type="checkbox" id="show-raw-data-{{this.ID}}" disabled onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, true, '{{this.ID}}', false)"></td>
+                        <td>
+                            <input type="checkbox"
+                                   id="toggle-gradient-{{this.ID}}"
+                                   disabled
+                                   onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, {{#if this.Start.EstimatedLocation}}{{this.Start.EstimatedLocation.Latitude}}, {{this.Start.EstimatedLocation.Longitude}}{{else}}null, null{{/if}}, false, '', this.checked)">
+                        </td>
+                        <td><input type="checkbox" id="show-raw-data-{{this.ID}}" disabled onclick="fetchAndDisplayMap('{{../this.TokenID}}', '{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}', this.parentNode.parentNode, {{#if this.Start.EstimatedLocation}}{{this.Start.EstimatedLocation.Latitude}}, {{this.Start.EstimatedLocation.Longitude}}{{else}}null, null{{/if}}, true, '{{this.ID}}', false)"></td>
                         <td>
                             <button class="green" onclick="downloadTripDataAsCSV('{{this.ID}}', '{{this.Start.Time}}', '{{this.End.Time}}')">
                                 &#x21E9;
                             </button>
                         </td>
-
                     </tr>
                 {{/each}}
+
                 </tbody>
-
-
             </table>
         </div>
     </div>
