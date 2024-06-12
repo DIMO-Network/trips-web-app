@@ -23,10 +23,11 @@ type Trip struct {
 	End   TripPoint `json:"end"`
 }
 
+// EstimatedLocation
 type TripPoint struct {
 	Time              string  `json:"time"`
 	Location          LatLon  `json:"location"`
-	EstimatedLocation *LatLon `json:"estimated_location"`
+	EstimatedLocation *LatLon `json:"estimatedLocation"`
 }
 
 // LatLon represents latitude and longitude coordinates.
@@ -168,7 +169,10 @@ func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 
 	for _, trip := range latestTrips {
 		TripIDToTokenIDMap[trip.ID] = tokenID
-		log.Info().Msgf("Trip ID: %s, EstimatedLocation: %+v", trip.ID, trip.Start.EstimatedLocation)
+		if trip.Start.EstimatedLocation != nil {
+			log.Info().Msgf("Trip ID: %s, EstimatedLocation: %+v", trip.ID, *trip.Start.EstimatedLocation)
+		}
+
 	}
 
 	return latestTrips, nil
@@ -178,7 +182,7 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 	graphqlQuery := fmt.Sprintf(` 
 	{
 	  signals(
-		tokenID: %d
+		tokenId: %d
 		interval: "30s"
 		from: "%s"
 		to: "%s"
@@ -219,6 +223,7 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 	if err != nil {
 		return nil, err
 	}
+	log.Info().Msgf("Telemetry API response body: %s", string(body))
 
 	var respData TelemetryAPIResponse
 	if err := json.Unmarshal(body, &respData); err != nil {
