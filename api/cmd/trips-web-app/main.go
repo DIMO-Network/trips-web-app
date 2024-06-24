@@ -59,8 +59,9 @@ func main() {
 	st := controllers.NewStreamrController(settings)
 
 	app := fiber.New(fiber.Config{
-		ErrorHandler: ErrorHandler,
-		Views:        engine,
+		ErrorHandler:   ErrorHandler,
+		Views:          engine,
+		ReadBufferSize: 16000,
 	})
 
 	app.Use(cors.New())
