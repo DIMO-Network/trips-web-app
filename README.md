@@ -12,7 +12,7 @@ Welcome to the Trips Sandbox repository! This project is a React + TypeScript + 
 
 ## Introduction
 
-The Trips Sandbox allows users to view, analyze, and manage trip data for specific vehicles. It uses Mapbox for visualizing the trips on a map. This README provides instructions on how to set up the project locally, details on deployment, and guidelines for contributing.
+The Trips Sandbox allows users to view and analyze trip data for specific vehicles. It uses Mapbox for visualizing the trips on a map. This README provides instructions on how to set up the project locally, details on deployment, and guidelines for contributing.
 
 ## Getting Started
 
