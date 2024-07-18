@@ -17,6 +17,7 @@ RUN apt-get clean && apt-get update
 RUN curl -fsSL https://deb.nodesource.com/setup_current.x | bash -
 RUN apt-get install -y nodejs
 RUN npm install -g typescript
+RUN npm install -g vite
 RUN go mod download
 RUN go mod tidy
 RUN go mod vendor
