@@ -16,6 +16,7 @@ ENV DIMO_PROJECT_ID=d16b9a51a03ecf7d3a617416144f70fb
 RUN apt-get clean && apt-get update
 RUN curl -fsSL https://deb.nodesource.com/setup_current.x | bash -
 RUN apt-get install -y nodejs
+RUN npm install -g typescript
 RUN go mod download
 RUN go mod tidy
 RUN go mod vendor
