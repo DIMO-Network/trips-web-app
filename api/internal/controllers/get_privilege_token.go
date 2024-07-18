@@ -37,7 +37,7 @@ func RequestPriviledgeToken(c *fiber.Ctx, settings *config.Settings, tokenID int
 		return nil, fmt.Errorf("JWT token value is not valid")
 	}
 
-	privileges := []int{1, 4}
+	privileges := []int{1, 2, 3, 4, 5, 6}
 	requestBody := map[string]interface{}{
 		"nftContractAddress": settings.PrivilegeNFTContractAddr,
 		"privileges":         privileges,
