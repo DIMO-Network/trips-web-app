@@ -94,6 +94,9 @@ function App() {
                 <div className="connect-button-container">
                   <ConnectButton />
                 </div>
+                <div className="connect-button-container">
+                  <p><a href="/login-jwt">Login with JWT</a></p>
+                </div>
               </>
             </RainbowKitProvider>
           </RainbowKitAuthenticationProvider>

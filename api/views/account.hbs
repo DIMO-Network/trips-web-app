@@ -189,9 +189,9 @@
                 <option value="{{this.TokenID}}">{{this.Definition.make}} {{this.Definition.model}} ({{this.Definition.year}})</option>
             {{/each}}
         </select>
-        <button id="generate-token-button">Generate Token</button>
-        <div id="token-display"></div>
+        <button id="generate-token-button">Generate Privilege Token</button>
     </div>
+    <div id="privilege-token"></div>
 
     <p>My Privileges:</p>
     <ul>
@@ -222,7 +222,7 @@
                     });
                     const data = await response.json();
                     if (response.ok) {
-                        document.getElementById('token-display').textContent = `Generated Token: ${data.token}`;
+                        document.getElementById('privilege-token').textContent = `${data.token}`;
                     } else {
                         throw new Error(data.error || 'Failed to generate token');
                     }

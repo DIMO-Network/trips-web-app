@@ -37,12 +37,16 @@
   color: #888;
 }
 
-.connect-button-container {
+div.connect-button-container {
   display: flex;
   justify-content: center;
   position:relative;
 
 }
+div.connect-button-container p {
+  margin-top: 2em;
+}
+
 .logo-container {
   display: flex;
   justify-content: center;

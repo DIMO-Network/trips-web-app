@@ -107,7 +107,11 @@ func (a *AccountController) MyAccount(c *fiber.Ctx) error {
 		"Token": jwtToken,
 		"Privileges": fiber.Map{
 			"1": "1: All-time, non-location data",
+			"2": "Commands",
+			"3": "Current Location",
 			"4": "4: All-time location",
+			"5": "Verifiable Credentials",
+			"6": "Streams",
 		},
 		"Vehicles": vehicles,
 	})
