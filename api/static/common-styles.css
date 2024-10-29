@@ -1,0 +1,189 @@
+@font-face {
+    font-family: 'Euclid';
+    src: url('/static/EuclidCircularA-Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+body {
+    font-family: 'Euclid', sans-serif;
+    background-color: #000000;
+    color: #ffffff;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #30D5C8;
+}
+
+.token-container, .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-direction: column;
+}
+
+.token-card {
+    background-color: #222222;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    margin-left: 200px;
+    margin-right: 200px;
+    word-wrap: break-word;
+    max-width: calc(100% - 400px);
+}
+
+.token-header {
+    margin-bottom: 15px;
+}
+
+.copy-button {
+    padding: 10px 20px;
+    background-color: #30D5C8;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.copy-button:hover {
+    background-color: #35deda;
+}
+
+.footer {
+    text-align: center;
+    margin-top: 40px;
+}
+
+a {
+    color: #30D5C8;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+li {
+    margin-bottom: 5px;
+}
+.back-button {
+    position: absolute;
+    top: 95px;
+    left: 165px;
+    font-size: 24px;
+    color: #ffffff;
+    cursor: pointer;
+    border: none;
+    background: none;
+}
+.header {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+}
+
+.dimo-logo {
+    height: 90px;
+}
+
+.generate-token-section {
+    background-color: #222;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-right: auto;
+    margin-left: 0;
+    padding: 15px;
+    z-index: 1;
+}
+
+.generate-token-section select {
+    width: 50%;
+    padding: 10px;
+    margin-top: 5px;
+    background-color: white;
+    color: black;
+    border: 1px solid #ccc;
+    border-radius: 0;
+    cursor: pointer;
+}
+
+.generate-token-section button {
+    padding: 10px 20px;
+    margin-top: 10px;
+    background-color: white;
+    color: black;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.generate-token-section button:hover {
+    background-color: #35deda;
+}
+
+#token-display {
+    word-wrap: break-word;
+    background-color: #222;
+    color: #ffffff;
+    padding: 10px;
+    border-radius: 5px;
+    width: 80%;
+    margin-top: 10px;
+    text-align: center;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+input[type="text"] {
+    width: 100%; /* Adjusts width to fit its container */
+    padding: 12px 15px; /* Adds padding for a more spacious look */
+    font-size: 16px; /* Sets a comfortable font size */
+    border: 2px solid #ddd; /* Light border for subtle framing */
+    border-radius: 8px; /* Rounds the corners */
+    outline: none; /* Removes default focus outline */
+    transition: border-color 0.3s, box-shadow 0.3s; /* Smooth transition for focus effects */
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1); /* Adds a soft shadow */
+}
+
+input[type="text"]:focus {
+    border-color: #4a90e2; /* Changes border color on focus */
+    box-shadow: 0 0 5px rgba(74, 144, 226, 0.5); /* Adds a glow effect on focus */
+}
+
+button.submit-btn {
+    padding: 12px 20px; /* Comfortable padding */
+    font-size: 16px; /* Readable font size */
+    font-weight: bold; /* Makes text stand out */
+    color: #fff; /* White text color */
+    background: linear-gradient(135deg, #4a90e2, #357abd); /* Gradient background */
+    border: none; /* Removes default border */
+    border-radius: 8px; /* Rounds the corners */
+    cursor: pointer; /* Changes cursor to pointer on hover */
+    box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.2); /* Adds a soft shadow */
+    transition: background 0.3s, box-shadow 0.3s, transform 0.1s; /* Smooth transitions */
+}
+
+button.submit-btn:hover {
+    background: linear-gradient(135deg, #357abd, #4a90e2); /* Reverses gradient on hover */
+    box-shadow: 2px 6px 10px rgba(0, 0, 0, 0.3); /* Enhances shadow on hover */
+    transform: translateY(-2px); /* Slight lift effect */
+}
+
+button.submit-btn:active {
+    transform: translateY(1px); /* Moves down slightly on click */
+    box-shadow: 1px 3px 5px rgba(0, 0, 0, 0.2); /* Reduces shadow on click */
+}

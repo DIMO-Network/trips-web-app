@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login with a JWT</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oooh+Baby&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/common-styles.css">
+</head>
+<body>
+<div class="header">
+    <img src="/static/whole_logo.png" alt="DIMO Logo" class="dimo-logo">
+</div>
+
+<h1>Enter your account JWT to login</h1>
+
+<div style="margin: 0; display: flex; align-items: center; justify-content: center;">
+<div style="width: 50%;padding: 20px;text-align: center;">
+<form method="post" action="/login-jwt">
+
+    <label for="jwt" about="enter JWT" title="enter JWT">
+        <input type="text" name="jwt" placeholder="JWT" />
+    </label>
+
+    <div style="margin-top: 2em;">
+        <button class="submit-btn" type="submit">Submit</button>
+    </div>
+</form>
+</div>
+</div>
+
+

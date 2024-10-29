@@ -3,8 +3,10 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
@@ -109,4 +111,28 @@ func (a *AccountController) MyAccount(c *fiber.Ctx) error {
 		},
 		"Vehicles": vehicles,
 	})
+}
+
+func (a *AccountController) LoginWithJWT(c *fiber.Ctx) error {
+	return c.Render("login_jwt", fiber.Map{})
+}
+
+func (a *AccountController) PostLoginWithJWT(c *fiber.Ctx) error {
+	// get the jwt from the form post
+	jwt := c.FormValue("jwt")
+
+	// set the session cookie stuff with the jwt
+	//jwt token storage
+	sessionID := uuid.New().String()
+	CacheInstance.Set(sessionID, jwt, 2*time.Hour)
+
+	cookie := new(fiber.Cookie)
+	cookie.Name = "session_id"
+	cookie.Value = sessionID
+	cookie.Expires = time.Now().Add(2 * time.Hour)
+	cookie.HTTPOnly = true
+
+	c.Cookie(cookie)
+
+	return c.Redirect("/account")
 }

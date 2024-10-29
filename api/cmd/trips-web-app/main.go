@@ -63,8 +63,11 @@ func main() {
 		Views:          engine,
 		ReadBufferSize: 16000,
 	})
-
 	app.Use(cors.New())
+
+	// View routes public
+	app.Get("/login-jwt", ac.LoginWithJWT)
+	app.Post("/login-jwt", ac.PostLoginWithJWT)
 
 	// View routes (protected)
 	app.Get("/account", controllers.AuthMiddleware(), ac.MyAccount)
