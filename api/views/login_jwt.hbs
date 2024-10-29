@@ -23,6 +23,11 @@
     <label for="jwt" about="enter JWT" title="enter JWT">
         <input type="text" name="jwt" placeholder="JWT" />
     </label>
+    {{#if error}}
+        <div class="error-message">
+            <p>{{error}}</p>
+        </div>
+    {{/if}}
 
     <div style="margin-top: 2em;">
         <button class="submit-btn" type="submit">Submit</button>

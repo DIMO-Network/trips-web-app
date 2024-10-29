@@ -187,3 +187,23 @@ button.submit-btn:active {
     transform: translateY(1px); /* Moves down slightly on click */
     box-shadow: 1px 3px 5px rgba(0, 0, 0, 0.2); /* Reduces shadow on click */
 }
+
+/* Style for the error message container */
+div.error-message {
+    padding: 15px 20px; /* Comfortable padding */
+    background-color: #f8d7da; /* Light red background for error indication */
+    border: 1px solid #f5c6cb; /* Slightly darker red border */
+    border-radius: 8px; /* Rounds the corners */
+    color: #721c24; /* Darker red text color */
+    font-size: 16px; /* Readable font size */
+    display: flex; /* Allows for icon + text layout */
+    align-items: center; /* Centers items vertically */
+    gap: 10px; /* Space between icon and text */
+    margin: 15px 0; /* Adds space around the error message */
+}
+
+/* Style for the error text inside the div */
+div.error-message p {
+    margin: 0; /* Removes default paragraph margin */
+    font-weight: 500; /* Makes text slightly bold */
+}

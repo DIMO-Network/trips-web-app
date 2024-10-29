@@ -121,8 +121,14 @@ func (a *AccountController) PostLoginWithJWT(c *fiber.Ctx) error {
 	// get the jwt from the form post
 	jwt := c.FormValue("jwt")
 
+	ethAddr, err := ExtractEthereumAddressFromToken(jwt)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).Render("login_jwt", fiber.Map{"error": "No ethereum address found in ethAddr " + err.Error()})
+	}
+	fmt.Println("processed login with JWT, eth addr: ", ethAddr)
+
 	// set the session cookie stuff with the jwt
-	//jwt token storage
+	//jwt ethAddr storage
 	sessionID := uuid.New().String()
 	CacheInstance.Set(sessionID, jwt, 2*time.Hour)
 
