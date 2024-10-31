@@ -36,8 +36,8 @@ type Vehicle struct {
 			Name string `json:"name"`
 		} `json:"manufacturer"`
 	} `json:"aftermarketDevice"`
-	TelemetryStatusEntries []TelemetrySignalEntry `json:"telemetryStatusEntries"`
-	Trips                  []Trip                 `json:"trips"`
+	SignalEntries []SignalEntry `json:"signalEntries"`
+	Trips         []Trip        `json:"trips"`
 }
 
 type VehiclesController struct {
@@ -105,7 +105,7 @@ func (v *VehiclesController) HandleGetVehicles(c *fiber.Ctx) error {
 	})
 }
 
-func (v *VehiclesController) HandleVehicleStatus(c *fiber.Ctx) error {
+func (v *VehiclesController) HandleVehicleSignals(c *fiber.Ctx) error {
 	tokenID, err := strconv.ParseInt(c.Params("tokenid"), 10, 64)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -121,7 +121,7 @@ func (v *VehiclesController) HandleVehicleStatus(c *fiber.Ctx) error {
 		})
 	}
 
-	telemetryStatus, err := FetchLatestSignalValues(tokenID, signalNames, &v.settings, c)
+	telemetrySignals, err := FetchLatestSignalValues(tokenID, signalNames, &v.settings, c)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to fetch latest signal values")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -129,10 +129,10 @@ func (v *VehiclesController) HandleVehicleStatus(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.Render("vehicle_telemetry", fiber.Map{
-		"TokenID":                tokenID,
-		"TelemetryStatusEntries": telemetryStatus,
-		"Privileges":             []any{},
+	return c.Render("vehicle_signals", fiber.Map{
+		"TokenID":       tokenID,
+		"SignalEntries": telemetrySignals,
+		"Privileges":    []any{},
 	})
 }
 

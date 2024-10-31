@@ -14,13 +14,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type TelemetrySignalEntry struct {
+type SignalEntry struct {
 	SignalName string
 	Value      interface{}
 	Timestamp  string
 }
 
-type TelemetryStatusEntries []TelemetrySignalEntry
+type SignalEntries []SignalEntry
 
 // FetchAvailableSignals retrieves a list of available signals for a given vehicle
 func FetchAvailableSignals(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]string, error) {
@@ -52,7 +52,7 @@ func FetchAvailableSignals(tokenID int64, settings *config.Settings, c *fiber.Ct
 }
 
 // FetchLatestSignalValues retrieves the latest timestamp and value for each available signal
-func FetchLatestSignalValues(tokenID int64, signalNames []string, settings *config.Settings, c *fiber.Ctx) (TelemetryStatusEntries, error) {
+func FetchLatestSignalValues(tokenID int64, signalNames []string, settings *config.Settings, c *fiber.Ctx) (SignalEntries, error) {
 	var latestSignalData struct {
 		Data map[string]map[string]struct {
 			Timestamp string      `json:"timestamp"`
@@ -60,7 +60,7 @@ func FetchLatestSignalValues(tokenID int64, signalNames []string, settings *conf
 		} `json:"data"`
 	}
 
-	entries := TelemetryStatusEntries{}
+	entries := SignalEntries{}
 	signalsQuery := ""
 	for _, signal := range signalNames {
 		signalsQuery += fmt.Sprintf("%s { timestamp value } ", signal)
@@ -88,7 +88,7 @@ func FetchLatestSignalValues(tokenID int64, signalNames []string, settings *conf
 
 	for signalName, signalData := range latestSignalData.Data {
 		if data, ok := signalData[signalName]; ok {
-			entries = append(entries, TelemetrySignalEntry{
+			entries = append(entries, SignalEntry{
 				SignalName: signalName,
 				Value:      data.Value,
 				Timestamp:  data.Timestamp,
@@ -143,7 +143,7 @@ func (v *VehiclesController) HandleVehicleTelemetry(c *fiber.Ctx) error {
 	}
 
 	// Fetch latest values for each signal
-	telemetryStatus, err := FetchLatestSignalValues(tokenID, signalNames, &v.settings, c)
+	telemetrySignals, err := FetchLatestSignalValues(tokenID, signalNames, &v.settings, c)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to fetch latest signal values")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -151,9 +151,9 @@ func (v *VehiclesController) HandleVehicleTelemetry(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.Render("vehicle_telemetry", fiber.Map{
-		"TokenID":                tokenID,
-		"TelemetryStatusEntries": telemetryStatus,
-		"Privileges":             []any{},
+	return c.Render("vehicle_signals", fiber.Map{
+		"TokenID":       tokenID,
+		"SignalEntries": telemetrySignals,
+		"Privileges":    []any{},
 	})
 }

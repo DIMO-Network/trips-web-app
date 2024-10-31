@@ -12,7 +12,6 @@ type Settings struct {
 	TokenExchangeJWTKeySetURL string `yaml:"TOKEN_EXCHANGE_JWK_KEY_SET_URL"`
 	TokenExchangeAPIURL       string `yaml:"TOKEN_EXCHANGE_API_URL"`
 	PrivilegeNFTContractAddr  string `yaml:"PRIVILEGE_NFT_CONTRACT_ADDR"`
-	DeviceDataAPIURL          string `yaml:"DEVICE_DATA_API_URL"`
 	Port                      string `yaml:"PORT"`
 	LogLevel                  string `yaml:"LOG_LEVEL"`
 	Environment               string `yaml:"ENVIRONMENT"`

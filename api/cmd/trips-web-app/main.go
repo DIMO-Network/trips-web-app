@@ -72,7 +72,7 @@ func main() {
 	// View routes (protected)
 	app.Get("/account", controllers.AuthMiddleware(), ac.MyAccount)
 	app.Get("/vehicles/me", controllers.AuthMiddleware(), vc.HandleGetVehicles)
-	app.Get("/vehicles/:tokenid/status", controllers.AuthMiddleware(), vc.HandleVehicleStatus)
+	app.Get("/vehicles/:tokenid/signals", controllers.AuthMiddleware(), vc.HandleVehicleSignals)
 	app.Get("/vehicles/:tokenid/trips", controllers.AuthMiddleware(), tc.HandleTripsList)
 	app.Get("/give-feedback", controllers.AuthMiddleware(), controllers.HandleGiveFeedback(&settings))
 	app.Get("/streamr", controllers.AuthMiddleware(), st.GetStreamr)

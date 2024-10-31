@@ -70,7 +70,7 @@
         }
 
         .column-title {
-            width: 24%;
+            width: 30%;
         }
     </style>
 </head>
@@ -80,20 +80,18 @@
 </div>
 <button class="back-button" onclick="window.location.href='/vehicles/me'">&#9664;</button>
 <div class="container">
-    <h1 class="status-title">Device Status for {{TokenID}}</h1>
+    <h1 class="status-title">Available Signals for {{TokenID}}</h1>
     <div class="status-header">
         <span class="column-title">Signal Name</span>
         <span class="column-title">Value</span>
         <span class="column-title">Timestamp</span>
-        <span class="column-title">Source</span>
     </div>
     <div class="status-card">
-        {{#each DeviceStatusEntries}}
+        {{#each SignalEntries}}
             <div class="status-content">
                 <span class="column-title">{{this.SignalName}}</span>
                 <span class="column-title">{{this.Value}}</span>
                 <span class="column-title">{{this.Timestamp}}</span>
-                <span class="column-title">{{this.Source}}</span>
             </div>
         {{/each}}
     </div>
