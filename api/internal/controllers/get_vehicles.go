@@ -10,10 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
+	"github.com/rs/zerolog/log"
 )
 
 type GraphQLRequest struct {
@@ -37,8 +36,8 @@ type Vehicle struct {
 			Name string `json:"name"`
 		} `json:"manufacturer"`
 	} `json:"aftermarketDevice"`
-	DeviceStatusEntries []DeviceDataEntry `json:"deviceStatusEntries"`
-	Trips               []Trip            `json:"trips"`
+	TelemetryStatusEntries []TelemetrySignalEntry `json:"telemetryStatusEntries"`
+	Trips                  []Trip                 `json:"trips"`
 }
 
 type VehiclesController struct {
@@ -53,8 +52,6 @@ func HandleGiveFeedback(settings *config.Settings) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ethAddress, ok := c.Locals("ethereum_address").(string)
 		if !ok {
-			// Handle the case where ethereum_address is not set or not a string
-			// For example, return an error or set a default value
 			return c.Status(fiber.StatusBadRequest).SendString("Ethereum address not provided")
 		}
 		email, err := GetEmailFromUsersAPI(c, settings)
@@ -82,7 +79,6 @@ func HandleGiveFeedback(settings *config.Settings) fiber.Handler {
 			url.QueryEscape(ethAddress), url.QueryEscape(email), url.QueryEscape("sample-web-app "+time.Now().Format("2006-01-02 15:04:05")), url.QueryEscape(deviceType), url.QueryEscape(tripID))
 
 		return c.Redirect(feedbackURL, http.StatusFound)
-
 	}
 }
 
@@ -117,25 +113,30 @@ func (v *VehiclesController) HandleVehicleStatus(c *fiber.Ctx) error {
 		})
 	}
 
-	rawDeviceStatus, err := QueryDeviceDataAPI(tokenID, &v.settings, c)
+	signalNames, err := FetchAvailableSignals(tokenID, &v.settings, c)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to query device data API")
+		log.Error().Err(err).Msg("Failed to fetch available signals")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to fetch device status",
+			"error": "Failed to fetch available signals",
 		})
 	}
 
-	deviceStatus := ProcessRawDeviceStatus(rawDeviceStatus)
+	telemetryStatus, err := FetchLatestSignalValues(tokenID, signalNames, &v.settings, c)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to fetch latest signal values")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch latest signal values",
+		})
+	}
 
-	return c.Render("vehicle_status", fiber.Map{
-		"TokenID":             tokenID,
-		"DeviceStatusEntries": deviceStatus,
-		"Privileges":          []any{},
+	return c.Render("vehicle_telemetry", fiber.Map{
+		"TokenID":                tokenID,
+		"TelemetryStatusEntries": telemetryStatus,
+		"Privileges":             []any{},
 	})
 }
 
 func QueryIdentityAPIForVehicles(ethAddress string, settings *config.Settings) ([]Vehicle, error) {
-	// GraphQL query
 	graphqlQuery := `{
         vehicles(first: 50, filterBy: { owner: "` + ethAddress + `" }) {
             nodes {
@@ -191,14 +192,12 @@ func QuerySharedVehicles(ethAddress string, settings *config.Settings) ([]Vehicl
 }
 
 func fetchVehiclesWithQuery(query string, settings *config.Settings) ([]Vehicle, error) {
-	// GraphQL request
 	requestPayload := GraphQLRequest{Query: query}
 	payloadBytes, err := json.Marshal(requestPayload)
 	if err != nil {
 		return nil, err
 	}
 
-	// POST request
 	req, err := http.NewRequest("POST", settings.IdentityAPIURL, bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return nil, err
