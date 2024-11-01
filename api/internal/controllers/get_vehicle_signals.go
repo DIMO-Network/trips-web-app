@@ -34,29 +34,39 @@ func FetchAvailableSignals(tokenID int64, settings *config.Settings, c *fiber.Ct
 		availableSignals(tokenId: %d)
 	}`, tokenID)
 
+	log.Info().Msgf("Sending FetchAvailableSignals query: %s", graphqlQuery)
+
 	privilegeToken, err := RequestPriviledgeToken(c, settings, tokenID)
 	if err != nil {
+		log.Error().Err(err).Msg("Error obtaining privilege token")
 		return nil, errors.Wrap(err, "error getting privilege token")
 	}
 
 	resp, err := makeGraphQLRequest(settings.TelemetryAPIURL, graphqlQuery, privilegeToken)
 	if err != nil {
+		log.Error().Err(err).Msg("Error making request to Telemetry API for available signals")
 		return nil, err
 	}
 
+	log.Info().Msgf("Received response for FetchAvailableSignals: %s", string(resp))
+
 	if err := json.Unmarshal(resp, &availableSignals); err != nil {
+		log.Error().Err(err).Msg("Error parsing available signals response")
 		return nil, errors.Wrap(err, "error parsing available signals response")
 	}
 
+	log.Info().Msgf("Parsed available signals: %v", availableSignals.Data.AvailableSignals)
 	return availableSignals.Data.AvailableSignals, nil
 }
 
 // FetchLatestSignalValues retrieves the latest timestamp and value for each available signal
 func FetchLatestSignalValues(tokenID int64, signalNames []string, settings *config.Settings, c *fiber.Ctx) (SignalEntries, error) {
 	var latestSignalData struct {
-		Data map[string]map[string]struct {
-			Timestamp string      `json:"timestamp"`
-			Value     interface{} `json:"value"`
+		Data struct {
+			SignalsLatest map[string]struct {
+				Timestamp string      `json:"timestamp"`
+				Value     interface{} `json:"value"`
+			} `json:"signalsLatest"`
 		} `json:"data"`
 	}
 
@@ -72,30 +82,38 @@ func FetchLatestSignalValues(tokenID int64, signalNames []string, settings *conf
 		}
 	}`, tokenID, signalsQuery)
 
+	log.Info().Msgf("Sending FetchLatestSignalValues query: %s", graphqlQuery)
+
 	privilegeToken, err := RequestPriviledgeToken(c, settings, tokenID)
 	if err != nil {
+		log.Error().Err(err).Msg("Error obtaining privilege token")
 		return nil, errors.Wrap(err, "error getting privilege token")
 	}
 
 	resp, err := makeGraphQLRequest(settings.TelemetryAPIURL, graphqlQuery, privilegeToken)
 	if err != nil {
+		log.Error().Err(err).Msg("Error making request to Telemetry API for latest signal values")
 		return nil, err
 	}
 
+	log.Info().Msgf("Received response for FetchLatestSignalValues: %s", string(resp))
+
 	if err := json.Unmarshal(resp, &latestSignalData); err != nil {
+		log.Error().Err(err).Msg("Error parsing latest signal values response")
 		return nil, errors.Wrap(err, "error parsing latest signal values response")
 	}
 
-	for signalName, signalData := range latestSignalData.Data {
-		if data, ok := signalData[signalName]; ok {
-			entries = append(entries, SignalEntry{
-				SignalName: signalName,
-				Value:      data.Value,
-				Timestamp:  data.Timestamp,
-			})
+	for signalName, signalData := range latestSignalData.Data.SignalsLatest {
+		entry := SignalEntry{
+			SignalName: signalName,
+			Value:      signalData.Value,
+			Timestamp:  signalData.Timestamp,
 		}
+		entries = append(entries, entry)
+		log.Info().Msgf("Parsed signal entry: %v", entry)
 	}
 
+	log.Info().Msgf("Final parsed signal entries: %v", entries)
 	return entries, nil
 }
 
