@@ -130,9 +130,10 @@ func (v *VehiclesController) HandleVehicleSignals(c *fiber.Ctx) error {
 	}
 
 	return c.Render("vehicle_signals", fiber.Map{
-		"TokenID":       tokenID,
-		"SignalEntries": telemetrySignals,
-		"Privileges":    []any{},
+		"TokenID":          tokenID,
+		"SignalEntries":    telemetrySignals,
+		"AvailableSignals": signalNames,
+		"Privileges":       []any{},
 	})
 }
 

@@ -42,6 +42,7 @@
             background-color: #222;
             padding: 15px 40px;
             border-radius: 10px;
+            margin-bottom: 30px; /* Add space between stacked cards */
         }
         .status-content {
             display: flex;
@@ -72,6 +73,19 @@
         .column-title {
             width: 30%;
         }
+
+        .centered {
+            text-align: center;
+        }
+
+        .dropdown-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -80,13 +94,13 @@
 </div>
 <button class="back-button" onclick="window.location.href='/vehicles/me'">&#9664;</button>
 <div class="container">
-    <h1 class="status-title">Available Signals for {{TokenID}}</h1>
-    <div class="status-header">
-        <span class="column-title">Signal Name</span>
-        <span class="column-title">Value</span>
-        <span class="column-title">Timestamp</span>
-    </div>
+    <h1 class="status-title">Latest Signals for {{TokenID}}</h1>
     <div class="status-card">
+        <div class="status-header">
+            <span class="column-title">Signal Name</span>
+            <span class="column-title">Value</span>
+            <span class="column-title">Timestamp</span>
+        </div>
         {{#each SignalEntries}}
             <div class="status-content">
                 <span class="column-title">{{this.SignalName}}</span>
@@ -95,6 +109,77 @@
             </div>
         {{/each}}
     </div>
+
+    <!-- Historical Data Card -->
+    <div class="status-card centered">
+        <h2>Select Signal to View Historical Data</h2>
+        <div class="dropdown-container">
+            <select id="historicalSignalDropdown" onchange="fetchAndDisplayHistoricalData()">
+                <option value="">Select a Signal</option>
+                {{#each AvailableSignals}}
+                    <option value="{{this}}">{{this}}</option>
+                {{/each}}
+            </select>
+        </div>
+
+        <h2>Historical Data Over the Past Week</h2>
+        <canvas id="historicalSignalChart" width="400" height="200"></canvas>
+    </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    async function fetchAndDisplayHistoricalData() {
+        const signalName = document.getElementById('historicalSignalDropdown').value;
+        if (!signalName) return;
+
+        const response = await fetch(`/vehicles/{{TokenID}}/history?signalName=${signalName}`);
+        const data = await response.json();
+
+        const values = data.map(entry => entry.Value);
+
+        const currentDate = new Date();
+        const timestamps = values.map((_, index) => {
+            const date = new Date(currentDate);
+            date.setDate(date.getDate() - index);
+            return date.toLocaleString();
+        }).reverse();
+
+        const ctx = document.getElementById('historicalSignalChart').getContext('2d');
+        if (window.historicalChart) {
+            window.historicalChart.destroy();
+        }
+        window.historicalChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: timestamps,
+                datasets: [{
+                    label: `Historical Data for ${signalName}`,
+                    data: values,
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1,
+                    fill: false,
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Timestamp' },
+                        ticks: {
+                            autoSkip: true,
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        title: { display: true, text: 'Value' }
+                    }
+                }
+            }
+        });
+    }
+</script>
+
+
 </body>
 </html>
