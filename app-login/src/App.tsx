@@ -112,7 +112,6 @@ function App() {
                   clientId={"0xf5ada890DA2E5582E38DF4648F9dAeE00e691199"}
                   redirectUri={"https://trips-sandbox.drivedimo.com/vehicles/me"}
                   environment={"production"}
-                  apiKey={"529070feb71020afc2dfa7c34815bae38b993e3c822cc9b96fbc9df86f2937c6"}
                   permissionTemplateId={"1"}
 
               />
