@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { RainbowKitProvider, createAuthenticationAdapter,
   RainbowKitAuthenticationProvider } from '@rainbow-me/rainbowkit';
 import logo from './assets/whole_logo.png';
+import { LoginWithDimo } from 'dimo-login-button-sdk';
 
 
 class DIMODexMessage {
@@ -84,23 +85,45 @@ function App() {
   }
   , [status]);
 
-  return (  
-          <RainbowKitAuthenticationProvider adapter={authenticationAdapter} status={status}>
-            <RainbowKitProvider>
-              <>
-                <div className="logo-container">
-                  <img src={logo} alt="Logo" className="logo" />
-                </div>
-                <div className="connect-button-container">
-                  <ConnectButton />
-                </div>
-                <div className="connect-button-container">
-                  <p><a href="/login-jwt">Login with JWT</a></p>
-                </div>
-              </>
-            </RainbowKitProvider>
-          </RainbowKitAuthenticationProvider>
-  )
+  return (
+      <RainbowKitAuthenticationProvider adapter={authenticationAdapter} status={status}>
+        <RainbowKitProvider>
+          <>
+            <div className="logo-container">
+              <img src={logo} alt="Logo" className="logo" />
+            </div>
+            <div className="connect-button-container">
+              <ConnectButton />
+            </div>
+            <div className="connect-button-container">
+              <p><a href="/login-jwt">Login with JWT</a></p>
+            </div>
+            <div className="connect-button-container">
+              <LoginWithDimo
+                  mode="redirect"
+                  onSuccess={(authData: string) => {
+                    console.log("Authentication successful, JWT:", authData);
+                    localStorage.setItem("jwt", authData);
+                    setStatus("authenticated");
+                  }}
+                  onError={(error: Error) => {
+                    console.error("Authentication error:", error.message);
+                  }}
+                  clientId={"0xf5ada890DA2E5582E38DF4648F9dAeE00e691199"}
+                  redirectUri={"https://trips-sandbox.drivedimo.com/oauth/callback"}
+                  environment={"development"}
+                  apiKey={"0xb9A1a2D4c572e0B0Df7255F10DAEa1cbf2F4eAe3"}
+                  permissionTemplateId={"1"}
+
+              />
+
+
+            </div>
+          </>
+        </RainbowKitProvider>
+      </RainbowKitAuthenticationProvider>
+  );
+
 }
 
 export default App
