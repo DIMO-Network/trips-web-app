@@ -85,6 +85,15 @@ function App() {
   }
   , [status]);
 
+  const clientId = import.meta.env.DIMO_CLIENT_ID;
+  const redirectUri = import.meta.env.DIMO_REDIRECT_URI;
+  const environment = import.meta.env.DIMO_ENVIRONMENT;
+  const permissionTemplateId = import.meta.env.DIMO_PERMISSION_TEMPLATE_ID;
+  const mode = import.meta.env.DIMO_MODE;
+
+  console.log("DIMO_API_BASEURL:", import.meta.env.DIMO_API_BASEURL);
+  console.log("CLIENT_ID:", import.meta.env.DIMO_CLIENT_ID);
+
   return (
       <RainbowKitAuthenticationProvider adapter={authenticationAdapter} status={status}>
         <RainbowKitProvider>
@@ -100,7 +109,7 @@ function App() {
             </div>
             <div className="connect-button-container">
               <LoginWithDimo
-                  mode="redirect"
+                  mode={mode}
                   onSuccess={(authData: string) => {
                     console.log("Authentication successful, JWT:", authData);
                     localStorage.setItem("jwt", authData);
@@ -109,10 +118,10 @@ function App() {
                   onError={(error: Error) => {
                     console.error("Authentication error:", error.message);
                   }}
-                  clientId={"0xf5ada890DA2E5582E38DF4648F9dAeE00e691199"}
-                  redirectUri={"https://trips-sandbox.drivedimo.com/vehicles/me"}
-                  environment={"production"}
-                  permissionTemplateId={"1"}
+                  clientId={clientId}
+                  redirectUri={redirectUri}
+                  environment={environment}
+                  permissionTemplateId={permissionTemplateId}
 
               />
 
