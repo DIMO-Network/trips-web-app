@@ -123,27 +123,46 @@ func (a *AccountController) LoginWithJWT(c *fiber.Ctx) error {
 }
 
 func (a *AccountController) PostLoginWithJWT(c *fiber.Ctx) error {
-	// get the jwt from the form post
-	jwt := c.FormValue("jwt")
+	log.Info().Msg("Entered PostLoginWithJWT")
 
+	// Parse JSON body for JWT
+	var body struct {
+		JWT string `json:"jwt"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		log.Error().Msg("Error parsing request body")
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	jwt := body.JWT
+	if jwt == "" {
+		log.Error().Msg("JWT token missing from body")
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "JWT token missing"})
+	}
+	log.Info().Msgf("Received JWT: %s", jwt)
+
+	// Verify JWT and extract Ethereum address
 	ethAddr, err := ExtractEthereumAddressFromToken(jwt)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).Render("login_jwt", fiber.Map{"error": "No ethereum address found in ethAddr " + err.Error()})
+		log.Error().Msgf("Invalid JWT: %v", err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid JWT"})
 	}
-	fmt.Println("processed login with JWT, eth addr: ", ethAddr)
+	log.Info().Msgf("Extracted Ethereum address: %s", ethAddr)
 
-	// set the session cookie stuff with the jwt
-	//jwt ethAddr storage
+	// Set session ID and store JWT in cache
 	sessionID := uuid.New().String()
 	CacheInstance.Set(sessionID, jwt, 2*time.Hour)
+	log.Info().Msgf("Stored JWT in cache with session ID: %s", sessionID)
 
-	cookie := new(fiber.Cookie)
-	cookie.Name = "session_id"
-	cookie.Value = sessionID
-	cookie.Expires = time.Now().Add(2 * time.Hour)
-	cookie.HTTPOnly = true
+	// Set session cookie
+	c.Cookie(&fiber.Cookie{
+		Name:     "session_id",
+		Value:    sessionID,
+		Expires:  time.Now().Add(2 * time.Hour),
+		HTTPOnly: true,
+		Secure:   true,
+	})
+	log.Info().Msg("Session cookie set successfully")
 
-	c.Cookie(cookie)
-
-	return c.Redirect("/account")
+	return c.Redirect("/vehicles/me")
 }

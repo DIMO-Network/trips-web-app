@@ -12,6 +12,7 @@
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.0.1",
     "@tanstack/react-query": "^5.24.1",
+    "dimo-login-button-sdk": "file:dimo-login-button-sdk-1.0.0.tar.gz",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "siwe": "^2.1.4",
