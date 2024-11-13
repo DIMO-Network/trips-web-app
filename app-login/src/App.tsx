@@ -80,7 +80,6 @@ function App() {
     }
   }, [status]);
 
-  const mode = import.meta.env.DIMO_MODE;
   const clientId = import.meta.env.DIMO_CLIENT_ID;
   const redirectUri = import.meta.env.DIMO_REDIRECT_URI;
   const environment = import.meta.env.DIMO_ENVIRONMENT;
@@ -101,7 +100,7 @@ function App() {
             </div>
             <div className="connect-button-container">
               <LoginWithDimo
-                  mode={mode}
+                  mode="popup"
                   clientId={clientId}
                   redirectUri={redirectUri}
                   environment={environment}
@@ -130,8 +129,8 @@ function App() {
                           console.error("Error sending JWT to backend:", error);
                         });
                   }}
-                  onError={(error:string) => {
-                    console.error("Authentication error:", error);
+                  onError={(error) => {
+                    console.error("Authentication error:", error.message);
                   }}
               />
             </div>
