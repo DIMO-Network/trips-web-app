@@ -10,8 +10,12 @@ COPY /app-login /go/src/github.com/dimo-network/trips-web-app/
 ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOFLAGS=-mod=vendor
-ENV DIMO_API_BASEURL= 
 ENV DIMO_PROJECT_ID=d16b9a51a03ecf7d3a617416144f70fb
+ENV DIMO_API_BASEURL=http://127.0.0.1:3003
+ENV DIMO_CLIENT_ID=0xf5ada890DA2E5582E38DF4648F9dAeE00e691199
+ENV DIMO_REDIRECT_URI=https://trips-sandbox.drivedimo.com/vehicles/me
+ENV DIMO_ENVIRONMENT=production
+ENV DIMO_PERMISSION_TEMPLATE_ID=1
 
 RUN apt-get clean && apt-get update
 RUN curl -fsSL https://deb.nodesource.com/setup_21.x | bash -
