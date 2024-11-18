@@ -129,8 +129,8 @@ function App() {
                           console.error("Error sending JWT to backend:", error);
                         });
                   }}
-                  onError={(error) => {
-                    console.error("Authentication error:", error.message);
+                  onError={(error: string) => {
+                    console.error("Authentication error:", error);
                   }}
               />
             </div>
