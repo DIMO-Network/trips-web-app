@@ -4,7 +4,7 @@ import { useAccount } from 'wagmi';
 import { useEffect, useState } from 'react';
 import { RainbowKitProvider, createAuthenticationAdapter, RainbowKitAuthenticationProvider } from '@rainbow-me/rainbowkit';
 import logo from './assets/whole_logo.png';
-import { LoginWithDimo } from 'dimo-login-button-sdk';
+import { LoginWithDimo } from '@dimo-network/login-with-dimo';
 
 class DIMODexMessage {
   state?: string;
@@ -47,10 +47,6 @@ function App() {
         state: message.state,
         challenge: message.challenge,
       });
-    },
-
-    getMessageBody: ({ message }) => {
-      return message.challenge as string;
     },
 
     verify: async ({ message, signature }) => {
@@ -129,7 +125,7 @@ function App() {
                           console.error("Error sending JWT to backend:", error);
                         });
                   }}
-                  onError={(error: string) => {
+                  onError={(error: Error) => {
                     console.error("Authentication error:", error);
                   }}
               />
