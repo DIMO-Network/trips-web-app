@@ -16,7 +16,7 @@ ENV DIMO_CLIENT_ID=0xf5ada890DA2E5582E38DF4648F9dAeE00e691199
 ENV DIMO_REDIRECT_URI=https://trips-sandbox.drivedimo.com/vehicles/me
 ENV DIMO_ENVIRONMENT=production
 ENV DIMO_PERMISSION_TEMPLATE_ID=1
-ENV DIMO_API_KEY=529070feb71020afc2dfa7c34815bae38b993e3c822cc9b96fbc9df86f2937c6
+ENV DIMO_API_KEY=12345
 
 RUN apt-get clean && apt-get update
 RUN curl -fsSL https://deb.nodesource.com/setup_21.x | bash -
