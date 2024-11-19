@@ -7,6 +7,7 @@ interface ImportMetaEnv {
     readonly DIMO_ENVIRONMENT: string;
     readonly DIMO_PERMISSION_TEMPLATE_ID: string;
     readonly DIMO_MODE: string;
+    readonly DIMO_API_KEY: string;
 }
 
 interface ImportMeta {
