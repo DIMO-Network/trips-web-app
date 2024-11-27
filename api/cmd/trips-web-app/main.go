@@ -102,6 +102,7 @@ func main() {
 
 		return controllers.HandleMapDataForTrip(c, &settings, tripID, startTime, endTime, estimatedStart)
 	})
+	app.Post("/api/decode-vin", controllers.AuthMiddleware(), vc.HandleDecodeVIN)
 
 	// Public Routes
 	app.Post("/auth/web3/generate_challenge", func(c *fiber.Ctx) error {
