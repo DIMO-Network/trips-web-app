@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@dimo-network/login-with-dimo": "^0.0.4",
+    "@dimo-network/login-with-dimo": "^0.0.9",
     "@rainbow-me/rainbowkit": "^2.0.1",
     "@tanstack/react-query": "^5.24.1",
     "react": "^18.2.0",

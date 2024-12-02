@@ -12,6 +12,8 @@ import {
   LoginWithDimo,
   ShareVehiclesWithDimo,
   initializeDimoSDK,
+  useDimoAuthState,
+  DimoAuthProvider,
 } from '@dimo-network/login-with-dimo';
 
 class DIMODexMessage {
@@ -27,15 +29,15 @@ interface AuthData {
   token: string;
 }
 
+// Initialize the Dimo SDK
 initializeDimoSDK({
   clientId: import.meta.env.DIMO_CLIENT_ID,
   redirectUri: import.meta.env.DIMO_REDIRECT_URI,
   apiKey: import.meta.env.DIMO_API_KEY,
-  environment: "production",
+  environment: 'production',
 });
 
 const permissionTemplateId = import.meta.env.DIMO_PERMISSION_TEMPLATE_ID;
-
 
 function App() {
   const [status, setStatus] = useState<AuthenticationStatus>('unauthenticated');
@@ -92,15 +94,19 @@ function App() {
     },
   });
 
+  // Use the Dimo authentication state
+  const { isAuthenticated, getValidJWT } = useDimoAuthState();
+
   useEffect(() => {
-    if (status === 'authenticated') {
-      // Redirect to vehicles page after successful session establishment
-      window.location.href = `${import.meta.env.DIMO_API_BASEURL}/vehicles/me`;
+    if (isAuthenticated) {
+      const jwt = getValidJWT();
+      console.log('User authenticated. JWT:', jwt);
+      // Example: Use the JWT to make authenticated requests here
     }
-  }, [status]);
+  }, [isAuthenticated]);
 
   const handleSuccess = (authData: AuthData) => {
-    console.log('JWT received:', authData.token);
+    console.log('Login Success:', authData.token);
 
     // Send the JWT to the backend to establish the session
     fetch('/login-jwt', {
@@ -122,46 +128,52 @@ function App() {
         .catch((error) => {
           console.error('Error sending JWT to backend:', error);
         });
+
+    window.location.href = `${import.meta.env.DIMO_API_BASEURL}/vehicles/me`;
+
   };
 
   return (
-      <RainbowKitAuthenticationProvider adapter={authenticationAdapter} status={status}>
-        <RainbowKitProvider>
-          <>
-            <div className="logo-container">
-              <img src={logo} alt="Logo" className="logo" />
-            </div>
-            <div className="connect-button-container">
-              <ConnectButton />
-            </div>
-            <div className="connect-button-container">
-              <p>
-                <a href="/login-jwt">Login with JWT</a>
-              </p>
-            </div>
-            <div className="connect-button-container">
-              <LoginWithDimo
-                  mode="popup"
-                  permissionTemplateId={permissionTemplateId}
-                  onSuccess={handleSuccess}
-                  onError={(error: Error) => {
-                    console.error('Authentication error:', error);
-                  }}
-              />
-            </div>
-            <div className="connect-button-container">
-              <ShareVehiclesWithDimo
-                  mode="popup"
-                  permissionTemplateId={permissionTemplateId}
-                  onSuccess={handleSuccess}
-                  onError={(error: Error) => {
-                    console.error('Error sharing vehicles:', error);
-                  }}
-              />
-            </div>
-          </>
-        </RainbowKitProvider>
-      </RainbowKitAuthenticationProvider>
+      <DimoAuthProvider>
+        <RainbowKitAuthenticationProvider adapter={authenticationAdapter} status={status}>
+          <RainbowKitProvider>
+            <>
+              <div className="logo-container">
+                <img src={logo} alt="Logo" className="logo" />
+              </div>
+              <div className="connect-button-container">
+                <ConnectButton />
+              </div>
+              <div className="connect-button-container">
+                <p>
+                  <a href="/login-jwt">Login with JWT</a>
+                </p>
+              </div>
+              <div className="connect-button-container">
+                {isAuthenticated ? (
+                    <ShareVehiclesWithDimo
+                        mode="popup"
+                        permissionTemplateId={permissionTemplateId}
+                        onSuccess={handleSuccess}
+                        onError={(error: Error) => {
+                          console.error('Error sharing vehicles:', error);
+                        }}
+                    />
+                ) : (
+                    <LoginWithDimo
+                        mode="popup"
+                        permissionTemplateId={permissionTemplateId}
+                        onSuccess={handleSuccess}
+                        onError={(error: Error) => {
+                          console.error('Authentication error:', error);
+                        }}
+                    />
+                )}
+              </div>
+            </>
+          </RainbowKitProvider>
+        </RainbowKitAuthenticationProvider>
+      </DimoAuthProvider>
   );
 }
 
