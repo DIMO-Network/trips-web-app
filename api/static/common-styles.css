@@ -402,3 +402,146 @@ footer {
 .centered {
     text-align: center;
 }
+
+.container {
+    padding: 50px 70px;
+    margin-left: 200px;
+}
+
+.status-title {
+    color: #30D5C8;
+    text-align: center;
+    margin-top: -10px;
+}
+
+.status-header {
+    display: flex;
+    color: #30D5C8;
+    justify-content: space-between;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.status-card {
+    background-color: #222;
+    padding: 15px 40px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+}
+
+.status-content {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.column-title {
+    width: 30%;
+}
+
+.dropdown-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+.title-and-wallet {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.title-container h1 {
+    margin: 0;
+}
+
+.sidebar {
+    position: absolute;
+    top: 157px;
+    height: auto;
+    left: 218px;
+    width: 250px;
+    background-color: #000;
+    padding: 20px;
+    z-index: 2;
+}
+
+.content-wrapper {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding-top: 50px;
+
+}
+
+.main-content {
+    margin-left: 240px;
+}
+html, body {
+    overflow: auto;
+}
+
+#add-vehicle {
+    background-color: #222;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px auto;
+    max-width: 600px;
+    text-align: center;
+    color: #ffffff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+#add-vehicle h1 {
+    color: #30D5C8;
+    margin-bottom: 20px;
+}
+
+#add-vehicle form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+#add-vehicle label {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#add-vehicle input[type="text"] {
+    width: 80%;
+    padding: 10px;
+    font-size: 16px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#add-vehicle input[type="text"]:focus {
+    border-color: #30D5C8;
+    box-shadow: 0 0 5px rgba(48, 213, 200, 0.5);
+}
+
+#add-vehicle button {
+    padding: 10px 20px;
+    background-color: white;
+    color: black;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+#add-vehicle button:hover {
+    background-color: #35deda;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}

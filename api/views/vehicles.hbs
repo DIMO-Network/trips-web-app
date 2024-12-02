@@ -10,16 +10,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <script>
         function toggleView(viewId) {
+            // Hide all vehicle lists
             document.querySelectorAll('.vehicle-list').forEach(function(div) {
                 div.style.display = 'none';
             });
 
+            // Show the selected view
             document.getElementById(viewId).style.display = 'block';
 
+            // Update active link styles
             document.querySelectorAll('.sidebar-link').forEach(function(link) {
                 link.classList.remove('active');
             });
 
+            // Update the page title and active link
             var title = document.getElementById('page-title');
             if (viewId === 'my-vehicles') {
                 document.getElementById('my-vehicles-link').classList.add('active');
@@ -27,22 +31,18 @@
             } else if (viewId === 'shared-vehicles') {
                 document.getElementById('shared-vehicles-link').classList.add('active');
                 title.textContent = 'Vehicles Shared With Me';
+            } else if (viewId === 'add-vehicle') {
+                document.getElementById('add-vehicle-link').classList.add('active');
+                title.textContent = 'Add a Vehicle';
             }
         }
+
 
         document.addEventListener('DOMContentLoaded', function() {
             toggleView('my-vehicles');
         });
 
-        function adjustSidebarTop() {
-            var titleContainerHeight = document.querySelector('.title-container').offsetHeight;
-            var sidebar = document.querySelector('.sidebar');
-            sidebar.style.top = titleContainerHeight + 'px';
-        }
 
-        document.addEventListener('DOMContentLoaded', adjustSidebarTop);
-
-        window.onresize = adjustSidebarTop;
 
     </script>
 </head>
@@ -52,10 +52,6 @@
     <img src="/static/whole_logo.png" alt="DIMO Logo" class="dimo-logo">
 </div>
 
-<div class="sidebar">
-    <a href="#" id="my-vehicles-link" onclick="toggleView('my-vehicles'); return false;" class="sidebar-link">My Vehicles</a>
-    <a href="#" id="shared-vehicles-link" onclick="toggleView('shared-vehicles'); return false;" class="sidebar-link">Vehicles Shared With Me</a>
-</div>
 
 <div class="title-container">
     <div class="title-and-wallet">
@@ -72,46 +68,62 @@
     </div>
 </div>
 
-<div class="main-content">
-    <a href="/vehicles/new" class="link-text">Add a Vehicle</a>
-    <div id="my-vehicles" class="vehicle-list">
-        {{#if Vehicles}}
-            {{#each Vehicles}}
-                <div class="vehicle-card">
-                    <span>{{this.Definition.make}} {{this.Definition.model}} ({{this.Definition.year}})</span>
-                    <span>Vehicle ID: {{this.TokenID}}</span>
-                    <p>
-                        <a href="/vehicles/{{this.TokenID}}/signals" class="link-text">Signal Data</a>
-                    </p>
-                    <p>
-                        <a href="/vehicles/{{this.TokenID}}/trips" class="link-text">Trips</a>
-                    </p>
-                </div>
-            {{/each}}
-        {{else}}
-            <p>No vehicles to display.</p>
-        {{/if}}
+    <div class="sidebar">
+        <a href="#" id="my-vehicles-link" onclick="toggleView('my-vehicles'); return false;" class="sidebar-link">My Vehicles</a>
+        <a href="#" id="shared-vehicles-link" onclick="toggleView('shared-vehicles'); return false;" class="sidebar-link">Vehicles Shared With Me</a>
+        <a href="#" id="add-vehicle-link" onclick="toggleView('add-vehicle'); return false;" class="sidebar-link">Add a Vehicle</a>
     </div>
 
-    <div id="shared-vehicles" class="vehicle-list" style="display: none;">
-        {{#if SharedVehicles}}
-            {{#each SharedVehicles}}
-                <div class="vehicle-card">
-                    <span>{{this.Definition.make}} {{this.Definition.model}} ({{this.Definition.year}})</span>
-                    <span>Vehicle ID: {{this.TokenID}}</span>
-                    <p>
-                        <a href="/vehicles/{{this.TokenID}}/status" class="link-text">Signal Data</a>
-                    </p>
-                    <p>
-                        <a href="/vehicles/{{this.TokenID}}/trips" class="link-text">Trips</a>
-                    </p>
-                </div>
-            {{/each}}
-        {{else}}
-            <p>No shared vehicles to display.</p>
-        {{/if}}
+    <div class="main-content">
+        <div id="my-vehicles" class="vehicle-list">
+            {{#if Vehicles}}
+                {{#each Vehicles}}
+                    <div class="vehicle-card">
+                        <span>{{this.Definition.make}} {{this.Definition.model}} ({{this.Definition.year}})</span>
+                        <span>Vehicle ID: {{this.TokenID}}</span>
+                        <p>
+                            <a href="/vehicles/{{this.TokenID}}/signals" class="link-text">Signal Data</a>
+                        </p>
+                        <p>
+                            <a href="/vehicles/{{this.TokenID}}/trips" class="link-text">Trips</a>
+                        </p>
+                    </div>
+                {{/each}}
+            {{else}}
+                <p>No vehicles to display.</p>
+            {{/if}}
+        </div>
+
+        <div id="shared-vehicles" class="vehicle-list" style="display: none;">
+            {{#if SharedVehicles}}
+                {{#each SharedVehicles}}
+                    <div class="vehicle-card">
+                        <span>{{this.Definition.make}} {{this.Definition.model}} ({{this.Definition.year}})</span>
+                        <span>Vehicle ID: {{this.TokenID}}</span>
+                        <p>
+                            <a href="/vehicles/{{this.TokenID}}/status" class="link-text">Signal Data</a>
+                        </p>
+                        <p>
+                            <a href="/vehicles/{{this.TokenID}}/trips" class="link-text">Trips</a>
+                        </p>
+                    </div>
+                {{/each}}
+            {{else}}
+                <p>No shared vehicles to display.</p>
+            {{/if}}
+        </div>
+
+        <div id="add-vehicle" class="vehicle-list" style="display: none;">
+            <h1>Add Vehicle</h1>
+            <form>
+                <label for="vin">VIN</label>
+                <input type="text" name="vin" id="vin" placeholder="VIN" />
+                <button type="submit">Add Vehicle</button>
+            </form>
+            <span id="add-vehicle-status"></span>
+        </div>
     </div>
-</div>
+
 </div>
 
 
