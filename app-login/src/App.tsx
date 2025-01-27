@@ -9,12 +9,10 @@ import {
 } from '@dimo-network/login-with-dimo';
 import logo from './assets/whole_logo.png';
 
-
 interface AuthData {
   token: string;
 }
 
-// Initialize the Dimo SDK
 initializeDimoSDK({
   clientId: import.meta.env.DIMO_CLIENT_ID,
   redirectUri: import.meta.env.DIMO_REDIRECT_URI,
@@ -31,7 +29,6 @@ function App() {
     if (isAuthenticated) {
       const jwt = getValidJWT();
       console.log('User authenticated. JWT:', jwt);
-      // Example: Use the JWT to make authenticated requests here
     }
   }, [isAuthenticated]);
 
