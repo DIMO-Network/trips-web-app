@@ -1,5 +1,5 @@
 ENVIRONMENT: local
-PORT: 3003
+PORT: 4000
 LOG_LEVEL: info
 
 SERVICE_NAME: trips-web-app

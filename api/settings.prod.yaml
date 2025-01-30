@@ -1,9 +1,9 @@
 ENVIRONMENT: local
-PORT: 3003
+PORT: 4000
 LOG_LEVEL: info
 
 CLIENT_ID: trips-signals-webapp
-DOMAIN: https://localhost:3003/oauth/callback
+DOMAIN: https://localhost:4000/oauth/callback
 SCOPE: openid email
 RESPONSE_TYPE: code
 GRANT_TYPE: authorization_code
