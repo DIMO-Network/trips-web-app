@@ -264,10 +264,12 @@
 
         let selectedVehicleID = null;
 
-        function openWebhookModal(vehicleID) {
+        async function openWebhookModal(vehicleID) {
             selectedVehicleID = vehicleID;
             document.getElementById('modalVehicleID').innerText = vehicleID;
             document.getElementById('webhookModal').style.display = 'block';
+
+            await loadWebhooks();
         }
 
         function closeWebhookModal() {
@@ -275,23 +277,42 @@
         }
 
         async function subscribeWebhook() {
-            const eventID = document.getElementById("eventID").value;
-            const response = await fetch(`/subscriptions/${selectedVehicleID}/event/${eventID}`, {
-                method: "POST",
-                headers: {
-                    "Authorization": "Bearer YOUR_VALID_JWT",
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({})
-            });
+            let eventID = document.getElementById("eventID").value.trim();
+            console.log(`Subscribing Vehicle ID: ${selectedVehicleID} to Event ID: ${eventID}`);
 
-            const message = response.ok ? "Webhook subscribed successfully!" : "Failed to subscribe.";
-            document.getElementById("webhookMessage").innerText = message;
+            try {
+                const response = await fetch(`http://localhost:3003/subscriptions/${selectedVehicleID}/event/${eventID}`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Bearer ANY_VALID_JWT",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({})
+                });
+
+                console.log("Response Status:", response.status);
+                const result = await response.json();
+                console.log("Response Data:", result);
+
+                if (response.status === 409) {
+                    document.getElementById("webhookMessage").innerText = "You are already subscribed to this event.";
+                } else if (response.ok) {
+                    document.getElementById("webhookMessage").innerText = "Webhook subscribed successfully!";
+                } else {
+                    document.getElementById("webhookMessage").innerText = result.error || "Failed to subscribe.";
+                }
+            } catch (error) {
+                console.error("Error subscribing to webhook:", error);
+                document.getElementById("webhookMessage").innerText = "Network error.";
+            }
         }
+
+
+
 
         async function unsubscribeWebhook() {
             const eventID = document.getElementById("eventID").value;
-            const response = await fetch(`/subscriptions/${selectedVehicleID}/event/${eventID}`, {
+            const response = await fetch(`http://localhost:3003/subscriptions/${selectedVehicleID}/event/${eventID}`, {
                 method: "DELETE",
                 headers: {
                     "Authorization": "Bearer YOUR_VALID_JWT",
@@ -301,6 +322,35 @@
 
             const message = response.ok ? "Webhook unsubscribed successfully!" : "Failed to unsubscribe.";
             document.getElementById("webhookMessage").innerText = message;
+        }
+
+        async function loadWebhooks() {
+            const eventDropdown = document.getElementById("eventID");
+            eventDropdown.innerHTML = ""; // Clear existing options
+
+            try {
+                const response = await fetch("http://localhost:3003/webhooks", { // Explicit backend URL
+                    method: "GET",
+                    headers: {
+                        "Authorization": "Bearer ANY_VALID_JWT", // No real JWT required yet
+                        "Accept": "application/json"
+                    }
+                });
+
+                if (!response.ok) throw new Error("Failed to fetch webhooks");
+
+                const webhooks = await response.json();
+                webhooks.forEach((webhook) => {
+                    const option = document.createElement("option");
+                    option.value = webhook.id.trim(); // Trim spaces to prevent errors
+                    option.text = webhook.description || webhook.trigger;
+                    eventDropdown.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error("Error loading webhooks:", error);
+                document.getElementById("webhookMessage").innerText = "Error loading webhooks.";
+            }
         }
 
     </script>
@@ -361,10 +411,8 @@
 
             <label for="eventID">Select Event:</label>
             <select id="eventID">
-                <option value="speed_alert">Speed Alert</option>
-                <option value="battery_low">Battery Low</option>
-                <option value="engine_health">Engine Health</option>
             </select>
+
 
             <button onclick="subscribeWebhook()">Subscribe</button>
             <button onclick="unsubscribeWebhook()">Unsubscribe</button>
