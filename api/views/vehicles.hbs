@@ -201,6 +201,30 @@
             position: fixed;
         }
 
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            background-color: #222;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            color: white;
+        }
+        .modal-content {
+            text-align: center;
+        }
+        .close {
+            color: white;
+            float: right;
+            font-size: 28px;
+            cursor: pointer;
+        }
+
     </style>
     <script>
         function toggleView(viewId) {
@@ -237,6 +261,47 @@
         document.addEventListener('DOMContentLoaded', adjustSidebarTop);
 
         window.onresize = adjustSidebarTop;
+
+        let selectedVehicleID = null;
+
+        function openWebhookModal(vehicleID) {
+            selectedVehicleID = vehicleID;
+            document.getElementById('modalVehicleID').innerText = vehicleID;
+            document.getElementById('webhookModal').style.display = 'block';
+        }
+
+        function closeWebhookModal() {
+            document.getElementById('webhookModal').style.display = 'none';
+        }
+
+        async function subscribeWebhook() {
+            const eventID = document.getElementById("eventID").value;
+            const response = await fetch(`/subscriptions/${selectedVehicleID}/event/${eventID}`, {
+                method: "POST",
+                headers: {
+                    "Authorization": "Bearer YOUR_VALID_JWT",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({})
+            });
+
+            const message = response.ok ? "Webhook subscribed successfully!" : "Failed to subscribe.";
+            document.getElementById("webhookMessage").innerText = message;
+        }
+
+        async function unsubscribeWebhook() {
+            const eventID = document.getElementById("eventID").value;
+            const response = await fetch(`/subscriptions/${selectedVehicleID}/event/${eventID}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": "Bearer YOUR_VALID_JWT",
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const message = response.ok ? "Webhook unsubscribed successfully!" : "Failed to unsubscribe.";
+            document.getElementById("webhookMessage").innerText = message;
+        }
 
     </script>
 </head>
@@ -279,12 +344,35 @@
                     <p>
                         <a href="/vehicles/{{this.TokenID}}/trips" class="link-text">Trips</a>
                     </p>
+                    <p>
+                        <a href="#" class="link-text" onclick="openWebhookModal('{{this.TokenID}}'); return false;">Webhooks</a>
+                    </p>
                 </div>
             {{/each}}
         {{else}}
             <p>No vehicles to display.</p>
         {{/if}}
     </div>
+
+    <div id="webhookModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeWebhookModal()">&times;</span>
+            <h2>Manage Webhooks for Vehicle <span id="modalVehicleID"></span></h2>
+
+            <label for="eventID">Select Event:</label>
+            <select id="eventID">
+                <option value="speed_alert">Speed Alert</option>
+                <option value="battery_low">Battery Low</option>
+                <option value="engine_health">Engine Health</option>
+            </select>
+
+            <button onclick="subscribeWebhook()">Subscribe</button>
+            <button onclick="unsubscribeWebhook()">Unsubscribe</button>
+
+            <p id="webhookMessage"></p>
+        </div>
+    </div>
+
 
     <div id="shared-vehicles" class="vehicle-list" style="display: none;">
         {{#if SharedVehicles}}
@@ -304,6 +392,8 @@
             <p>No shared vehicles to display.</p>
         {{/if}}
     </div>
+
+
 </div>
 </div>
 
