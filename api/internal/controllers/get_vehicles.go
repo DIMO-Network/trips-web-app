@@ -85,6 +85,17 @@ func HandleGiveFeedback(settings *config.Settings) fiber.Handler {
 func (v *VehiclesController) HandleGetVehicles(c *fiber.Ctx) error {
 	ethAddress := c.Locals("ethereum_address").(string)
 
+	sessionCookie := c.Cookies("session_id")
+	if sessionCookie == "" {
+		fmt.Println("No session_id cookie")
+		return c.Render("session_expired", fiber.Map{})
+	}
+	jwtToken, found := CacheInstance.Get(sessionCookie)
+	if !found {
+		fmt.Println("Session expired")
+		return c.Render("session_expired", fiber.Map{})
+	}
+
 	vehicles, err := QueryIdentityAPIForVehicles(ethAddress, &v.settings)
 	if err != nil {
 		log.Printf("Error querying My Vehicles: %v", err)
@@ -102,6 +113,7 @@ func (v *VehiclesController) HandleGetVehicles(c *fiber.Ctx) error {
 		"Vehicles":       vehicles,
 		"SharedVehicles": sharedVehicles,
 		"EthAddress":     ethAddress,
+		"Token":          jwtToken,
 	})
 }
 

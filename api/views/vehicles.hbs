@@ -23,13 +23,11 @@
             padding: 0;
             overflow-x: hidden;
         }
-
         .title-container,
         .sidebar,
         .main-content {
             box-sizing: border-box;
         }
-
         .sidebar {
             position: fixed;
             left: 190px;
@@ -39,14 +37,11 @@
             padding: 20px;
             z-index: 2;
         }
-
         .main-content {
             margin-top: 20px;
             margin-left: 250px;
             position: relative;
         }
-
-
         .sidebar a, .sidebar button {
             color: #ffffff;
             text-decoration: none;
@@ -58,11 +53,9 @@
             text-align: left;
             padding: 0;
         }
-
         .sidebar button:hover, .sidebar a:hover {
             color: #30D5C8;
         }
-
         .vehicle-card {
             background-color: #222;
             margin-bottom: 10px;
@@ -76,11 +69,9 @@
             text-align: center;
             z-index: 1;
         }
-
         .vehicle-card > * {
             flex: 1;
         }
-
         .vehicle-card h2 {
             color: #30D5C8;
             margin-top: 0;
@@ -93,8 +84,6 @@
         .vehicle-card p:hover {
             color: #30D5C8;
         }
-
-
         .session-button {
             background-color: white;
             color: #000000;
@@ -108,21 +97,17 @@
             margin-right: 10px;
             transition: background-color 0.3s;
         }
-
         .session-button:hover {
             background-color: #35deda;
         }
-
         .title-and-wallet {
             display: block;
         }
-
         .session-buttons {
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
-
         .title-container {
             background-color: #000;
             color: #fff;
@@ -131,13 +116,16 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
         }
-
+        .wallet-address-container {
+            margin-right: 20px;
+        }
+        /* Removed the manual JWT input container */
         .vehicle-list a {
             display: inline;
             margin-right: 10px;
         }
-
         h1 {
             color: #30D5C8;
         }
@@ -152,11 +140,9 @@
             padding: 10px 0;
             transition: color 0.3s;
         }
-
         .sidebar-link.active {
             color: #30D5C8;
         }
-
         .eth-address {
             color: #fff;
             font-size: 16px;
@@ -166,7 +152,6 @@
             top: 10px;
             left: 10px;
         }
-
         .dimo-logo {
             height: 90px;
         }
@@ -175,7 +160,6 @@
             text-decoration: none;
             margin: 0 10px;
         }
-
         .footer-link:hover {
             text-decoration: underline;
         }
@@ -183,13 +167,11 @@
             height: 100%;
             margin: 0;
         }
-
         .content-wrapper {
             min-height: 100%;
             padding-bottom: 100px;
             box-sizing: border-box;
         }
-
         footer {
             display: flex;
             justify-content: center;
@@ -200,7 +182,6 @@
             z-index: 999;
             position: fixed;
         }
-
         .modal {
             display: none;
             position: fixed;
@@ -208,7 +189,7 @@
             left: 50%;
             top: 50%;
             transform: translate(-50%, -50%);
-            width: 400px;
+            width: 600px;
             background-color: #222;
             padding: 20px;
             border-radius: 8px;
@@ -224,9 +205,36 @@
             font-size: 28px;
             cursor: pointer;
         }
-
+        /* Subscriptions table styling */
+        #subscriptionsTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        #subscriptionsTable th, #subscriptionsTable td {
+            border: 1px solid #555;
+            padding: 8px;
+            text-align: center;
+        }
+        #subscriptionsTable th {
+            background-color: #333;
+        }
     </style>
     <script>
+        let jwtToken = "";
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const tokenInput = document.getElementById("jwtToken");
+            if (tokenInput) {
+                jwtToken = tokenInput.value;
+                console.log("JWT Token Loaded:", jwtToken);
+            } else {
+                console.error("Hidden input #jwtToken not found.");
+            }
+            toggleView('my-vehicles');
+
+        });
+
         function toggleView(viewId) {
             document.querySelectorAll('.vehicle-list').forEach(function(div) {
                 div.style.display = 'none';
@@ -248,10 +256,6 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            toggleView('my-vehicles');
-        });
-
         function adjustSidebarTop() {
             var titleContainerHeight = document.querySelector('.title-container').offsetHeight;
             var sidebar = document.querySelector('.sidebar');
@@ -259,7 +263,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', adjustSidebarTop);
-
         window.onresize = adjustSidebarTop;
 
         let selectedVehicleID = null;
@@ -270,6 +273,7 @@
             document.getElementById('webhookModal').style.display = 'block';
 
             await loadWebhooks();
+            await loadSubscriptions();
         }
 
         function closeWebhookModal() {
@@ -284,7 +288,7 @@
                 const response = await fetch(`http://localhost:3003/subscriptions/${selectedVehicleID}/event/${eventID}`, {
                     method: "POST",
                     headers: {
-                        "Authorization": "Bearer ANY_VALID_JWT",
+                        "Authorization": "Bearer " + jwtToken,
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({})
@@ -301,27 +305,102 @@
                 } else {
                     document.getElementById("webhookMessage").innerText = result.error || "Failed to subscribe.";
                 }
+                await loadSubscriptions();
             } catch (error) {
                 console.error("Error subscribing to webhook:", error);
                 document.getElementById("webhookMessage").innerText = "Network error.";
             }
         }
 
-
-
-
         async function unsubscribeWebhook() {
             const eventID = document.getElementById("eventID").value;
             const response = await fetch(`http://localhost:3003/subscriptions/${selectedVehicleID}/event/${eventID}`, {
                 method: "DELETE",
                 headers: {
-                    "Authorization": "Bearer YOUR_VALID_JWT",
+                    "Authorization": "Bearer " + jwtToken,
                     "Content-Type": "application/json"
                 }
             });
 
             const message = response.ok ? "Webhook unsubscribed successfully!" : "Failed to unsubscribe.";
             document.getElementById("webhookMessage").innerText = message;
+
+            await loadSubscriptions();
+        }
+
+        async function loadSubscriptions() {
+            const tbody = document.querySelector("#subscriptionsTable tbody");
+            tbody.innerHTML = ""; // Clear existing rows
+
+            try {
+                const response = await fetch(`http://localhost:3003/subscriptions/${selectedVehicleID}`, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": "Bearer " + jwtToken,
+                        "Accept": "application/json"
+                    }
+                });
+
+                if (!response.ok) throw new Error("Failed to fetch subscriptions");
+
+
+                const subscriptions = await response.json();
+                if (subscriptions.length === 0) {
+                    document.getElementById("webhookMessage").innerText = "No subscriptions at this time.";
+                    return;
+                }
+                subscriptions.forEach((sub) => {
+                    const tr = document.createElement("tr");
+
+                    const eventIDCell = document.createElement("td");
+                    eventIDCell.textContent = sub.event_id || sub.EventID || "";
+                    tr.appendChild(eventIDCell);
+
+                    const descriptionCell = document.createElement("td");
+                    descriptionCell.textContent = sub.description || "No description available";
+                    tr.appendChild(descriptionCell);
+
+                    const createdAtCell = document.createElement("td");
+                    createdAtCell.textContent = sub.created_at ? new Date(sub.created_at).toLocaleString() : "";
+                    tr.appendChild(createdAtCell);
+
+                    const actionCell = document.createElement("td");
+                    const btn = document.createElement("button");
+                    btn.textContent = "Unsubscribe";
+                    btn.onclick = async function() {
+                        await unsubscribeWebhookForEvent(sub.event_id || sub.EventID);
+                    };
+                    actionCell.appendChild(btn);
+                    tr.appendChild(actionCell);
+
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error("Error loading subscriptions:", error);
+                document.getElementById("webhookMessage").innerText = "Error loading subscriptions.";
+            }
+        }
+
+        async function unsubscribeWebhookForEvent(eventID) {
+            try {
+                const response = await fetch(`http://localhost:3003/subscriptions/${selectedVehicleID}/event/${eventID}`, {
+                    method: "DELETE",
+                    headers: {
+                        "Authorization": "Bearer " + jwtToken,
+                        "Content-Type": "application/json"
+                    }
+                });
+                if (!response.ok) {
+                    alert("Failed to unsubscribe from event " + eventID);
+                } else {
+                    alert("Unsubscribed successfully from event " + eventID);
+                    // Refresh subscriptions
+                    await loadSubscriptions();
+                }
+            } catch (error) {
+                console.error("Error unsubscribing:", error);
+                alert("Error unsubscribing");
+            }
         }
 
         async function loadWebhooks() {
@@ -329,10 +408,10 @@
             eventDropdown.innerHTML = ""; // Clear existing options
 
             try {
-                const response = await fetch("http://localhost:3003/webhooks", { // Explicit backend URL
+                const response = await fetch("http://localhost:3003/webhooks", {
                     method: "GET",
                     headers: {
-                        "Authorization": "Bearer ANY_VALID_JWT", // No real JWT required yet
+                        "Authorization": "Bearer " + jwtToken,
                         "Accept": "application/json"
                     }
                 });
@@ -342,8 +421,8 @@
                 const webhooks = await response.json();
                 webhooks.forEach((webhook) => {
                     const option = document.createElement("option");
-                    option.value = webhook.id.trim(); // Trim spaces to prevent errors
-                    option.text = webhook.description || webhook.trigger;
+                    option.value = webhook.id.trim();
+                    option.text = webhook.description;
                     eventDropdown.appendChild(option);
                 });
 
@@ -352,100 +431,107 @@
                 document.getElementById("webhookMessage").innerText = "Error loading webhooks.";
             }
         }
-
     </script>
 </head>
 <body>
+<input type="hidden" id="jwtToken" value="{{Token}}" />
+
 <div class="content-wrapper">
-<div class="header">
-    <img src="/static/whole_logo.png" alt="DIMO Logo" class="dimo-logo">
-</div>
+    <div class="header">
+        <img src="/static/whole_logo.png" alt="DIMO Logo" class="dimo-logo">
+    </div>
 
-<div class="sidebar">
-    <a href="#" id="my-vehicles-link" onclick="toggleView('my-vehicles'); return false;" class="sidebar-link">My Vehicles</a>
-    <a href="#" id="shared-vehicles-link" onclick="toggleView('shared-vehicles'); return false;" class="sidebar-link">Vehicles Shared With Me</a>
-</div>
+    <div class="sidebar">
+        <a href="#" id="my-vehicles-link" onclick="toggleView('my-vehicles'); return false;" class="sidebar-link">My Vehicles</a>
+        <a href="#" id="shared-vehicles-link" onclick="toggleView('shared-vehicles'); return false;" class="sidebar-link">Vehicles Shared With Me</a>
+    </div>
 
-<div class="title-container">
-    <div class="title-and-wallet">
-        <h1 id="page-title">{{Title}}</h1>
-        <div class="wallet-address-container">
-            <span class="eth-address">Connected wallet: {{EthAddress}}</span>
+    <div class="title-container">
+        <div class="title-and-wallet">
+            <h1 id="page-title">{{Title}}</h1>
+            <div class="wallet-address-container">
+                <span class="eth-address">Connected wallet: {{EthAddress}}</span>
+            </div>
+        </div>
+
+        <div class="session-buttons">
+            <a href="/account" class="session-button">Session Credentials</a>
+            <a href="/streamr" class="session-button">Live Streamr</a>
+            <a href="/give-feedback" class="session-button" target="_blank">Give us Feedback!</a>
         </div>
     </div>
 
-    <div class="session-buttons">
-        <a href="/account" class="session-button">Session Credentials</a>
-        <a href="/streamr" class="session-button">Live Streamr</a>
-        <a href="/give-feedback" class="session-button" target="_blank">Give us Feedback!</a>
-    </div>
-</div>
+    <div class="main-content">
+        <div id="my-vehicles" class="vehicle-list">
+            {{#if Vehicles}}
+                {{#each Vehicles}}
+                    <div class="vehicle-card">
+                        <span>{{this.Definition.make}} {{this.Definition.model}} ({{this.Definition.year}})</span>
+                        <span>Vehicle ID: {{this.TokenID}}</span>
+                        <p>
+                            <a href="/vehicles/{{this.TokenID}}/signals" class="link-text">Signal Data</a>
+                        </p>
+                        <p>
+                            <a href="/vehicles/{{this.TokenID}}/trips" class="link-text">Trips</a>
+                        </p>
+                        <p>
+                            <a href="#" class="link-text" onclick="openWebhookModal('{{this.TokenID}}'); return false;">Webhooks</a>
+                        </p>
+                    </div>
+                {{/each}}
+            {{else}}
+                <p>No vehicles to display.</p>
+            {{/if}}
+        </div>
 
-<div class="main-content">
-    <div id="my-vehicles" class="vehicle-list">
-        {{#if Vehicles}}
-            {{#each Vehicles}}
-                <div class="vehicle-card">
-                    <span>{{this.Definition.make}} {{this.Definition.model}} ({{this.Definition.year}})</span>
-                    <span>Vehicle ID: {{this.TokenID}}</span>
-                    <p>
-                        <a href="/vehicles/{{this.TokenID}}/signals" class="link-text">Signal Data</a>
-                    </p>
-                    <p>
-                        <a href="/vehicles/{{this.TokenID}}/trips" class="link-text">Trips</a>
-                    </p>
-                    <p>
-                        <a href="#" class="link-text" onclick="openWebhookModal('{{this.TokenID}}'); return false;">Webhooks</a>
-                    </p>
-                </div>
-            {{/each}}
-        {{else}}
-            <p>No vehicles to display.</p>
-        {{/if}}
-    </div>
+        <div id="webhookModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close" onclick="closeWebhookModal()">&times;</span>
+                <h2>Manage Webhooks for Vehicle <span id="modalVehicleID"></span></h2>
 
-    <div id="webhookModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <span class="close" onclick="closeWebhookModal()">&times;</span>
-            <h2>Manage Webhooks for Vehicle <span id="modalVehicleID"></span></h2>
+                <label for="eventID">Select Event:</label>
+                <select id="eventID"></select>
 
-            <label for="eventID">Select Event:</label>
-            <select id="eventID">
-            </select>
+                <button onclick="subscribeWebhook()">Subscribe</button>
+                <button onclick="unsubscribeWebhook()">Unsubscribe</button>
+                <p id="webhookMessage"></p>
 
+                <h3>Subscribed Webhooks</h3>
+                <table id="subscriptionsTable">
+                    <thead>
+                    <tr>
+                        <th>Event ID</th>
+                        <th>Descriptions</th>
+                        <th>Created At</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-            <button onclick="subscribeWebhook()">Subscribe</button>
-            <button onclick="unsubscribeWebhook()">Unsubscribe</button>
-
-            <p id="webhookMessage"></p>
+        <div id="shared-vehicles" class="vehicle-list" style="display: none;">
+            {{#if SharedVehicles}}
+                {{#each SharedVehicles}}
+                    <div class="vehicle-card">
+                        <span>{{this.Definition.make}} {{this.Definition.model}} ({{this.Definition.year}})</span>
+                        <span>Vehicle ID: {{this.TokenID}}</span>
+                        <p>
+                            <a href="/vehicles/{{this.TokenID}}/status" class="link-text">Signal Data</a>
+                        </p>
+                        <p>
+                            <a href="/vehicles/{{this.TokenID}}/trips" class="link-text">Trips</a>
+                        </p>
+                    </div>
+                {{/each}}
+            {{else}}
+                <p>No shared vehicles to display.</p>
+            {{/if}}
         </div>
     </div>
-
-
-    <div id="shared-vehicles" class="vehicle-list" style="display: none;">
-        {{#if SharedVehicles}}
-            {{#each SharedVehicles}}
-                <div class="vehicle-card">
-                    <span>{{this.Definition.make}} {{this.Definition.model}} ({{this.Definition.year}})</span>
-                    <span>Vehicle ID: {{this.TokenID}}</span>
-                    <p>
-                        <a href="/vehicles/{{this.TokenID}}/status" class="link-text">Signal Data</a>
-                    </p>
-                    <p>
-                        <a href="/vehicles/{{this.TokenID}}/trips" class="link-text">Trips</a>
-                    </p>
-                </div>
-            {{/each}}
-        {{else}}
-            <p>No shared vehicles to display.</p>
-        {{/if}}
-    </div>
-
-
 </div>
-</div>
-
-
 
 <footer style="text-align: center; padding: 20px 0; background-color: #222; color: #fff;">
     <a href="https://dimo.zone/legal/privacy-policy" class="footer-link" target="_blank">Privacy Policy</a> |
