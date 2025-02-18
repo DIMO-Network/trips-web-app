@@ -17,7 +17,7 @@ initializeDimoSDK({
   clientId: import.meta.env.DIMO_CLIENT_ID,
   redirectUri: import.meta.env.DIMO_REDIRECT_URI,
   apiKey: import.meta.env.DIMO_API_KEY,
-  environment: 'production',
+  environment: 'development',
 });
 
 const permissionTemplateId = import.meta.env.DIMO_PERMISSION_TEMPLATE_ID;
