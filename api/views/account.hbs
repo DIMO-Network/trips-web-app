@@ -186,7 +186,7 @@
     <div class="generate-token-section">
         <select id="vehicle-dropdown">
             {{#each Vehicles}}
-                <option value="{{this.TokenID}}">{{this.Definition.make}} {{this.Definition.model}} ({{this.Definition.year}})</option>
+                <option value="{{this.TokenID}}">TokenId: {{this.TokenID}} | {{this.Definition.make}} {{this.Definition.model}} ({{this.Definition.year}})</option>
             {{/each}}
         </select>
         <button id="generate-token-button">Generate Privilege Token</button>
