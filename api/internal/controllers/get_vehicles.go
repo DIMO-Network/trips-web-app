@@ -96,13 +96,13 @@ func (v *VehiclesController) HandleGetVehicles(c *fiber.Ctx) error {
 		return c.Render("session_expired", fiber.Map{})
 	}
 
-	vehicles, err := QueryIdentityAPIForVehicles(ethAddress, &v.settings)
+	vehicles, err := QueryIdentityAPIForVehicles(ethAddress, v.settings)
 	if err != nil {
 		log.Printf("Error querying My Vehicles: %v", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying my vehicles: " + err.Error())
 	}
 
-	sharedVehicles, err := QuerySharedVehicles(ethAddress, &v.settings)
+	sharedVehicles, err := QuerySharedVehicles(ethAddress, v.settings)
 	if err != nil {
 		log.Printf("Error querying Shared Vehicles: %v", err)
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying shared vehicles: " + err.Error())
@@ -125,7 +125,7 @@ func (v *VehiclesController) HandleVehicleSignals(c *fiber.Ctx) error {
 		})
 	}
 
-	signalNames, err := FetchAvailableSignals(tokenID, &v.settings, c)
+	signalNames, err := FetchAvailableSignals(tokenID, v.settings, c)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to fetch available signals")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -133,7 +133,7 @@ func (v *VehiclesController) HandleVehicleSignals(c *fiber.Ctx) error {
 		})
 	}
 
-	telemetrySignals, err := FetchLatestSignalValues(tokenID, signalNames, &v.settings, c)
+	telemetrySignals, err := FetchLatestSignalValues(tokenID, signalNames, v.settings, c)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to fetch latest signal values")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

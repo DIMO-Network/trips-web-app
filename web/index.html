@@ -9,7 +9,8 @@
     <link rel="stylesheet" href="src/index.css">
   </head>
   <body>
-  <div>
+  <div style="display: flex; justify-content: center; align-items: center; ">
+  <div style="margin-top: 100px;">
     <svg role="img" aria-label="Dimo logo" class="h-full w-full mdw:h-[31px]" width="138" height="31" viewBox="0 0 138 31" fill="none" xmlns="http://www.w3.org/2000/svg">
       <g clip-path="url(#clip0_7201_13951)">
         <path d="M46.97 0.316406H38.4121V30.7632H46.97V0.316406Z" fill="currentColor"></path>
@@ -24,9 +25,15 @@
       </defs>
     </svg>
   </div>
-  <h1 class="title">Trips Sandbox</h1>
+  </div>
+  <div style="display: flex; justify-content: center; align-items: center; ">
+    <h1 class="title">Trips Sandbox</h1>
+  </div>
   <slot></slot>
+  <div style="display: flex; justify-content: center; align-items: center; ">
   <login-element></login-element>
+  </div>
+  
   <script>
     function isTokenExpired(token) {
       if (!token) {

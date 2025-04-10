@@ -96,6 +96,7 @@
         });
 
         console.log('Selected localStorage keys removed for logout.');
+        document.cookie = `session_id=; path=/;`
 
         // Optionally, you can also redirect the user after logout:
         window.location.href = '/';

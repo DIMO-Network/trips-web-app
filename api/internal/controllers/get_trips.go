@@ -98,7 +98,7 @@ func (t *TripsController) HandleTripsList(c *fiber.Ctx) error {
 		})
 	}
 
-	trips, err := QueryTripsAPI(tokenID, &t.settings, c)
+	trips, err := QueryTripsAPI(tokenID, t.settings, c)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to query trips API")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

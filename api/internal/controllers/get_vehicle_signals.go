@@ -138,7 +138,7 @@ func (v *VehiclesController) HandleGetHistoricalData(c *fiber.Ctx) error {
 	startTime := endTime.AddDate(0, 0, -7)
 
 	// Fetch historical data with a 24-hour interval
-	entries, err := FetchHistoricalSignalValues(tokenID, signalName, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339), &v.settings, c)
+	entries, err := FetchHistoricalSignalValues(tokenID, signalName, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339), v.settings, c)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch historical signal values",

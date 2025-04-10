@@ -34,13 +34,19 @@ export class LoginElement extends LitElement {
     }
 
     static styles = css`
-    #todo
+    .login-with-dimo-link {
+        color: #fff;
+        background-color: #0070f3;
+        padding: 10px 20px;
+        border-radius: 5px;
+        text-decoration: none;
+    }
     `
 
     render() {
         return html`
             <div class="grid place-items-center" ?hidden=${this.loginUrl === ""}>
-                <a id="loginLink" href="${this.loginUrl}">Login with DIMO!</a>
+                <a id="loginLink" href="${this.loginUrl}" class="login-with-dimo-link">Login with DIMO!</a>
             </div>
             <div class="grid place-items-center" ?hidden=${this.loginUrl !== ""}>
                 <h3>It appears there is no ClientID configured</h3>

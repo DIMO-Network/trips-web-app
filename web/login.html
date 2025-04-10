@@ -32,13 +32,16 @@
     // Use URLSearchParams to parse the query string
     const params = new URLSearchParams(queryString);
     // post login redirect path
-    const appPath = "/vehicles/me"; // "/app.html" if we go with all lint
+    let appPath = "/vehicles/me"; // "/app.html" if we go with all lint
+    if (isLocalhost()) {
+        appPath = "https://localdev.dimo.org:3007/vehicles/me";
+    }
 
     let noEmail = false;
     // Loop through each query parameter and log it
     console.log('Query Parameters:');
-    params.forEach((value, key) => {
-        console.log(`${key}: ${value}`);
+    params.forEach(async (value, key) => {
+        // console.log(`${key}: ${value}`);
         // handle logout case from LIWD
         if(key === 'logout' && value === true) {
             localStorage.removeItem('token');
@@ -56,14 +59,56 @@
         }
     });
 
+    function isLocalhost() {
+        return window.location.hostname === "localhost" ||
+            window.location.hostname === "localdev.dimo.org" ||
+            window.location.hostname === "";
+    }
 
-    document.addEventListener("DOMContentLoaded", () => {
+    async function sendJwt(jwtToken) {
+        try {
+            let baseUrl = ""
+            if (isLocalhost()) {
+                baseUrl = "https://localdev.dimo.org:3007";
+            }
+            // Call your endpoint with the JWT payload
+            const response = await fetch(`${baseUrl}/auth/start_session`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ jwt: jwtToken })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            // Parse the JSON response containing the session_id
+            const data = await response.json();
+            const sessionId = data.session_id;
+
+            // Register the session_id as a cookie
+            // Adjust the cookie properties as necessary (e.g., Secure, HttpOnly, etc.)
+            document.cookie = `session_id=${sessionId}; path=/; Secure; max-age=7200; SameSite=Lax`;
+
+            console.log("Session ID saved as cookie:", sessionId);
+        } catch (error) {
+            console.error("Error sending JWT:", error);
+            alert("Error sending JWT: " + error.message);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
         const emailForm = document.getElementById('emailForm');
         emailForm.style.display = 'none';
+
+        await sendJwt(localStorage.getItem('token'));
 
         if (noEmail === true) {
             emailForm.style.display = 'block';
         } else {
+            console.log("Email found in query string, redirecting to " + appPath);
             window.location.href = appPath;
         }
 

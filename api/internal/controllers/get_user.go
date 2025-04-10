@@ -88,13 +88,13 @@ func (a *AccountController) MyAccount(c *fiber.Ctx) error {
 
 	ethAddress := c.Locals("ethereum_address").(string)
 
-	vehicles, err := QueryIdentityAPIForVehicles(ethAddress, &a.settings)
+	vehicles, err := QueryIdentityAPIForVehicles(ethAddress, a.settings)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying identity API: " + err.Error())
 	}
 
 	if len(vehicles) == 0 {
-		vehicles, err = QuerySharedVehicles(ethAddress, &a.settings)
+		vehicles, err = QuerySharedVehicles(ethAddress, a.settings)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Error querying shared vehicles: " + err.Error())
 		}
