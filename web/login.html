@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <link rel="stylesheet" href="src/index.css">
+</head>
+<body>
+ <h1>Logging In</h1>
+ <form id="emailForm">
+     <div class="grid">
+        <p>We couldn't get the email from your account, please enter it below.</p>
+     </div>
+     <div class="grid">
+        <label>Your Account Email:
+            <input id="email" type="text" placeholder="me@company.com" maxlength="60"></label>
+
+        <button type="button" id="submitEmail">
+            Continue
+        </button>
+     </div>
+ </form>
+<script>
+
+    // I'll get back following in querystrings:
+    // token, walletAddress, email
+    // Get the current URL query string (everything after ?)
+    const queryString = window.location.search;
+
+    // Use URLSearchParams to parse the query string
+    const params = new URLSearchParams(queryString);
+    // post login redirect path
+    const appPath = "/vehicles/me"; // "/app.html" if we go with all lint
+
+    let noEmail = false;
+    // Loop through each query parameter and log it
+    console.log('Query Parameters:');
+    params.forEach((value, key) => {
+        console.log(`${key}: ${value}`);
+        // handle logout case from LIWD
+        if(key === 'logout' && value === true) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('email');
+            window.location.href = "/";
+        }
+
+        // only store stuff we care about
+        if (key === 'email' || key === 'token') {
+            localStorage.setItem(key, value);
+            if (key === 'email' && value === undefined) {
+                console.log("No email found");
+                noEmail = true;
+            }
+        }
+    });
+
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const emailForm = document.getElementById('emailForm');
+        emailForm.style.display = 'none';
+
+        if (noEmail === true) {
+            emailForm.style.display = 'block';
+        } else {
+            window.location.href = appPath;
+        }
+
+        // Get the input and button elements by their IDs
+        const textInput = document.getElementById('email');
+        const myButton = document.getElementById('submitEmail');
+
+        // Attach a click event listener to the button
+        myButton.addEventListener('click', () => {
+            // Grab the value from the text input
+            const inputValue = textInput.value;
+            if (inputValue == null || inputValue === '') {
+                alert('Please enter a valid email address.');
+            } else {
+            localStorage.setItem("email", inputValue);
+            window.location.href = appPath;
+            }
+        });
+    });
+</script>
+</body>
+</html>

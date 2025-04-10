@@ -41,10 +41,10 @@ type Vehicle struct {
 }
 
 type VehiclesController struct {
-	settings config.Settings
+	settings *config.Settings
 }
 
-func NewVehiclesController(settings config.Settings) VehiclesController {
+func NewVehiclesController(settings *config.Settings) VehiclesController {
 	return VehiclesController{settings: settings}
 }
 

@@ -36,7 +36,10 @@ func ErrorHandler(ctx *fiber.Ctx, err error) error {
 }
 
 func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	logger := zerolog.New(os.Stdout).Level(zerolog.InfoLevel).With().
+		Timestamp().
+		Str("app", "trips-sandbox-app").
+		Logger()
 
 	fmt.Print("Server is starting...")
 
@@ -53,10 +56,11 @@ func main() {
 
 	engine := handlebars.New("./views", ".hbs")
 
-	ac := controllers.NewAccountController(settings)
-	vc := controllers.NewVehiclesController(settings)
-	tc := controllers.NewTripsController(settings)
-	st := controllers.NewStreamrController(settings)
+	ac := controllers.NewAccountController(&settings)
+	vc := controllers.NewVehiclesController(&settings)
+	tc := controllers.NewTripsController(&settings)
+	st := controllers.NewStreamrController(&settings)
+	sc := controllers.NewSettingsController(&settings, &logger)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler:   ErrorHandler,
@@ -101,6 +105,8 @@ func main() {
 
 		return controllers.HandleMapDataForTrip(c, &settings, tripID, startTime, endTime, estimatedStart)
 	})
+
+	app.Get("/v1/public/settings", sc.GetPublicSettings)
 
 	// Public Routes
 	app.Post("/auth/web3/generate_challenge", func(c *fiber.Ctx) error {

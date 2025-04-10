@@ -7,10 +7,10 @@ import (
 )
 
 type StreamrController struct {
-	settings config.Settings
+	settings *config.Settings
 }
 
-func NewStreamrController(settings config.Settings) StreamrController {
+func NewStreamrController(settings *config.Settings) StreamrController {
 	return StreamrController{settings: settings}
 }
 

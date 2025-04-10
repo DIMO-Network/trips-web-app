@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <title>DIMO Trips Sandbox App</title>
+    <script type="module" src="./src/index.ts"></script>
+</head>
+<style>
+    .header {
+        display: flex;
+        justify-content: space-between; /* Places h1 and button at opposite ends */
+        align-items: center;           /* Vertically centers the items */
+        padding: 1rem;
+        background-color: #f0f0f0;     /* Optional background for visibility */
+    }
+    .logout-btn {
+        padding: 0.4rem 0.8rem;
+        background-color: #d9534f;     /* A red tone for the button */
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+
+    /* Optional: Hover state for the button */
+    .logout-btn:hover {
+        background-color: #c9302c;
+    }
+    /* Base style for all alerts */
+    .alert {
+        padding: 1rem;
+        margin: 1rem 0;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-family: sans-serif;
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    /* Success alert theme */
+    .alert-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
+
+    /* Error (failure) alert theme */
+    .alert-error {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+    }
+    .processing {
+        position: relative;
+        pointer-events: none;
+        background-color: #ccc;
+    }
+
+    .processing::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 1em;
+        height: 1em;
+        border: 2px solid white;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spin 0.8s linear infinite;
+        transform: translate(-50%, -50%);
+    }
+
+    @keyframes spin {
+        from { transform: translate(-50%, -50%) rotate(0deg); }
+        to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+</style>
+<body>
+<div class="header">
+    <h1 class="title">Future placeholder</h1>
+    <button class="logout-btn">Logout</button>
+</div>
+<p>we could migrate the web sandbox app to be all in lint / SPA instead of server side render from go</p>
+
+
+<script>
+    function handleLogout() {
+        // List the keys you want to remove
+        const keysToRemove = ['token', 'email', 'appSettings', 'accountInfo', 'signerPublicKey', 'signerApiKey'];
+
+        keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+        });
+
+        console.log('Selected localStorage keys removed for logout.');
+
+        // Optionally, you can also redirect the user after logout:
+        window.location.href = '/';
+    }
+
+    // Attach the click event listener once the DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        const logoutButton = document.querySelector('.logout-btn');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', handleLogout);
+        }
+    });
+</script>
+</body>
+</html>

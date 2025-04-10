@@ -83,10 +83,10 @@ var SpeedGradient = []struct {
 }
 
 type TripsController struct {
-	settings config.Settings
+	settings *config.Settings
 }
 
-func NewTripsController(settings config.Settings) TripsController {
+func NewTripsController(settings *config.Settings) TripsController {
 	return TripsController{settings: settings}
 }
 
