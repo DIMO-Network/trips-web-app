@@ -10,9 +10,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/rs/zerolog"
+
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
-	"github.com/rs/zerolog/log"
 )
 
 type GraphQLRequest struct {
@@ -42,13 +43,14 @@ type Vehicle struct {
 
 type VehiclesController struct {
 	settings *config.Settings
+	logger   *zerolog.Logger
 }
 
-func NewVehiclesController(settings *config.Settings) VehiclesController {
-	return VehiclesController{settings: settings}
+func NewVehiclesController(settings *config.Settings, logger *zerolog.Logger) VehiclesController {
+	return VehiclesController{settings: settings, logger: logger}
 }
 
-func HandleGiveFeedback(settings *config.Settings) fiber.Handler {
+func (v *VehiclesController) HandleGiveFeedback(settings *config.Settings) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ethAddress, ok := c.Locals("ethereum_address").(string)
 		if !ok {
@@ -56,14 +58,15 @@ func HandleGiveFeedback(settings *config.Settings) fiber.Handler {
 		}
 		email, err := GetEmailFromUsersAPI(c, settings)
 		if err != nil {
-			log.Error().Err(err).Msg("Error querying User API for email")
+			v.logger.Error().Err(err).Msg("Error querying User API for email")
+
 			return c.Status(fiber.StatusInternalServerError).SendString("Error querying user data: " + err.Error())
 		}
 
 		var deviceType string
 		vehicles, err := QueryIdentityAPIForVehicles(ethAddress, settings)
 		if err != nil {
-			log.Error().Err(err).Msg("Error querying My Vehicles")
+			v.logger.Error().Err(err).Msg("Error querying My Vehicles")
 			return c.Status(fiber.StatusInternalServerError).SendString("Error querying my vehicles: " + err.Error())
 		}
 
@@ -87,24 +90,24 @@ func (v *VehiclesController) HandleGetVehicles(c *fiber.Ctx) error {
 
 	sessionCookie := c.Cookies("session_id")
 	if sessionCookie == "" {
-		fmt.Println("No session_id cookie")
+		v.logger.Warn().Msg("No session_id cookie")
 		return c.Render("session_expired", fiber.Map{})
 	}
 	jwtToken, found := CacheInstance.Get(sessionCookie)
 	if !found {
-		fmt.Println("Session expired")
+		v.logger.Warn().Msg("Session expired")
 		return c.Render("session_expired", fiber.Map{})
 	}
 
 	vehicles, err := QueryIdentityAPIForVehicles(ethAddress, v.settings)
 	if err != nil {
-		log.Printf("Error querying My Vehicles: %v", err)
+		v.logger.Error().Err(err).Msg("Error querying My Vehicles")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying my vehicles: " + err.Error())
 	}
 
 	sharedVehicles, err := QuerySharedVehicles(ethAddress, v.settings)
 	if err != nil {
-		log.Printf("Error querying Shared Vehicles: %v", err)
+		v.logger.Error().Err(err).Msg("Error querying Shared Vehicles")
 		return c.Status(fiber.StatusInternalServerError).SendString("Error querying shared vehicles: " + err.Error())
 	}
 
@@ -127,7 +130,7 @@ func (v *VehiclesController) HandleVehicleSignals(c *fiber.Ctx) error {
 
 	signalNames, err := FetchAvailableSignals(tokenID, v.settings, c)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to fetch available signals")
+		v.logger.Error().Err(err).Msg("Failed to fetch available signals")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch available signals",
 		})
@@ -135,7 +138,7 @@ func (v *VehiclesController) HandleVehicleSignals(c *fiber.Ctx) error {
 
 	telemetrySignals, err := FetchLatestSignalValues(tokenID, signalNames, v.settings, c)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to fetch latest signal values")
+		v.logger.Error().Err(err).Msg("Failed to fetch latest signal values")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch latest signal values",
 		})

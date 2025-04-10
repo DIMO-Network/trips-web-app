@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/rs/zerolog"
+
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
 	geojson "github.com/paulmach/go.geojson"
@@ -84,10 +86,11 @@ var SpeedGradient = []struct {
 
 type TripsController struct {
 	settings *config.Settings
+	logger   *zerolog.Logger
 }
 
-func NewTripsController(settings *config.Settings) TripsController {
-	return TripsController{settings: settings}
+func NewTripsController(settings *config.Settings, logger *zerolog.Logger) TripsController {
+	return TripsController{settings: settings, logger: logger}
 }
 
 func (t *TripsController) HandleTripsList(c *fiber.Ctx) error {
@@ -98,9 +101,9 @@ func (t *TripsController) HandleTripsList(c *fiber.Ctx) error {
 		})
 	}
 
-	trips, err := QueryTripsAPI(tokenID, t.settings, c)
+	trips, err := t.QueryTripsAPI(tokenID, t.settings, c)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to query trips API")
+		t.logger.Error().Err(err).Msg("Failed to query trips API")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch trips",
 		})
@@ -117,7 +120,7 @@ func (t *TripsController) HandleTripsList(c *fiber.Ctx) error {
 	})
 }
 
-func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Trip, error) {
+func (t *TripsController) QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Trip, error) {
 	var tripsResponse TripsResponse
 	privilegeToken, err := RequestPriviledgeToken(c, settings, tokenID)
 
@@ -143,7 +146,7 @@ func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 	// Read the raw response body
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error().Interface("response", resp).Msgf("Error reading response body: %v", err)
+		t.logger.Error().Interface("response", resp).Msgf("Error reading response body: %v", err)
 		return nil, err
 	}
 
@@ -151,11 +154,9 @@ func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 
 	// Dynamically parse the JSON response
 	if err := json.Unmarshal(responseBody, &tripsResponse); err != nil {
-		log.Error().Str("body", string(responseBody)).Msgf("Error parsing JSON response: %v", err)
+		t.logger.Error().Interface("response", resp).Msgf("Error parsing JSON response: %v", err)
 		return nil, err
 	}
-
-	log.Info().Msgf("Fetched trips: %+v", tripsResponse.Trips)
 
 	sort.Slice(tripsResponse.Trips, func(i, j int) bool {
 		return tripsResponse.Trips[i].End.Time > tripsResponse.Trips[j].End.Time
@@ -170,7 +171,7 @@ func QueryTripsAPI(tokenID int64, settings *config.Settings, c *fiber.Ctx) ([]Tr
 	for _, trip := range latestTrips {
 		TripIDToTokenIDMap[trip.ID] = tokenID
 		if trip.Start.EstimatedLocation != nil {
-			log.Info().Msgf("Trip ID: %s, EstimatedLocation: %+v", trip.ID, *trip.Start.EstimatedLocation)
+			t.logger.Debug().Msgf("Trip ID: %s, EstimatedLocation: %+v", trip.ID, *trip.Start.EstimatedLocation)
 		}
 
 	}
@@ -223,7 +224,6 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 	if err != nil {
 		return nil, err
 	}
-	log.Info().Msgf("Telemetry API response body: %s", string(body))
 
 	var respData TelemetryAPIResponse
 	if err := json.Unmarshal(body, &respData); err != nil {
@@ -247,24 +247,24 @@ func queryTelemetryData(tokenID int64, startTime string, endTime string, setting
 	return locations, nil
 }
 
-func HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, startTime, endTime string, estimatedStart *LatLon) error {
+func (t *TripsController) HandleMapDataForTrip(c *fiber.Ctx, settings *config.Settings, tripID, startTime, endTime string, estimatedStart *LatLon) error {
 	tokenID, exists := TripIDToTokenIDMap[tripID]
 	if !exists {
-		log.Error().Msgf("Trip not found for tripID: %s", tripID)
+		t.logger.Error().Msgf("Trip not found for tripID: %s", tripID)
 		return c.Status(fiber.StatusNotFound).SendString("Trip not found")
 	}
 
-	log.Info().Msgf("Fetching map data for TripID: %s, StartTime: %s, EndTime: %s, TokenID: %d", tripID, startTime, endTime, tokenID)
+	t.logger.Debug().Msgf("Fetching map data for TripID: %s, StartTime: %s, EndTime: %s, TokenID: %d", tripID, startTime, endTime, tokenID)
 
 	// Fetch telemetry data
 	locations, err := queryTelemetryData(tokenID, startTime, endTime, settings, c)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to fetch historical data")
+		t.logger.Error().Err(err).Msg("Failed to fetch historical data")
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch historical data: " + err.Error()})
 	}
 
 	if len(locations) == 0 {
-		log.Warn().Msg("No location data received")
+		t.logger.Warn().Msgf("No location data received for TripID: %s, StartTime: %s, EndTime: %s, TokenID: %d", tripID, startTime, endTime, tokenID)
 	}
 
 	geoJSON := convertToGeoJSON(locations, estimatedStart)

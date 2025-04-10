@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
-
-	"github.com/google/uuid"
 
 	"github.com/dimo-network/trips-web-app/api/internal/config"
 	"github.com/gofiber/fiber/v2"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -66,23 +64,24 @@ func GetEmailFromUsersAPI(c *fiber.Ctx, settings *config.Settings) (string, erro
 
 type AccountController struct {
 	settings *config.Settings
+	logger   *zerolog.Logger
 }
 
-func NewAccountController(settings *config.Settings) AccountController {
-	return AccountController{settings: settings}
+func NewAccountController(settings *config.Settings, logger *zerolog.Logger) AccountController {
+	return AccountController{settings: settings, logger: logger}
 }
 
 func (a *AccountController) MyAccount(c *fiber.Ctx) error {
 	sessionCookie := c.Cookies("session_id")
 	if sessionCookie == "" {
-		fmt.Println("No session_id cookie")
+		a.logger.Error().Msg("No session_id cookie")
 		return c.Render("session_expired", fiber.Map{})
 	}
 
 	// check if the session_id is in the cache
 	jwtToken, found := CacheInstance.Get(sessionCookie)
 	if !found {
-		fmt.Println("Session expired")
+		a.logger.Error().Msg("Session expired")
 		return c.Render("session_expired", fiber.Map{})
 	}
 
@@ -100,10 +99,6 @@ func (a *AccountController) MyAccount(c *fiber.Ctx) error {
 		}
 	}
 
-	if err != nil {
-		return c.Render("session_expired", fiber.Map{})
-	}
-
 	return c.Render("account", fiber.Map{
 		"Token": jwtToken,
 		"Privileges": fiber.Map{
@@ -116,53 +111,4 @@ func (a *AccountController) MyAccount(c *fiber.Ctx) error {
 		},
 		"Vehicles": vehicles,
 	})
-}
-
-func (a *AccountController) LoginWithJWT(c *fiber.Ctx) error {
-	return c.Render("login_jwt", fiber.Map{})
-}
-
-func (a *AccountController) PostLoginWithJWT(c *fiber.Ctx) error {
-	log.Info().Msg("Entered PostLoginWithJWT")
-
-	// Parse JSON body for JWT
-	var body struct {
-		JWT string `json:"jwt"`
-	}
-	if err := c.BodyParser(&body); err != nil {
-		log.Error().Msg("Error parsing request body")
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
-	}
-
-	jwt := body.JWT
-	if jwt == "" {
-		log.Error().Msg("JWT token missing from body")
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "JWT token missing"})
-	}
-	log.Info().Msgf("Received JWT: %s", jwt)
-
-	// Verify JWT and extract Ethereum address
-	ethAddr, err := ExtractEthereumAddressFromToken(jwt)
-	if err != nil {
-		log.Error().Msgf("Invalid JWT: %v", err)
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid JWT"})
-	}
-	log.Info().Msgf("Extracted Ethereum address: %s", ethAddr)
-
-	// Set session ID and store JWT in cache
-	sessionID := uuid.New().String()
-	CacheInstance.Set(sessionID, jwt, 2*time.Hour)
-	log.Info().Msgf("Stored JWT in cache with session ID: %s", sessionID)
-
-	// Set session cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     "session_id",
-		Value:    sessionID,
-		Expires:  time.Now().Add(2 * time.Hour),
-		HTTPOnly: true,
-		Secure:   true,
-	})
-	log.Info().Msg("Session cookie set successfully")
-
-	return c.Redirect("/vehicles/me")
 }

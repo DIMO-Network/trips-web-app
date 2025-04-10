@@ -61,10 +61,10 @@ func main() {
 
 	engine := handlebars.New("./views", ".hbs")
 
-	ac := controllers.NewAccountController(&settings)
-	vc := controllers.NewVehiclesController(&settings)
-	tc := controllers.NewTripsController(&settings)
-	st := controllers.NewStreamrController(&settings)
+	ac := controllers.NewAccountController(&settings, &logger)
+	vc := controllers.NewVehiclesController(&settings, &logger)
+	tc := controllers.NewTripsController(&settings, &logger)
+	st := controllers.NewStreamrController(&settings, &logger)
 	sc := controllers.NewSettingsController(&settings, &logger)
 
 	app := fiber.New(fiber.Config{
@@ -87,7 +87,7 @@ func main() {
 	app.Get("/vehicles/:tokenid/history", vc.HandleGetHistoricalData)
 
 	app.Get("/vehicles/:tokenid/trips", controllers.AuthMiddleware(), tc.HandleTripsList)
-	app.Get("/give-feedback", controllers.AuthMiddleware(), controllers.HandleGiveFeedback(&settings))
+	app.Get("/give-feedback", controllers.AuthMiddleware(), vc.HandleGiveFeedback(&settings))
 	app.Get("/streamr", controllers.AuthMiddleware(), st.GetStreamr)
 
 	// API routes called via Javascript fetch
@@ -96,21 +96,25 @@ func main() {
 		startTime := c.Query("start")
 		endTime := c.Query("end")
 
-		log.Info().Msgf("Received request for tripID: %s, startTime: %s, endTime: %s", tripID, startTime, endTime)
+		logger.Debug().Msgf("Received request for tripID: %s, startTime: %s, endTime: %s", tripID, startTime, endTime)
 
 		// Retrieve the estimated start location from the query string
 		var estimatedStart *controllers.LatLon
 		if estimatedStartStr := c.Query("estimatedStart"); estimatedStartStr != "" {
-			log.Info().Msgf("Received estimatedStart: %s", estimatedStartStr)
+			logger.Debug().Msgf("Estimated start location: %s", estimatedStartStr)
 			if err := json.Unmarshal([]byte(estimatedStartStr), &estimatedStart); err != nil {
 				log.Error().Err(err).Msg("Invalid estimated start location")
+				logger.Err(err).Msgf(
+					"Invalid estimated start location: %s",
+					estimatedStartStr,
+				)
 				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid estimated start location"})
 			}
 		} else {
-			log.Info().Msg("No estimatedStart received")
+			logger.Debug().Msgf("No estimatedStart received for tripID: %s", tripID)
 		}
 
-		return controllers.HandleMapDataForTrip(c, &settings, tripID, startTime, endTime, estimatedStart)
+		return tc.HandleMapDataForTrip(c, &settings, tripID, startTime, endTime, estimatedStart)
 	})
 	// used by /web frontend in lit for the login
 	app.Get("/v1/public/settings", sc.GetPublicSettings)
