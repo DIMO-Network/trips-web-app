@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/DIMO-Network/shared"
 	"github.com/dimo-network/trips-web-app/api/internal/config"
@@ -67,7 +70,12 @@ func main() {
 		Views:          engine,
 		ReadBufferSize: 16000,
 	})
-	app.Use(cors.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "https://localdev.dimo.org:3008", // localhost development
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowCredentials: true,
+	}))
 
 	// View routes public
 	app.Get("/login-jwt", ac.LoginWithJWT)
@@ -152,6 +160,7 @@ func main() {
 
 	app.Get("/health", healthCheck)
 
+	// todo use runfiber below
 	log.Info().Msgf("Starting server on port %s", settings.Port)
 	if err := app.Listen(":" + settings.Port); err != nil {
 		log.Fatal().Err(err).Msg("Server failed to start")
@@ -172,4 +181,26 @@ func loadStaticIndex(ctx *fiber.Ctx) error {
 	}
 	ctx.Set("Content-Type", "text/html; charset=utf-8")
 	return ctx.Status(fiber.StatusOK).Send(dat)
+}
+
+func runFiber(ctx context.Context, fiberApp *fiber.App, addr string, group *errgroup.Group, useTLS bool) {
+	group.Go(func() error {
+		if useTLS {
+			if err := fiberApp.ListenTLS("localdev.dimo.org"+addr, "../web/.mkcert/cert.pem", "../web/.mkcert/dev.pem"); err != nil {
+				return fmt.Errorf("failed to start server: %w", err)
+			}
+		} else {
+			if err := fiberApp.Listen(addr); err != nil {
+				return fmt.Errorf("failed to start server: %w", err)
+			}
+		}
+		return nil
+	})
+	group.Go(func() error {
+		<-ctx.Done()
+		if err := fiberApp.Shutdown(); err != nil {
+			return fmt.Errorf("failed to shutdown server: %w", err)
+		}
+		return nil
+	})
 }
