@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/DIMO-Network/shared"
 	"github.com/dimo-network/trips-web-app/api/internal/config"
@@ -36,9 +40,13 @@ func ErrorHandler(ctx *fiber.Ctx, err error) error {
 }
 
 func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	logger := zerolog.New(os.Stdout).Level(zerolog.InfoLevel).With().
+		Timestamp().
+		Str("app", "trips-sandbox-app").
+		Logger()
 
-	fmt.Print("Server is starting...")
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
 
 	settings, err := shared.LoadConfig[config.Settings]("settings.prod.yaml")
 	if err != nil {
@@ -53,21 +61,24 @@ func main() {
 
 	engine := handlebars.New("./views", ".hbs")
 
-	ac := controllers.NewAccountController(settings)
-	vc := controllers.NewVehiclesController(settings)
-	tc := controllers.NewTripsController(settings)
-	st := controllers.NewStreamrController(settings)
+	ac := controllers.NewAccountController(&settings)
+	vc := controllers.NewVehiclesController(&settings)
+	tc := controllers.NewTripsController(&settings)
+	st := controllers.NewStreamrController(&settings)
+	sc := controllers.NewSettingsController(&settings, &logger)
 
 	app := fiber.New(fiber.Config{
-		ErrorHandler:   ErrorHandler,
-		Views:          engine,
-		ReadBufferSize: 16000,
+		ErrorHandler:          ErrorHandler,
+		Views:                 engine,
+		ReadBufferSize:        16000,
+		DisableStartupMessage: true,
 	})
-	app.Use(cors.New())
-
-	// View routes public
-	app.Get("/login-jwt", ac.LoginWithJWT)
-	app.Post("/login-jwt", ac.PostLoginWithJWT)
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "https://localdev.dimo.org:3008", // localhost development
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowCredentials: true,
+	}))
 
 	// View routes (protected)
 	app.Get("/account", controllers.AuthMiddleware(), ac.MyAccount)
@@ -101,6 +112,8 @@ func main() {
 
 		return controllers.HandleMapDataForTrip(c, &settings, tripID, startTime, endTime, estimatedStart)
 	})
+	// used by /web frontend in lit for the login
+	app.Get("/v1/public/settings", sc.GetPublicSettings)
 
 	// Public Routes
 	app.Post("/auth/web3/generate_challenge", func(c *fiber.Ctx) error {
@@ -109,6 +122,7 @@ func main() {
 	app.Post("/auth/web3/submit_challenge", func(c *fiber.Ctx) error {
 		return controllers.HandleSubmitChallenge(c, &settings)
 	})
+	app.Post("/auth/start_session", controllers.PersistJwtHandler)
 
 	app.Post("/api/generate-token/:tokenID", controllers.AuthMiddleware(), func(c *fiber.Ctx) error {
 		tokenID, err := strconv.ParseInt(c.Params("tokenID"), 10, 64)
@@ -146,10 +160,15 @@ func main() {
 
 	app.Get("/health", healthCheck)
 
+	group, gCtx := errgroup.WithContext(ctx)
+
 	log.Info().Msgf("Starting server on port %s", settings.Port)
-	if err := app.Listen(":" + settings.Port); err != nil {
-		log.Fatal().Err(err).Msg("Server failed to start")
+	runFiber(gCtx, app, ":"+settings.Port, group, settings.UseDevCerts)
+
+	if err := group.Wait(); err != nil {
+		logger.Fatal().Err(err).Msg("Server failed.")
 	}
+	logger.Info().Msg("Server stopped.")
 }
 
 func healthCheck(c *fiber.Ctx) error {
@@ -166,4 +185,26 @@ func loadStaticIndex(ctx *fiber.Ctx) error {
 	}
 	ctx.Set("Content-Type", "text/html; charset=utf-8")
 	return ctx.Status(fiber.StatusOK).Send(dat)
+}
+
+func runFiber(ctx context.Context, fiberApp *fiber.App, addr string, group *errgroup.Group, useTLS bool) {
+	group.Go(func() error {
+		if useTLS {
+			if err := fiberApp.ListenTLS("localdev.dimo.org"+addr, "../web/.mkcert/cert.pem", "../web/.mkcert/dev.pem"); err != nil {
+				return fmt.Errorf("failed to start server: %w", err)
+			}
+		} else {
+			if err := fiberApp.Listen(addr); err != nil {
+				return fmt.Errorf("failed to start server: %w", err)
+			}
+		}
+		return nil
+	})
+	group.Go(func() error {
+		<-ctx.Done()
+		if err := fiberApp.Shutdown(); err != nil {
+			return fmt.Errorf("failed to shutdown server: %w", err)
+		}
+		return nil
+	})
 }

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DIMO Trips Sandbox</title>
+    <script type="module" src="./src/index.ts"></script>
+    <link rel="stylesheet" href="src/index.css">
+  </head>
+  <body>
+  <div style="display: flex; justify-content: center; align-items: center; ">
+  <div style="margin-top: 100px;">
+    <svg role="img" aria-label="Dimo logo" class="h-full w-full mdw:h-[31px]" width="138" height="31" viewBox="0 0 138 31" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g clip-path="url(#clip0_7201_13951)">
+        <path d="M46.97 0.316406H38.4121V30.7632H46.97V0.316406Z" fill="currentColor"></path>
+        <path d="M70.9596 31C65.7111 31 61.443 26.7308 61.443 21.4812L61.4553 9.51884C61.4553 8.59062 60.6993 7.83452 59.7713 7.83452C58.8433 7.83452 58.0874 8.59062 58.0874 9.51884V30.7664H50.2578V9.51576C50.2578 4.26919 54.526 0 59.7713 0C65.0167 0 69.2849 4.26919 69.2849 9.51576V13.4315L69.2756 13.8495V21.4812C69.2756 22.4063 70.0285 23.1624 70.9565 23.1624C71.6387 23.1624 72.244 22.769 72.4929 22.1635L79.0934 5.9996L79.1241 5.92584C81.1952 1.02657 84.6829 0 87.2456 0H87.4146C92.66 0 96.9282 4.26919 96.9282 9.51576V30.7664H89.0955V9.51576C89.0955 8.81806 88.6776 8.20028 88.0261 7.94825C87.8295 7.87141 87.6236 7.83145 87.4146 7.83145C86.7171 7.83145 86.0994 8.25253 85.8475 8.90412L78.8383 25.9378C77.5416 29.0852 74.7607 30.9201 71.1869 30.9969H70.9626L70.9596 31Z" fill="currentColor"></path>
+        <path d="M0.246094 22.6276H20.0936C24.2634 22.6276 27.5299 19.5049 27.5299 15.5184C27.5299 11.532 24.1958 8.13881 20.0967 8.13881H10.0976C9.15734 8.13881 8.38605 8.91027 8.38605 9.85078V20.4792H0.246094V9.51576C0.246094 4.26919 4.51427 0 9.75961 0H20.5115C29.097 0 36.0816 6.96163 36.0816 15.5154C36.0816 24.0691 29.2414 30.7633 20.5115 30.7633H0.246094V22.6245V22.6276Z" fill="currentColor"></path>
+        <path d="M114.863 30.7633C106.133 30.7633 99.293 24.066 99.293 15.5154C99.293 6.95856 106.278 0 114.863 0H122.186C130.771 0 137.756 6.96163 137.756 15.5154C137.756 24.0691 130.916 30.7633 122.186 30.7633H114.863ZM121.768 22.6276C125.938 22.6276 129.204 19.5049 129.204 15.5184C129.204 11.532 125.87 8.13881 121.771 8.13881H115.284C111.185 8.13881 107.851 11.449 107.851 15.5184C107.851 19.5049 111.117 22.6276 115.287 22.6276H121.774H121.768Z" fill="currentColor"></path>
+      </g>
+      <defs>
+        <clipPath id="clip0_7201_13951">
+          <rect width="137.51" height="31" fill="white" transform="translate(0.246094)"></rect>
+        </clipPath>
+      </defs>
+    </svg>
+  </div>
+  </div>
+  <div style="display: flex; justify-content: center; align-items: center; ">
+    <h1 class="title">Trips Sandbox</h1>
+  </div>
+  <slot></slot>
+  <div style="display: flex; justify-content: center; align-items: center; ">
+  <login-element></login-element>
+  </div>
+  
+  <script>
+    function isTokenExpired(token) {
+      if (!token) {
+        console.log("No token found");
+        return true; // If there's no token, treat it as expired
+      }
+
+      try {
+        // Split the token and get the payload (2nd part)
+        const payload = JSON.parse(atob(token.split('.')[1]));
+
+        // Get the current time in seconds
+        const currentTime = Math.floor(Date.now() / 1000);
+
+        // Check if the `exp` claim (expiration time) is still valid
+        return payload.exp < currentTime;
+      } catch (error) {
+        console.error("Invalid token:", error);
+        return true; // If parsing fails, assume token is expired
+      }
+    }
+
+    token = localStorage.getItem("token");
+    if (isTokenExpired(token) === false) {
+      window.location.href = "/app.html";
+    }
+  </script>
+  </body>
+</html>

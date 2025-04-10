@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/patrickmn/go-cache"
@@ -66,4 +68,28 @@ func AuthMiddleware() fiber.Handler {
 
 		return c.Next()
 	}
+}
+
+// JwtRequest represents the expected POST JSON payload.
+type JwtRequest struct {
+	Jwt string `json:"jwt"`
+}
+
+// PersistJwtHandler handles the POST request containing the JWT for our session
+func PersistJwtHandler(c *fiber.Ctx) error {
+	var req JwtRequest
+
+	// Parse the JSON body into our request struct.
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request payload",
+		})
+	}
+	sessionID := uuid.New().String()
+	CacheInstance.Set(sessionID, req.Jwt, 2*time.Hour)
+
+	// Return the session_id as JSON.
+	return c.JSON(fiber.Map{
+		"session_id": sessionID,
+	})
 }

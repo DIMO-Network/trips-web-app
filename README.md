@@ -32,9 +32,9 @@ Before you begin, ensure you have the following installed on your system:
     cd trips-web-app
     ```
 
-2. Install the dependencies for the frontend:
+2. Install the dependencies for the frontend. Currently compiled SPA frontend is used only for login, but in future we could migrate rest of functionality to it.
     ```sh
-    cd app-login
+    cd web
     npm install
     # or
     yarn install
@@ -42,7 +42,7 @@ Before you begin, ensure you have the following installed on your system:
 
 ## Running Locally
 
-1. Create a `.env` file in the `app-login` directory
+1. Modify your hosts file to add a 127.0.0.1 entry for localdev.dimo.org . This should exist in the equivalent app configured in dimo dev console.
 
 2. Start the frontend development server:
     ```sh
@@ -51,12 +51,14 @@ Before you begin, ensure you have the following installed on your system:
     yarn dev
     ```
 
-3. Navigate to the directory where `main.go` is located and run the backend server:
+3. You must run the dev server first because this is what will generate the certificates in the .mkcert folder. We develop locally with https for passkeys & stuff to work.
+
+4. Navigate to the directory where `main.go` is located and run the backend server:
     ```sh
     go run ./cmd/trips-web-app
     ```
 
-   The backend Go server will be hosted on [http://localhost:3003](http://localhost:3003).
+   The backend Go server will be hosted on [http://localhost:3007](http://localhost:3007). Port is controlled from settings.yaml file. 
 
 ## Deployment
 
@@ -64,7 +66,7 @@ Deploying the Trips Sandbox involves a few steps:
 
 1. **Build the frontend**:
     ```sh
-    cd app-login
+    cd web
     npm run build
     # or
     yarn build

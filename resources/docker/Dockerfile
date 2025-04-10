@@ -1,4 +1,4 @@
-FROM golang:1.21 AS build
+FROM golang:1.23 AS build
 ## based on debian 11
 
 RUN useradd -u 10001 dimo
@@ -10,13 +10,6 @@ COPY /app-login /go/src/github.com/dimo-network/trips-web-app/
 ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOFLAGS=-mod=vendor
-ENV DIMO_PROJECT_ID=d16b9a51a03ecf7d3a617416144f70fb
-ENV DIMO_API_BASEURL=https://trips-sandbox.drivedimo.com
-ENV DIMO_CLIENT_ID=0x6dc04b391D38818B2036f80cEf2cF4727e479065
-ENV DIMO_REDIRECT_URI=https://trips-sandbox.drivedimo.com/vehicles/me
-ENV DIMO_ENVIRONMENT=production
-ENV DIMO_PERMISSION_TEMPLATE_ID=1
-ENV DIMO_API_KEY=12345
 
 RUN apt-get clean && apt-get update
 RUN curl -fsSL https://deb.nodesource.com/setup_21.x | bash -
