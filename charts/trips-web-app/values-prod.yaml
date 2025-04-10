@@ -18,7 +18,7 @@ env:
   PORT: '8080'
   LOG_LEVEL: info
   SERVICE_NAME: trips-web-app
-  CLIENT_ID: '0x51dacC165f1306Abfbf0a6312ec96E13AAA826DB'
+  CLIENT_ID: '0x6dc04b391D38818B2036f80cEf2cF4727e479065'
   LOGIN_URL: "https://login.dimo.org"
   DOMAIN: https://trips-sandbox.drivedimo.com/oauth/callback
   SCOPE: openid email
