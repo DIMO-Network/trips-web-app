@@ -5,7 +5,7 @@ RUN useradd -u 10001 dimo
 
 WORKDIR /go/src/github.com/dimo-network/trips-web-app/
 COPY /api /go/src/github.com/dimo-network/trips-web-app/
-COPY /app-login /go/src/github.com/dimo-network/trips-web-app/
+COPY /web /go/src/github.com/dimo-network/trips-web-app/
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux
