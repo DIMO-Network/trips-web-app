@@ -2,7 +2,7 @@ ENVIRONMENT: local
 PORT: 3007
 LOG_LEVEL: info
 
-CLIENT_ID: '0x51dacC165f1306Abfbf0a6312ec96E13AAA826DB'
+CLIENT_ID: '0x6dc04b391D38818B2036f80cEf2cF4727e479065'
 LOGIN_URL: 'https://login.dimo.org'
 DOMAIN: https://localhost:4000/oauth/callback
 SCOPE: openid email
