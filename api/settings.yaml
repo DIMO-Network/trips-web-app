@@ -3,7 +3,7 @@ PORT: 4000
 LOG_LEVEL: info
 
 SERVICE_NAME: trips-web-app
-CLIENT_ID: trips-signals-webapp
+CLIENT_ID: '0x151e4c2899a3b232613872372e1e872F99CbA09A'
 DOMAIN: https://sample-web-app.dev.dimo.zone/oauth/callback
 SCOPE: openid email
 RESPONSE_TYPE: code

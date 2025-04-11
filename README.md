@@ -60,6 +60,9 @@ Before you begin, ensure you have the following installed on your system:
 
    The backend Go server will be hosted on [http://localhost:3007](http://localhost:3007). Port is controlled from settings.yaml file. 
 
+Note that if you're running against dev (eg. dev login, dev identity & telemetry), you must use a client_id from our dev version of the console
+https://console-staging.dimo.org/
+
 ## Deployment
 
 Deploying the Trips Sandbox involves a few steps:
