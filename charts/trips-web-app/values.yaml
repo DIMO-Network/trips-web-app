@@ -2,7 +2,7 @@ replicaCount: 1
 image:
   repository: dimozone/trips-web-app
   pullPolicy: IfNotPresent
-  tag: da36b6b
+  tag: 5c43937
 imagePullSecrets: []
 nameOverride: ''
 fullnameOverride: ''
@@ -41,9 +41,9 @@ service:
       targetPort: http
       protocol: TCP
 ports:
-- name: http
-  containerPort: 8080
-  protocol: TCP
+  - name: http
+    containerPort: 8080
+    protocol: TCP
 ingress:
   enabled: true
   className: nginx
@@ -54,10 +54,10 @@ ingress:
     nginx.ingress.kubernetes.io/cors-allow-origin: '*'
     external-dns.alpha.kubernetes.io/hostname: trips-sandbox.dev.drivedimo.com
   hosts:
-  - host: trips-sandbox.dev.drivedimo.com
-    paths:
-    - path: /
-      pathType: ImplementationSpecific
+    - host: trips-sandbox.dev.drivedimo.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
   tls: []
 resources:
   limits:
